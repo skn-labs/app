@@ -36,7 +36,7 @@ export function RecordsPage() {
   const reset = useMutation({ mutationFn: (scenario: 'default' | 'empty-experience' | 'cold-start') => api.resetDemo(scenario), onSuccess: () => { queryClient.invalidateQueries(); navigate('/') } })
 
   const pending = auth.isPending || records.isPending || patterns.isPending || products.isPending || profile.isPending || current.isPending || baseline.isPending
-  if (pending) return <Screen><AppHeader back backTo="/"/><Loading label="내 기록을 연결하는 중"/></Screen>
+  if (pending) return <Screen><AppHeader back sticky/><Loading label="내 기록을 연결하는 중"/></Screen>
 
   const loadError = auth.error
     || records.error
@@ -45,7 +45,7 @@ export function RecordsPage() {
     || (profile.error && !isNotFound(profile.error) ? profile.error : null)
     || (current.error && !isNotFound(current.error) ? current.error : null)
     || (baseline.error && !isNotFound(baseline.error) ? baseline.error : null)
-  if (loadError) return <Screen><AppHeader back backTo="/"/><ErrorState message={loadError.message} onRetry={() => {
+  if (loadError) return <Screen><AppHeader back sticky/><ErrorState message={loadError.message} onRetry={() => {
     auth.refetch()
     records.refetch()
     patterns.refetch()
@@ -59,7 +59,7 @@ export function RecordsPage() {
   const connectedRoutineCount = new Set([current.data?.id, baseline.data?.id].filter(Boolean)).size
 
   return <Screen>
-    <AppHeader back backTo="/"/>
+    <AppHeader back sticky/>
     <div className="px-5 pb-8">
       <div className="flex min-w-0 items-center gap-4">
         <div className="grid size-[60px] shrink-0 place-items-center rounded-full bg-soft text-ink"><CircleUserRound size={28}/></div>

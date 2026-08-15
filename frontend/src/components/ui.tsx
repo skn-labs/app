@@ -18,10 +18,10 @@ export function TopBar({ title, back = false, backTo, right }: { title: string; 
 }
 
 /** Figma "홈+루틴" 헤더: 탭 루트 화면은 로고+마이페이지, 하위 화면은 뒤로가기+로고. */
-export function AppHeader({ back = false, backTo, right, profile = true }: { back?: boolean; backTo?: string; right?: ReactNode; profile?: boolean }) {
+export function AppHeader({ back = false, backTo, onBack, left, right, profile = true, sticky = false }: { back?: boolean; backTo?: string; onBack?: () => void; left?: ReactNode; right?: ReactNode; profile?: boolean; sticky?: boolean }) {
   const navigate = useNavigate()
-  return <header className="safe-top relative z-20 flex min-h-[72px] shrink-0 items-center justify-between px-5">
-    <div className="flex w-20 items-center">{back && <button type="button" aria-label="뒤로" onClick={() => backTo ? navigate(backTo) : navigate(-1)} className="-ml-2 grid size-11 place-items-center rounded-full transition hover:bg-soft active:scale-95"><ChevronLeft size={24}/></button>}</div>
+  return <header className={twMerge('safe-top z-20 flex min-h-[72px] shrink-0 items-center justify-between bg-white/95 px-5 backdrop-blur-xl', sticky ? 'sticky top-0' : 'relative')}>
+    <div className="flex w-20 items-center">{left || (back && <button type="button" aria-label="뒤로" onClick={() => onBack ? onBack() : backTo ? navigate(backTo) : navigate(-1)} className="-ml-2 grid size-11 place-items-center rounded-full transition hover:bg-soft active:scale-95"><ChevronLeft size={24}/></button>)}</div>
     <SknMark className="h-10 w-10"/>
     <div className="flex w-20 items-center justify-end">
       {right || (!back && profile && <Link to="/records" aria-label="마이페이지" className="grid size-11 place-items-center rounded-full text-ink transition hover:bg-soft active:scale-95"><CircleUserRound size={22} strokeWidth={1.8}/></Link>)}
@@ -32,14 +32,14 @@ export function AppHeader({ back = false, backTo, right, profile = true }: { bac
 function BottomNav() {
   const items = [
     { to: '/', label: '홈', icon: Home, end: true },
-    { to: '/experience', label: 'My Lab', icon: FlaskConical },
+    { to: '/my-products', label: 'My Lab', icon: FlaskConical },
     { to: '/routines', label: '루틴', icon: NotebookText },
     { to: '/ai', label: 'AI', icon: MessageCircle },
   ]
   return <div className="safe-bottom pointer-events-none fixed inset-x-0 bottom-0 z-30 mx-auto flex max-w-[430px] justify-center px-7">
-    <nav aria-label="주요 메뉴" className="pointer-events-auto flex h-[70px] w-full max-w-[348px] items-center justify-around rounded-[40px] border border-black/[.035] bg-white/96 px-2 shadow-[0_12px_36px_rgba(0,0,0,.13)] backdrop-blur-xl">
-      {items.map(({ to, label, icon: Icon, end }) => <NavLink key={to} to={to} end={end} className={({ isActive }) => twMerge('flex h-13 min-w-14 flex-col items-center justify-center gap-0.5 rounded-full px-2 text-[#b5b8b2] transition active:scale-95', isActive && 'bg-[#f5f7f2] text-[#0a0a0a]')}>
-        <Icon size={21} strokeWidth={1.9}/><span className="text-[9px] font-medium leading-none">{label}</span>
+    <nav aria-label="주요 메뉴" className="pointer-events-auto flex h-[66px] w-full max-w-[334px] items-center justify-around rounded-[40px] border border-black/[.035] bg-white/96 px-2 shadow-[0_12px_36px_rgba(0,0,0,.13)] backdrop-blur-xl">
+      {items.map(({ to, label, icon: Icon, end }) => <NavLink key={to} to={to} end={end} aria-label={label} className={({ isActive }) => twMerge('grid size-11 place-items-center rounded-full text-[#c7c9c4] transition active:scale-95', isActive && 'text-[#0a0a0a]')}>
+        <Icon size={23} strokeWidth={1.9}/><span className="sr-only">{label}</span>
       </NavLink>)}
     </nav>
   </div>

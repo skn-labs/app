@@ -1,14 +1,16 @@
 import { useDeferredValue, useEffect, useRef, useState } from 'react'
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowRight, BadgeCheck, ChevronLeft, ChevronRight, ExternalLink, Plus, Search, Sparkles, X } from 'lucide-react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { ArrowRight, BadgeCheck, ChevronRight, Clock3, ExternalLink, FlaskConical, Plus, Search, Sparkles, X } from 'lucide-react'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { api, ApiError } from '../lib/api'
 import { startChatPath } from '../lib/chat'
-import type { Product, ProductFact, ProductGuide, UserProduct } from '../lib/types'
-import { Button, EmptyState, ErrorState, Loading, PageHeading, ProductGlyph, Screen, SknMark, StickyActionBar, TopBar } from '../components/ui'
+import type { Experience, Product, ProductFact, ProductGuide, Routine, UserProduct } from '../lib/types'
+import { AppHeader, Button, EmptyState, ErrorState, Loading, PageHeading, ProductGlyph, Screen, StickyActionBar, TopBar } from '../components/ui'
 
 export function ExplorePage() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const returnTo = safeReturnTo(searchParams.get('returnTo'))
   const [query, setQuery] = useState('')
   const deferredQuery = useDeferredValue(query.trim())
   const loadMoreRef = useRef<HTMLDivElement>(null)
@@ -33,27 +35,29 @@ export function ExplorePage() {
     observer.observe(target)
     return () => observer.disconnect()
   }, [fetchNextPage, hasNextPage, isFetchingNextPage])
-  return <Screen>
-    <TopBar title="탐색" right={<Link to="/my-products" className="whitespace-nowrap text-xs font-semibold text-muted">내 화장품</Link>}/>
+  return <Screen nav={false}>
+    <AppHeader back onBack={() => navigate(-1)} profile={false} sticky right={<Link to="/my-products" className="whitespace-nowrap rounded-full px-2 py-2 text-xs font-medium text-muted">My Lab</Link>}/>
     <div className="px-5 pt-6">
       <PageHeading title="다음에 써볼 제품" description={<>인기 순위보다, 이전에 남긴 내 경험과<br/>비교하며 탐색해요.</>}/>
       <div className="sticky top-[calc(64px+env(safe-area-inset-top))] z-10 -mx-1 mt-5 bg-paper/95 px-1 py-3 backdrop-blur"><label className="flex h-12 items-center gap-3 rounded-2xl border border-line bg-white px-4 transition focus-within:border-accent focus-within:ring-4 focus-within:ring-accent-soft"><Search size={19} className="text-muted"/><input value={query} onChange={e => setQuery(e.target.value)} aria-label="제품 검색" enterKeyHint="search" autoComplete="off" placeholder="브랜드 또는 제품명" className="min-w-0 flex-1 bg-transparent text-sm outline-none"/>{searching && <span aria-label="검색 중" className="size-4 animate-spin rounded-full border-2 border-line border-t-accent"/>}{query && <button type="button" aria-label="검색어 지우기" onClick={() => setQuery('')} className="grid size-9 place-items-center rounded-full hover:bg-soft"><X size={17} className="text-muted"/></button>}</label></div>
-      {!deferredQuery && contextualProduct && <section className="mb-7"><h2 className="text-sm font-bold">{hasPersonalContext ? '내 기록에서 다시 볼 제품' : '제품 정보부터 둘러보기'}</h2><div className="mt-3 grid grid-cols-2 gap-3"><Link to={`/products/${contextualProduct.id}`} className="rounded-[22px] border border-line bg-white p-4 transition hover:border-[#cfd4cc] active:scale-[.99]"><ProductGlyph category={contextualProduct.category} src={contextualProduct.imageUrl}/><p className="mt-3 text-[10px] font-semibold text-muted">{contextualProduct.brand}</p><h3 className="mt-1 line-clamp-2 text-sm font-bold leading-5">{contextualProduct.name}</h3><p className="mt-2 text-[10px] font-bold text-accent">{hasPersonalContext ? `내 기록 ${contextualProduct.personalRecordCount}건과 비교` : '제품 정보 살펴보기'}</p></Link><button type="button" onClick={openRecommendationChat} className="rounded-[22px] border border-[#d9ddff] bg-[#f8f8ff] p-4 text-left transition hover:border-[#bfc6f5] active:scale-[.99]"><div className="grid size-12 place-items-center rounded-2xl bg-accent-soft text-accent"><Sparkles size={20}/></div><p className="mt-4 text-[10px] font-semibold text-accent">SKN AI</p><h3 className="mt-1 text-sm font-bold leading-5">내 경험에서<br/>다음 제품 찾기</h3><p className="mt-2 text-[10px] text-muted">근거가 부족하면 그대로 알려드려요</p></button></div></section>}
+      {!deferredQuery && contextualProduct && <section className="mb-7"><h2 className="text-sm font-bold">{hasPersonalContext ? '내 기록에서 다시 볼 제품' : '제품 정보부터 둘러보기'}</h2><div className="mt-3 grid grid-cols-2 gap-3"><Link to={productPath(contextualProduct.id, returnTo)} className="rounded-[22px] border border-line bg-white p-4 transition hover:border-[#cfd4cc] active:scale-[.99]"><ProductGlyph category={contextualProduct.category} src={contextualProduct.imageUrl}/><p className="mt-3 text-[10px] font-semibold text-muted">{contextualProduct.brand}</p><h3 className="mt-1 line-clamp-2 text-sm font-bold leading-5">{contextualProduct.name}</h3><p className="mt-2 text-[10px] font-bold text-accent">{hasPersonalContext ? `내 기록 ${contextualProduct.personalRecordCount}건과 비교` : '제품 정보 살펴보기'}</p></Link><button type="button" onClick={openRecommendationChat} className="rounded-[22px] border border-[#d9ddff] bg-[#f8f8ff] p-4 text-left transition hover:border-[#bfc6f5] active:scale-[.99]"><div className="grid size-12 place-items-center rounded-2xl bg-accent-soft text-accent"><Sparkles size={20}/></div><p className="mt-4 text-[10px] font-semibold text-accent">SKN AI</p><h3 className="mt-1 text-sm font-bold leading-5">내 경험에서<br/>다음 제품 찾기</h3><p className="mt-2 text-[10px] text-muted">근거가 부족하면 그대로 알려드려요</p></button></div></section>}
       <h2 className="mb-3 text-[15px] font-medium">{deferredQuery ? '검색 결과' : '전체 제품'}</h2>
-      {products.isPending ? <Loading/> : products.isError && !productItems.length ? <ErrorState message={products.error.message} onRetry={() => products.refetch()}/> : productItems.length ? <><div className="space-y-2">{productItems.map(product => <ProductRow key={product.id} product={product}/>)}</div><div ref={loadMoreRef} className="grid min-h-24 place-items-center pb-4" aria-live="polite">{isFetchingNextPage ? <div className="flex items-center gap-2 text-xs text-muted"><span className="size-4 animate-spin rounded-full border-2 border-line border-t-accent"/>제품 더 불러오는 중</div> : products.isFetchNextPageError ? <button type="button" onClick={() => fetchNextPage()} className="rounded-full border border-line bg-white px-4 py-2 text-xs font-semibold">다시 불러오기</button> : !hasNextPage ? <p className="text-[11px] text-muted">{deferredQuery ? '검색된 제품을 모두 봤어요.' : '모든 제품을 봤어요.'}</p> : null}</div></> : <EmptyState icon={<Search/>} title="검색 결과가 없어요" body="브랜드나 제품명을 다시 확인해주세요." action={deferredQuery ? <Button variant="secondary" onClick={() => setQuery('')}>전체 제품 보기</Button> : undefined}/>}
+      {products.isPending ? <Loading/> : products.isError && !productItems.length ? <ErrorState message={products.error.message} onRetry={() => products.refetch()}/> : productItems.length ? <><div className="space-y-2">{productItems.map(product => <ProductRow key={product.id} product={product} returnTo={returnTo}/>)}</div><div ref={loadMoreRef} className="grid min-h-24 place-items-center pb-4" aria-live="polite">{isFetchingNextPage ? <div className="flex items-center gap-2 text-xs text-muted"><span className="size-4 animate-spin rounded-full border-2 border-line border-t-accent"/>제품 더 불러오는 중</div> : products.isFetchNextPageError ? <button type="button" onClick={() => fetchNextPage()} className="rounded-full border border-line bg-white px-4 py-2 text-xs font-semibold">다시 불러오기</button> : !hasNextPage ? <p className="text-[11px] text-muted">{deferredQuery ? '검색된 제품을 모두 봤어요.' : '모든 제품을 봤어요.'}</p> : null}</div></> : <EmptyState icon={<Search/>} title="검색 결과가 없어요" body="브랜드나 제품명을 다시 확인해주세요." action={deferredQuery ? <Button variant="secondary" onClick={() => setQuery('')}>전체 제품 보기</Button> : undefined}/>}
     </div>
   </Screen>
 }
 
-function ProductRow({ product }: { product: Product }) {
+function ProductRow({ product, returnTo }: { product: Product; returnTo?: string }) {
   const details = [product.category, product.volume].filter(Boolean).join(' · ')
-  return <Link to={`/products/${product.id}`} className="flex items-center rounded-[20px] border border-line bg-white p-3 transition hover:border-[#cfd4cc] active:scale-[.99]"><ProductGlyph category={product.category} src={product.imageUrl}/><div className="min-w-0 flex-1 pr-1"><div className="flex items-center gap-1.5 text-[11px] font-semibold text-muted"><span>{product.brand}</span>{product.verified && <BadgeCheck size={13} className="text-accent"/>}</div><h2 className="mt-1 truncate text-[15px] font-bold tracking-[-.02em]">{product.name}</h2>{details && <p className="mt-1 text-xs text-muted">{details}</p>}{product.personalRecordCount > 0 ? <p className="mt-2 inline-flex rounded-full bg-accent-soft px-2 py-1 text-[10px] font-bold text-accent">내 비교 기록 {product.personalRecordCount}건</p> : product.owned ? <p className="mt-2 text-[10px] font-bold text-muted">내 화장품에 있음</p> : null}</div><ChevronRight size={18} className="text-muted"/></Link>
+  return <Link to={productPath(product.id, returnTo)} className="flex items-center rounded-[20px] border border-line bg-white p-3 transition hover:border-[#cfd4cc] active:scale-[.99]"><ProductGlyph category={product.category} src={product.imageUrl}/><div className="min-w-0 flex-1 pr-1"><div className="flex items-center gap-1.5 text-[11px] font-semibold text-muted"><span>{product.brand}</span>{product.verified && <BadgeCheck size={13} className="text-accent"/>}</div><h2 className="mt-1 truncate text-[15px] font-bold tracking-[-.02em]">{product.name}</h2>{details && <p className="mt-1 text-xs text-muted">{details}</p>}{product.personalRecordCount > 0 ? <p className="mt-2 inline-flex rounded-full bg-accent-soft px-2 py-1 text-[10px] font-bold text-accent">내 비교 기록 {product.personalRecordCount}건</p> : product.owned ? <p className="mt-2 text-[10px] font-bold text-muted">내 화장품에 있음</p> : null}</div><ChevronRight size={18} className="text-muted"/></Link>
 }
 
 export function ProductPage() {
   const { id } = useParams()
   const productId = Number(id)
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const returnTo = safeReturnTo(searchParams.get('returnTo'))
   const queryClient = useQueryClient()
   const [added, setAdded] = useState(false)
   const product = useQuery({ queryKey: ['product', productId], queryFn: () => api.product(productId), enabled: Number.isFinite(productId) })
@@ -91,7 +95,7 @@ export function ProductPage() {
     { productId },
   ))
   return <Screen nav={false} className="bg-white pb-44">
-    <CatalogHeader onBack={() => navigate(-1)} onAdd={() => navigate('/explore')}/>
+    <CatalogHeader onBack={() => navigate(-1)} onAdd={() => navigate(explorePath(returnTo))}/>
     <div className="pb-8">
       <ProductHero product={data}/>
       <div className="px-5">
@@ -106,12 +110,24 @@ export function ProductPage() {
     <StickyActionBar className="px-4 pb-4 pt-3">
       {added && <p className="mb-2 text-center text-[11px] font-semibold text-[#52722d]">내 화장품에 담았어요. 현재 루틴은 바뀌지 않아요.</p>}
       {add.error && <p className="mb-2 text-center text-[11px] font-semibold leading-5 text-danger">{add.error.message}</p>}
-      {owned ? <div className="grid grid-cols-2 gap-2.5"><Button className="rounded-full border-0 bg-[#edf3ff]" variant="secondary" onClick={() => navigate('/my-products')}>내 화장품</Button><Button className="rounded-full bg-black" onClick={openProductChat}>{data.personalRecordCount > 0 ? '내 기록 비교' : 'AI에게 묻기'}</Button></div> : <div className="grid grid-cols-2 gap-2.5">
+      {owned ? <div className="grid grid-cols-2 gap-2.5"><Button className="rounded-full border-0 bg-[#edf3ff]" variant="secondary" onClick={() => navigate(returnTo || '/my-products')}>{returnTo ? '루틴 계속 편집' : '내 화장품'}</Button><Button className="rounded-full bg-black" onClick={openProductChat}>{data.personalRecordCount > 0 ? '내 기록 비교' : 'AI에게 묻기'}</Button></div> : <div className="grid grid-cols-2 gap-2.5">
         <Button className="rounded-full border-0 bg-[#edf3ff]" variant="secondary" onClick={openProductChat} aria-label="AI에게 이 제품 물어보기">AI에게 묻기</Button>
         <Button className="rounded-full bg-black" disabled={add.isPending} onClick={() => add.mutate()}>{add.isPending ? '추가하는 중…' : '내 화장품 추가'}</Button>
       </div>}
     </StickyActionBar>
   </Screen>
+}
+
+function safeReturnTo(value: string | null) {
+  return value === '/routine/edit' ? value : undefined
+}
+
+function explorePath(returnTo?: string) {
+  return returnTo ? `/explore?returnTo=${encodeURIComponent(returnTo)}` : '/explore'
+}
+
+function productPath(productId: number, returnTo?: string) {
+  return returnTo ? `/products/${productId}?returnTo=${encodeURIComponent(returnTo)}` : `/products/${productId}`
 }
 
 function ProductHero({ product }: { product: Product }) {
@@ -223,15 +239,17 @@ export function ShelfPage() {
   const [filter, setFilter] = useState<'ALL' | 'ROUTINE' | 'UNUSED'>('ALL')
   const products = useQuery({ queryKey: ['user-products'], queryFn: api.userProducts })
   const current = useQuery({ queryKey: ['current-routine'], queryFn: api.currentRoutine, retry: false })
+  const home = useQuery({ queryKey: ['home'], queryFn: api.home })
   const routineIds = new Set(current.data?.items.map(item => item.userProductId) || [])
   const filtered = products.data?.filter(item => filter === 'ALL' || (filter === 'ROUTINE' ? routineIds.has(item.id) : !routineIds.has(item.id) && !(item.product?.personalRecordCount)))
   const unusedCount = products.data?.filter(item => !routineIds.has(item.id) && !item.product?.personalRecordCount).length || 0
   const currentError = current.error instanceof ApiError && current.error.status === 404 ? null : current.error
-  if (products.isPending || current.isPending) return <Screen><CatalogHeader onBack={() => navigate(-1)} onAdd={() => navigate('/explore')}/><Loading label="내 화장품을 정리하는 중"/></Screen>
-  if (products.isError || currentError) return <Screen><CatalogHeader onBack={() => navigate(-1)} onAdd={() => navigate('/explore')}/><ErrorState message={(products.error || currentError)?.message || '내 화장품을 불러오지 못했어요.'} onRetry={() => { products.refetch(); current.refetch() }}/></Screen>
+  if (products.isPending || current.isPending || home.isPending) return <Screen><CatalogHeader onAdd={() => navigate('/explore')}/><Loading label="My Lab을 정리하는 중"/></Screen>
+  if (products.isError || currentError || home.error) return <Screen><CatalogHeader onAdd={() => navigate('/explore')}/><ErrorState message={(products.error || currentError || home.error)?.message || 'My Lab을 불러오지 못했어요.'} onRetry={() => { products.refetch(); current.refetch(); home.refetch() }}/></Screen>
   return <Screen className="bg-white">
-    <CatalogHeader onBack={() => navigate(-1)} onAdd={() => navigate('/explore')}/>
-    <div className="px-5 pb-8"><PageHeading title="내가 가진 화장품" description="루틴에 넣을 제품을 고를 수 있어요."/>
+    <CatalogHeader onAdd={() => navigate('/explore')}/>
+    <div className="px-5 pb-8"><PageHeading eyebrow="MY LAB" title="내가 가진 화장품" description="보유한 제품과 지금의 사용 맥락을 한곳에서 관리해요."/>
+      <LabContext experience={home.data.currentExperience} current={current.data} productCount={products.data.length}/>
       {!!products.data?.length && <div className="hide-scrollbar mt-8 flex gap-2 overflow-x-auto pb-1">{([['ALL',`전체 ${products.data.length}`],['ROUTINE',`현재 루틴 ${routineIds.size}`],['UNUSED',`아직 안 써봄 ${unusedCount}`]] as const).map(([value,label]) => <button type="button" aria-pressed={filter === value} key={value} onClick={() => setFilter(value)} className={`whitespace-nowrap rounded-full border px-4 py-2 text-[13px] font-medium ${filter === value ? 'border-black bg-black text-white' : 'border-[#cfe0ff] bg-white text-[#5f7396]'}`}>{label}</button>)}</div>}
       {products.data?.length ? filtered?.length ? <div className="mt-4 grid grid-cols-2 gap-3">{filtered.map(item => <ShelfCard key={item.id} item={item} inRoutine={routineIds.has(item.id)} onStart={() => {
         if (item.product) navigate(`/products/${item.product.id}`)
@@ -239,6 +257,16 @@ export function ShelfPage() {
       }}/>)}</div> : <ShelfEmpty filter={filter} onAdd={() => navigate('/explore')}/> : <ShelfEmpty filter="ALL" onAdd={() => navigate('/explore')}/>}
     </div>
   </Screen>
+}
+
+function LabContext({ experience, current, productCount }: { experience?: Experience | null; current?: Routine; productCount: number }) {
+  return <section className="mt-7 overflow-hidden rounded-[22px] border border-line bg-[#fafbf8]" aria-labelledby="lab-context-title">
+    <div className="flex items-center justify-between px-4 pb-3 pt-4"><div><p className="text-[10px] font-medium tracking-[.08em] text-muted">USE CONTEXT</p><h2 id="lab-context-title" className="mt-1 text-[16px] font-medium">지금의 사용 맥락</h2></div><Link to="/experience" className="inline-flex min-h-10 items-center gap-1 rounded-full px-3 text-[11px] font-medium text-muted transition hover:bg-white">연구 흐름 <ChevronRight size={14}/></Link></div>
+    <div className="grid grid-cols-2 border-t border-line bg-white">
+      <Link to={experience ? `/experiences/${experience.id}` : productCount ? '/routine/edit' : '/explore'} className="interactive-card min-w-0 border-r border-line p-4"><span className="flex items-center gap-2 text-[10px] font-medium text-[#5f7396]"><FlaskConical size={14}/>{experience ? `확인 중 · DAY ${experience.day}` : '확인 중인 경험 없음'}</span><strong className="mt-2 block line-clamp-2 text-[14px] font-medium leading-5">{experience?.title || '새 경험을 시작해보세요'}</strong><span className="mt-2 block text-[10px] leading-4 text-muted">7일은 경험을 돌아보는 기본 시점이에요.</span></Link>
+      <Link to={current ? `/routines/${current.id}` : '/routine/edit'} className="interactive-card min-w-0 p-4"><span className="flex items-center gap-2 text-[10px] font-medium text-[#657253]"><Clock3 size={14}/>{current ? '현재 사용 중' : '현재 루틴 없음'}</span><strong className="mt-2 block line-clamp-2 text-[14px] font-medium leading-5">{current?.name || '사용 루틴을 만들어보세요'}</strong><span className="mt-2 block text-[10px] leading-4 text-muted">{current ? `${current.items.length}개 제품 · 실제 사용 조합` : '제품과 순서를 함께 저장해요.'}</span></Link>
+    </div>
+  </section>
 }
 
 function ShelfCard({ item, inRoutine, onStart }: { item: UserProduct; inRoutine: boolean; onStart: () => void }) {
@@ -253,6 +281,6 @@ function ShelfEmpty({ filter, onAdd }: { filter: 'ALL' | 'ROUTINE' | 'UNUSED'; o
   return <div className="pt-24 text-center"><button type="button" onClick={onAdd} aria-label="탐색에서 화장품 추가하기" className="relative mx-auto block rounded-full"><img src="/skn-assets/ai-drop.png" alt="" className="size-[190px] object-contain"/><span aria-hidden="true" className="absolute left-1/2 top-1/2 grid size-11 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-white text-2xl shadow-md">+</span></button><h2 className="mt-5 text-[22px] font-medium tracking-[-.035em]">{title}</h2><p className="mt-3 whitespace-pre-line text-[14px] leading-5 text-[#8c8c8c]">{body}</p></div>
 }
 
-function CatalogHeader({ onBack, onAdd }: { onBack: () => void; onAdd: () => void }) {
-  return <header className="safe-top sticky top-0 z-30 grid min-h-[72px] shrink-0 grid-cols-3 items-center bg-white/95 px-5 backdrop-blur-xl"><button type="button" onClick={onBack} aria-label="뒤로" className="-ml-2 grid size-11 place-items-center justify-self-start rounded-full transition hover:bg-soft active:scale-95"><ChevronLeft size={24}/></button><SknMark className="h-10 w-10 justify-self-center"/><button type="button" onClick={onAdd} aria-label="화장품 추가" className="grid size-11 place-items-center justify-self-end rounded-full border border-line bg-white shadow-[0_3px_12px_rgba(0,0,0,.06)] transition hover:bg-soft active:scale-95"><Plus size={21}/></button></header>
+function CatalogHeader({ onBack, onAdd }: { onBack?: () => void; onAdd: () => void }) {
+  return <AppHeader back={Boolean(onBack)} onBack={onBack} profile={false} sticky right={<button type="button" onClick={onAdd} aria-label="화장품 추가" className="grid size-11 place-items-center rounded-full border border-line bg-white transition hover:bg-soft active:scale-95"><Plus size={21}/></button>}/>
 }
