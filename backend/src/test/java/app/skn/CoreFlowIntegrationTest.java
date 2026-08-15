@@ -210,6 +210,11 @@ class CoreFlowIntegrationTest {
                 .andExpect(jsonPath("$.likes[0]").value("가벼운"))
                 .andExpect(jsonPath("$.avoids[0]").value("향료"))
                 .andExpect(jsonPath("$.note").value("에센셜 오일은 피하고 싶어요"));
+
+        mvc.perform(get("/api/v1/me/notifications").session(session))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.unreadCount").value(1))
+                .andExpect(jsonPath("$.items[0].type").value("PROFILE_READY"));
     }
 
     @Test
@@ -244,6 +249,10 @@ class CoreFlowIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.ageRange").value("30S"))
                 .andExpect(jsonPath("$.skinType").value("DRY"));
+        mvc.perform(get("/api/v1/me/notifications").session(session))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].type").value("PROFILE_UPDATED"))
+                .andExpect(jsonPath("$.items[0].action.type").value("PROFILE"));
     }
 
     @Test
@@ -388,6 +397,115 @@ class CoreFlowIntegrationTest {
         mvc.perform(get("/api/v1/home").session(session))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.primaryAction").value("START_EXPERIENCE"));
+    }
+
+    @Test
+    void notificationStateIsPrivateAndIndependentFromExperienceDueState() throws Exception {
+        MockHttpSession owner = signUpSession("notification_owner");
+        long userProductId = addProduct(owner, 1);
+        String experienceBody = mvc.perform(post("/api/v1/me/experiences").session(owner)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"userProductId":%d,"mode":"PRODUCT","dayPart":"EVENING","clientRequestId":"notification-lifecycle"}
+                                """.formatted(userProductId)))
+                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+        long experienceId = json.readTree(experienceBody).path("id").asLong();
+
+        jdbc.update("""
+                UPDATE notification
+                   SET available_at = CASE notification_type
+                       WHEN 'EXPERIENCE_CHECK_IN' THEN datetime('now', '-2 hour')
+                       ELSE datetime('now', '-1 hour') END
+                 WHERE experience_id = ?
+                """, experienceId);
+        jdbc.update("UPDATE experience_session SET review_due_at = datetime('now', '-1 day') WHERE id = ?", experienceId);
+
+        String inboxBody = mvc.perform(get("/api/v1/me/notifications").session(owner))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.unreadCount").value(2))
+                .andExpect(jsonPath("$.items.length()").value(2))
+                .andReturn().getResponse().getContentAsString();
+        JsonNode items = json.readTree(inboxBody).path("items");
+        long checkInId = 0;
+        long reviewId = 0;
+        for (JsonNode item : items) {
+            if (item.path("type").asText().equals("EXPERIENCE_CHECK_IN")) checkInId = item.path("id").asLong();
+            if (item.path("type").asText().equals("EXPERIENCE_REVIEW_DUE")) reviewId = item.path("id").asLong();
+        }
+        assertThat(checkInId).isPositive();
+        assertThat(reviewId).isPositive();
+
+        mvc.perform(post("/api/v1/me/notifications/{id}/read", checkInId).session(owner)
+                        .contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.read").value(true))
+                .andExpect(jsonPath("$.completed").value(false));
+        mvc.perform(get("/api/v1/me/experiences/{id}", experienceId).session(owner))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("ACTIVE"))
+                .andExpect(jsonPath("$.reviewDue").value(true));
+
+        mvc.perform(post("/api/v1/me/notifications/{id}/snooze", reviewId).session(owner)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"durationHours\":24}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.snoozedUntil").isString())
+                .andExpect(jsonPath("$.completed").value(false));
+        mvc.perform(get("/api/v1/me/notifications").session(owner))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.unreadCount").value(0))
+                .andExpect(jsonPath("$.items.length()").value(1));
+
+        MockHttpSession other = signUpSession("notification_other");
+        mvc.perform(post("/api/v1/me/notifications/{id}/read", checkInId).session(other)
+                        .contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isNotFound());
+
+        jdbc.update("UPDATE notification SET snoozed_until = NULL WHERE id = ?", reviewId);
+        mvc.perform(post("/api/v1/me/experiences/{id}/records", experienceId).session(owner)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"sentiment":"LIKED","note":"7일 사용 맥락을 돌아봤어요","tags":[],"discomfort":"NOT_REPORTED","clientRequestId":"notification-review-record"}
+                                """))
+                .andExpect(status().isCreated());
+        mvc.perform(get("/api/v1/me/notifications").session(owner))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.unreadCount").value(0))
+                .andExpect(jsonPath("$.items[0].id").value(reviewId))
+                .andExpect(jsonPath("$.items[0].completed").value(true));
+    }
+
+    @Test
+    void customProductIsOwnerScopedAndProjectsShelfState() throws Exception {
+        MockHttpSession owner = signUpSession("custom_product_owner");
+        String customBody = mvc.perform(post("/api/v1/me/products").session(owner)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"customBrand":"직접 입력 브랜드","customName":"목록에 없는 세럼","customCategory":"세럼"}
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.product").doesNotExist())
+                .andExpect(jsonPath("$.personalRecordCount").value(0))
+                .andExpect(jsonPath("$.inCurrentRoutine").value(false))
+                .andReturn().getResponse().getContentAsString();
+        long userProductId = json.readTree(customBody).path("id").asLong();
+
+        mvc.perform(put("/api/v1/me/routines/current").session(owner)
+                        .header("Idempotency-Key", "custom-product-routine")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name":"직접 등록 제품 루틴","items":[
+                                  {"userProductId":%d,"timeSlot":"EVENING","frequency":"매일"}
+                                ]}
+                                """.formatted(userProductId)))
+                .andExpect(status().isOk());
+        mvc.perform(get("/api/v1/me/products/{id}", userProductId).session(owner))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.customName").value("목록에 없는 세럼"))
+                .andExpect(jsonPath("$.inCurrentRoutine").value(true));
+
+        MockHttpSession other = signUpSession("custom_product_other");
+        mvc.perform(get("/api/v1/me/products/{id}", userProductId).session(other))
+                .andExpect(status().isNotFound());
     }
 
     @Test

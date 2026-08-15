@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Bot, ChevronLeft, CircleUserRound, FlaskConical, Home, MessageCircle, NotebookText, Sparkles, X } from 'lucide-react'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { twMerge } from 'tailwind-merge'
+import { NotificationBell } from './NotificationBell'
 
 export function Screen({ children, className = '', nav = true }: PropsWithChildren<{ className?: string; nav?: boolean }>) {
   return <main className={twMerge('mobile-shell h-full min-h-0 overflow-y-auto overscroll-contain bg-paper text-ink', nav && 'pb-28', className)}>{children}{nav && <BottomNav />}</main>
@@ -17,14 +18,14 @@ export function TopBar({ title, back = false, backTo, right }: { title: string; 
   </header>
 }
 
-/** Figma "홈+루틴" 헤더: 탭 루트 화면은 로고+마이페이지, 하위 화면은 뒤로가기+로고. */
-export function AppHeader({ back = false, backTo, onBack, left, right, profile = true, sticky = false }: { back?: boolean; backTo?: string; onBack?: () => void; left?: ReactNode; right?: ReactNode; profile?: boolean; sticky?: boolean }) {
+/** Figma "홈+루틴" 헤더: 탭 루트 화면은 로고+알림+마이페이지, 하위 화면은 뒤로가기+로고. */
+export function AppHeader({ back = false, backTo, onBack, left, right, profile = true, notifications = true, sticky = false }: { back?: boolean; backTo?: string; onBack?: () => void; left?: ReactNode; right?: ReactNode; profile?: boolean; notifications?: boolean; sticky?: boolean }) {
   const navigate = useNavigate()
   return <header className={twMerge('safe-top z-20 flex min-h-[72px] shrink-0 items-center justify-between bg-white/95 px-5 backdrop-blur-xl', sticky ? 'sticky top-0' : 'relative')}>
-    <div className="flex w-20 items-center">{left || (back && <button type="button" aria-label="뒤로" onClick={() => onBack ? onBack() : backTo ? navigate(backTo) : navigate(-1)} className="-ml-2 grid size-11 place-items-center rounded-full transition hover:bg-soft active:scale-95"><ChevronLeft size={24}/></button>)}</div>
+    <div className="flex w-24 items-center">{left || (back && <button type="button" aria-label="뒤로" onClick={() => onBack ? onBack() : backTo ? navigate(backTo) : navigate(-1)} className="-ml-2 grid size-11 place-items-center rounded-full transition hover:bg-soft active:scale-95"><ChevronLeft size={24}/></button>)}</div>
     <SknMark className="h-10 w-10"/>
-    <div className="flex w-20 items-center justify-end">
-      {right || (!back && profile && <Link to="/records" aria-label="마이페이지" className="grid size-11 place-items-center rounded-full text-ink transition hover:bg-soft active:scale-95"><CircleUserRound size={22} strokeWidth={1.8}/></Link>)}
+    <div className="flex w-24 items-center justify-end">
+      {right || (!back && <>{notifications && <NotificationBell/>}{profile && <Link to="/records" aria-label="마이페이지" className="grid size-11 place-items-center rounded-full text-ink transition hover:bg-soft active:scale-95"><CircleUserRound size={22} strokeWidth={1.8}/></Link>}</>)}
     </div>
   </header>
 }

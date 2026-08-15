@@ -27,6 +27,9 @@ erDiagram
   APP_USER ||--o{ PERSONAL_PATTERN : has
   PERSONAL_PATTERN ||--o{ PATTERN_EVIDENCE : connects
   EXPERIENCE_RECORD ||--o{ PATTERN_EVIDENCE : supports
+  APP_USER ||--o{ NOTIFICATION : receives
+  EXPERIENCE_SESSION o|--o{ NOTIFICATION : schedules
+  PERSONAL_PATTERN o|--o{ NOTIFICATION : announces
   APP_USER ||--o{ CONVERSATION : chats
   CONVERSATION ||--o{ CONVERSATION_MESSAGE : contains
   CONVERSATION_MESSAGE ||--o{ CONVERSATION_MESSAGE_SOURCE : cites
@@ -52,6 +55,7 @@ erDiagram
 | `comparison_baseline` | Rescue 변경점 비교의 기준 루틴 | 7일 기록에서 불편함이 보고되지 않은 루틴을 현재 기준으로 연결 |
 | `personal_pattern` | 여러 경험에서 반복된 선호·차이의 표현 | 피부 타입이나 원인 판정이 아님 |
 | `pattern_evidence` | 패턴을 지지하거나 반대하는 원본 기록 | `SUPPORTS` 또는 `CONTRADICTS` |
+| `notification` | 경험 회고 시점·프로필·패턴·탐색 진입을 알리는 앱 안 수신함 | 경험의 due와 알림의 읽음·미루기·완료·취소를 서로 다른 컬럼으로 저장하고 `dedupe_key`로 같은 사건의 중복 생성을 막음 |
 | `conversation` | 제품·패턴·Rescue·자율 질문을 담는 공통 채팅 | 모드만 다르고 UI와 메시지 계약은 공통 |
 | `conversation_message` | 사용자/AI 메시지 | AI 답변마다 동적 후속 입력 1~3개와 검증된 개인 근거 참조를 JSON으로 저장 |
 | `conversation_message_source` | AI 답변이 실제로 인용한 웹 출처 | OpenAI `url_citation`의 HTTPS URL만 메시지별 순서와 P1~P4 등급으로 저장 |
@@ -70,6 +74,19 @@ ACTIVE
 
 경험 기간 중에 느낌을 여러 번 남겨도 `ACTIVE`를 유지한다. 7일 확인 기록을 남기면 서버가 별도 종료 버튼 없이 완료한다.
 
+### 앱 안 알림
+
+```text
+예약됨(available_at 미래)
+  → 노출 가능
+      ├─ 읽음(read_at) ───────────────┐
+      ├─ 미루기(snoozed_until) → 재노출│
+      ├─ 행동 완료(completed_at)       │
+      └─ 원본 흐름 종료(cancelled_at)  │
+```
+
+`experience_session.review_due_at`은 경험을 돌아볼 제품 상태이고, `notification.read_at`은 메시지를 확인했는지에 대한 UI 상태다. 알림을 읽거나 미뤄도 경험의 due·ACTIVE 상태는 바뀌지 않는다. 느낌을 남기면 DAY 2 확인 알림을, 7일 회고로 경험이 끝나면 해당 경험 알림을 완료 처리한다. 새 경험이나 루틴 변경으로 원본 경험이 취소되면 남은 알림도 취소한다.
+
 ### Rescue 제안
 
 ```text
@@ -83,7 +100,7 @@ AI가 적용했다고 말하는 것으로는 상태가 바뀌지 않는다. `/re
 ## 무결성과 소유권
 
 - 모든 개인 조회는 현재 세션의 `user_id`를 조건으로 사용한다.
-- 다른 사용자의 `user_product`, `routine`, `experience`, `pattern`, `conversation`은 ID를 알아도 조회·적용할 수 없다.
+- 다른 사용자의 `user_product`, `routine`, `experience`, `pattern`, `notification`, `conversation`은 ID를 알아도 조회·적용할 수 없다.
 - 외래 키는 모든 SQLite 연결에서 켜고, 사용자 삭제 시 개인 행은 cascade한다.
 - 사용자별 현재 루틴, 활성 경험, 열린 비교 기준은 부분 유니크 인덱스로 하나만 허용한다.
 - AI 호출은 DB 쓰기 트랜잭션 밖에서 수행하고, 메시지 입력을 먼저 저장해 실패해도 잃지 않는다.

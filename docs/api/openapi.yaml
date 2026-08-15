@@ -16,6 +16,7 @@ tags:
   - { name: Collection, description: 내 화장품 }
   - { name: Routines, description: 실제 사용 조합과 순서 }
   - { name: Experiences, description: 사용 기간과 경험 기록 }
+  - { name: Notifications, description: 회고와 도메인 행동을 회수하는 앱 안 알림 }
   - { name: Patterns, description: 연결된 개인 경험 패턴 }
   - { name: AI, description: 공통 AI 채팅과 Rescue }
   - { name: Demo, description: 해커톤 시연 상태 }
@@ -148,6 +149,47 @@ paths:
       responses:
         '200': { description: 홈, content: { application/json: { schema: { $ref: '#/components/schemas/Home' } } } }
         '401': { $ref: '#/components/responses/Problem' }
+  /me/notifications:
+    get:
+      tags: [Notifications]
+      summary: 지금 도착했고 미뤄지지 않은 내 앱 안 알림을 조회한다
+      description: 회고 due와 별도로 저장된 전달 상태를 반환한다. 완료된 알림도 읽은 이력으로 목록에 남는다.
+      operationId: listNotifications
+      responses:
+        '200': { description: 알림함, content: { application/json: { schema: { $ref: '#/components/schemas/NotificationInbox' } } } }
+        '401': { $ref: '#/components/responses/Problem' }
+  /me/notifications/read-all:
+    post:
+      tags: [Notifications]
+      summary: 현재 도착한 알림을 모두 읽음 처리한다
+      operationId: readAllNotifications
+      responses:
+        '200': { description: 읽음 처리됨, content: { application/json: { schema: { $ref: '#/components/schemas/ApiMessage' } } } }
+        '401': { $ref: '#/components/responses/Problem' }
+  /me/notifications/{notificationId}/read:
+    post:
+      tags: [Notifications]
+      summary: 알림 하나를 읽음 처리한다
+      operationId: readNotification
+      parameters: [ { $ref: '#/components/parameters/NotificationId' } ]
+      responses:
+        '200': { description: 읽음 처리된 알림, content: { application/json: { schema: { $ref: '#/components/schemas/Notification' } } } }
+        '404': { $ref: '#/components/responses/Problem' }
+  /me/notifications/{notificationId}/snooze:
+    post:
+      tags: [Notifications]
+      summary: 완료되지 않은 알림을 지정한 시간만큼 미룬다
+      operationId: snoozeNotification
+      parameters: [ { $ref: '#/components/parameters/NotificationId' } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SnoozeNotificationRequest' }
+      responses:
+        '200': { description: 미뤄진 알림, content: { application/json: { schema: { $ref: '#/components/schemas/Notification' } } } }
+        '400': { $ref: '#/components/responses/Problem' }
+        '404': { $ref: '#/components/responses/Problem' }
   /products:
     get:
       tags: [Catalog]
@@ -401,6 +443,7 @@ components:
     ExperienceId: { name: experienceId, in: path, required: true, schema: { type: integer, format: int64 } }
     PatternId: { name: patternId, in: path, required: true, schema: { type: integer, format: int64 } }
     ConversationId: { name: conversationId, in: path, required: true, schema: { type: integer, format: int64 } }
+    NotificationId: { name: notificationId, in: path, required: true, schema: { type: integer, format: int64 } }
     IdempotencyKey: { name: Idempotency-Key, in: header, required: true, schema: { type: string, minLength: 1 } }
   responses:
     Problem:
@@ -553,24 +596,26 @@ components:
         hasMore: { type: boolean }
     UserProduct:
       type: object
-      required: [id, addedAt]
+      required: [id, addedAt, personalRecordCount, inCurrentRoutine]
       properties:
         id: { type: integer, format: int64 }
         product: { anyOf: [ { $ref: '#/components/schemas/Product' }, { type: 'null' } ] }
-        customBrand: { type: [string, 'null'] }
-        customName: { type: [string, 'null'] }
-        customCategory: { type: [string, 'null'] }
-        memo: { type: [string, 'null'] }
+        customBrand: { type: [string, 'null'], maxLength: 120 }
+        customName: { type: [string, 'null'], maxLength: 160 }
+        customCategory: { type: [string, 'null'], maxLength: 80 }
+        memo: { type: [string, 'null'], maxLength: 1000 }
         addedAt: { type: string }
+        personalRecordCount: { type: integer, minimum: 0 }
+        inCurrentRoutine: { type: boolean }
     AddUserProductRequest:
       type: object
       description: productId 또는 customName 중 하나를 사용한다.
       properties:
         productId: { type: [integer, 'null'], format: int64 }
-        customBrand: { type: [string, 'null'] }
-        customName: { type: [string, 'null'] }
-        customCategory: { type: [string, 'null'] }
-        memo: { type: [string, 'null'] }
+        customBrand: { type: [string, 'null'], maxLength: 120 }
+        customName: { type: [string, 'null'], maxLength: 160 }
+        customCategory: { type: [string, 'null'], maxLength: 80 }
+        memo: { type: [string, 'null'], maxLength: 1000 }
     RoutineItem:
       type: object
       required: [userProductId, productName, brand, category, timeSlot, position, frequency]
@@ -750,6 +795,41 @@ components:
       required: [clientRequestId]
       properties:
         clientRequestId: { type: string, minLength: 1 }
+    NotificationAction:
+      type: object
+      required: [type, label, href]
+      properties:
+        type: { type: string, enum: [RECORD_EXPERIENCE, RECORDS, PATTERN, PROFILE, EXPLORE] }
+        label: { type: string }
+        href: { type: string, pattern: '^/' }
+    Notification:
+      type: object
+      description: 회고 due와 분리된 앱 안 전달 상태. readAt, snoozedUntil, completedAt은 서로 독립적이다.
+      required: [id, type, title, body, createdAt, availableAt, read, completed, action]
+      properties:
+        id: { type: integer, format: int64 }
+        type: { type: string, enum: [EXPERIENCE_CHECK_IN, EXPERIENCE_REVIEW_DUE, PROFILE_READY, PROFILE_UPDATED, PATTERN_READY, PRODUCT_DISCOVERY] }
+        title: { type: string }
+        body: { type: string }
+        createdAt: { type: string }
+        availableAt: { type: string }
+        readAt: { type: [string, 'null'] }
+        snoozedUntil: { type: [string, 'null'] }
+        completedAt: { type: [string, 'null'] }
+        read: { type: boolean }
+        completed: { type: boolean }
+        action: { $ref: '#/components/schemas/NotificationAction' }
+    NotificationInbox:
+      type: object
+      required: [items, unreadCount]
+      properties:
+        items: { type: array, maxItems: 50, items: { $ref: '#/components/schemas/Notification' } }
+        unreadCount: { type: integer, minimum: 0 }
+    SnoozeNotificationRequest:
+      type: object
+      required: [durationHours]
+      properties:
+        durationHours: { type: integer, minimum: 1, maximum: 168 }
     Home:
       type: object
       required: [displayName, patterns, productCount, recordCount, primaryAction]

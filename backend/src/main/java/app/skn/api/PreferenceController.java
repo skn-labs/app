@@ -7,7 +7,9 @@ import app.skn.api.ApiModels.SkinProfileView;
 import app.skn.auth.AuthRepository;
 import app.skn.auth.CurrentUser;
 import app.skn.common.ApiException;
+import app.skn.data.SkincareRepository;
 import jakarta.validation.Valid;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -25,10 +27,13 @@ import java.util.List;
 public class PreferenceController {
     private final CurrentUser currentUser;
     private final AuthRepository repository;
+    private final SkincareRepository skincareRepository;
 
-    public PreferenceController(CurrentUser currentUser, AuthRepository repository) {
+    public PreferenceController(CurrentUser currentUser, AuthRepository repository,
+                                SkincareRepository skincareRepository) {
         this.currentUser = currentUser;
         this.repository = repository;
+        this.skincareRepository = skincareRepository;
     }
 
     @GetMapping("/me/preferences")
@@ -54,6 +59,7 @@ public class PreferenceController {
     }
 
     @PutMapping("/me/skin-profile")
+    @Transactional
     SkinProfileView replaceSkinProfile(@Valid @RequestBody SkinProfileRequest request) {
         long userId = currentUser.id();
         repository.saveSkinProfile(userId, request);
@@ -62,6 +68,7 @@ public class PreferenceController {
                 request.textures().stream().distinct().limit(12).toList(),
                 request.avoids().stream().distinct().limit(12).toList(),
                 request.avoidNote());
+        skincareRepository.insertProfileUpdatedNotification();
         return repository.findSkinProfile(userId).orElseThrow();
     }
 }

@@ -11,6 +11,7 @@ const OnboardingPage = lazy(() => import('./pages/OnboardingPage').then(module =
 const HomePage = lazy(() => import('./pages/HomePage').then(module => ({ default: module.HomePage })))
 const ExplorePage = lazy(() => import('./pages/ExplorePages').then(module => ({ default: module.ExplorePage })))
 const ProductPage = lazy(() => import('./pages/ExplorePages').then(module => ({ default: module.ProductPage })))
+const CustomProductPage = lazy(() => import('./pages/ExplorePages').then(module => ({ default: module.CustomProductPage })))
 const ShelfPage = lazy(() => import('./pages/ExplorePages').then(module => ({ default: module.ShelfPage })))
 const ExperiencePage = lazy(() => import('./pages/ExperiencePages').then(module => ({ default: module.ExperiencePage })))
 const RecordPage = lazy(() => import('./pages/ExperiencePages').then(module => ({ default: module.RecordPage })))
@@ -24,6 +25,7 @@ const RecordsPage = lazy(() => import('./pages/RecordsPages').then(module => ({ 
 const RoutineDetailPage = lazy(() => import('./pages/RoutinesPages').then(module => ({ default: module.RoutineDetailPage })))
 const RoutineListPage = lazy(() => import('./pages/RoutinesPages').then(module => ({ default: module.RoutineListPage })))
 const ExperienceHubPage = lazy(() => import('./pages/ExperienceHubPage').then(module => ({ default: module.ExperienceHubPage })))
+const NotificationsPage = lazy(() => import('./pages/NotificationsPage').then(module => ({ default: module.NotificationsPage })))
 
 export default function App() {
   const auth = useQuery({ queryKey: ['auth'], queryFn: api.me, retry: false })
@@ -53,6 +55,7 @@ export default function App() {
     <Route path="/experience" element={<ExperienceHubPage/>}/>
     <Route path="/products/:id" element={<ProductPage/>}/>
     <Route path="/my-products" element={<ShelfPage/>}/>
+    <Route path="/my-products/:id" element={<CustomProductPage/>}/>
     <Route path="/routine/edit" element={<RoutineEditPage/>}/>
     <Route path="/routines" element={<RoutineListPage/>}/>
     <Route path="/routines/:id" element={<RoutineDetailPage/>}/>
@@ -64,6 +67,7 @@ export default function App() {
     <Route path="/ai/:id" element={<ChatPage/>}/>
     <Route path="/records" element={<RecordsPage/>}/>
     <Route path="/patterns/:id" element={<PatternPage/>}/>
+    <Route path="/notifications" element={<NotificationsPage/>}/>
     <Route path="*" element={<Navigate to="/" replace/>}/>
   </Routes>
 
