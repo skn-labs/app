@@ -1,14 +1,14 @@
 import { useDeferredValue, useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
-import { AlertCircle, ArrowRight, BadgeCheck, BookOpen, Check, ChevronLeft, ChevronRight, Clock3, ExternalLink, Globe2, History, Layers3, MessageCircle, PackageSearch, Plus, RefreshCw, Search, Send, ShieldCheck, Sparkles, X } from 'lucide-react'
+import { AlertCircle, ArrowRight, BadgeCheck, BookOpen, Check, ChevronRight, Clock3, ExternalLink, Globe2, History, Layers3, MessageCircle, PackageSearch, Plus, RefreshCw, Search, Send, ShieldCheck, Sparkles, X } from 'lucide-react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
 import remarkBreaks from 'remark-breaks'
 import remarkGfm from 'remark-gfm'
 import { api } from '../lib/api'
 import type { Conversation, ExperienceRecord, Pattern, Product, Routine, WebSource } from '../lib/types'
-import { AiBadge, AssetMotion, Button, Card, ErrorState, ProductGlyph, Screen, SknMark } from '../components/ui'
+import { AiBadge, AppHeader, AssetMotion, Button, Card, ErrorState, ProductGlyph, Screen } from '../components/ui'
 import { startChatPath } from '../lib/chat'
 
 const INITIAL_PROMPTS = [
@@ -23,7 +23,7 @@ export function AiLandingPage() {
   const [text, setText] = useState('')
   const submit = (value: string, mode = 'GENERAL') => { const prompt = value.trim(); if (prompt) navigate(startChatPath(mode, prompt)) }
   return <Screen nav={false} className="flex h-full min-h-0 flex-col overflow-hidden bg-white">
-    <AiHeader onBack={() => navigate(-1)}/>
+    <AiHeader/>
     <div className="hide-scrollbar flex-1 overflow-y-auto px-9 pb-8 pt-10">
       <AiMotion size="hero"/>
       <h1 className="page-title mt-7">무엇이 궁금하신가요?</h1>
@@ -144,12 +144,9 @@ function Composer({ value, onChange, onSubmit, pending, suggestions, placeholder
 function AiHeader({ onBack }: { onBack?: () => void }) {
   const [historyOpen, setHistoryOpen] = useState(false)
   const conversations = useQuery({ queryKey: ['conversations'], queryFn: api.conversations, enabled: historyOpen })
+  const historyButton = <button type="button" onClick={() => setHistoryOpen(true)} aria-label="최근 AI 대화" className="grid size-11 place-items-center rounded-full transition hover:bg-soft active:scale-95"><History size={21}/></button>
   return <>
-    <header className="safe-top z-30 grid min-h-[72px] shrink-0 grid-cols-3 items-center bg-white/95 px-5 backdrop-blur-xl">
-      {onBack ? <button type="button" onClick={onBack} aria-label="뒤로" className="-ml-2 grid size-11 place-items-center justify-self-start rounded-full transition hover:bg-soft active:scale-95"><ChevronLeft size={24}/></button> : <span/>}
-      <SknMark className="h-10 w-10 justify-self-center"/>
-      <button type="button" onClick={() => setHistoryOpen(true)} aria-label="최근 AI 대화" className="-mr-2 grid size-11 place-items-center justify-self-end rounded-full transition hover:bg-soft active:scale-95"><History size={21}/></button>
-    </header>
+    <AppHeader back={Boolean(onBack)} onBack={onBack} left={onBack ? undefined : historyButton} profile={false} sticky right={onBack ? historyButton : <Link to="/" className="-mr-1 rounded-full px-2 py-2 text-[12px] font-medium text-muted transition hover:bg-soft">닫기</Link>}/>
     {historyOpen && <AiHistory conversations={conversations.data || []} loading={conversations.isPending} error={conversations.error?.message} onRetry={() => conversations.refetch()} onClose={() => setHistoryOpen(false)}/>}
   </>
 }

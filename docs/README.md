@@ -12,6 +12,6 @@
 | 7 | [AI 프롬프트](./ai/README.md) | AI 모드·근거 경계·동적 후속 입력 계약 |
 | 8 | [백엔드 배포](./deployment.md) | OCI 배포 구조·공개 URL·헬스체크·비밀정보 경계 |
 
-보조 문서는 [제품 규칙](./product/product-rules.md), [근거와 가정](./evidence/README.md), [요구사항 추적표](./04-requirements/traceability.md)다.
+보조 문서는 [제품 규칙](./product/product-rules.md), [앱 내비게이션과 화면 역할](./product/navigation-model.md), [근거와 가정](./evidence/README.md), [요구사항 추적표](./04-requirements/traceability.md)다.
 
 사용자가 실제로 보는 흐름은 [프로토타입](https://skn-labs.github.io/app/prototype/)을 우선한다. 제품 의미는 브리프와 요구사항, 기능 분기는 GitHub Feature, API 필드는 OpenAPI, 저장 무결성은 데이터 모델을 따른다. 충돌을 발견하면 관련 Feature에서 결정을 기록하고 모든 계약을 함께 고친다.

@@ -17,13 +17,13 @@ export function ExperienceHubPage() {
   const records = useQuery({ queryKey: ['records'], queryFn: api.records })
 
   const pending = home.isPending || current.isPending || baseline.isPending || records.isPending
-  if (pending) return <Screen><AppHeader/><Loading label="My Lab을 정리하는 중"/></Screen>
+  if (pending) return <Screen nav={false}><AppHeader back backTo="/my-products" sticky/><Loading label="연구 흐름을 정리하는 중"/></Screen>
 
   const loadError = home.error
     || records.error
     || (current.error && !isNotFound(current.error) ? current.error : null)
     || (baseline.error && !isNotFound(baseline.error) ? baseline.error : null)
-  if (loadError) return <Screen><AppHeader/><ErrorState message={loadError.message} onRetry={() => {
+  if (loadError) return <Screen nav={false}><AppHeader back backTo="/my-products" sticky/><ErrorState message={loadError.message} onRetry={() => {
     home.refetch()
     current.refetch()
     baseline.refetch()
@@ -31,10 +31,10 @@ export function ExperienceHubPage() {
   }}/></Screen>
 
   const experience = home.data.currentExperience
-  return <Screen className="bg-white">
-    <AppHeader/>
+  return <Screen nav={false} className="bg-white">
+    <AppHeader back backTo="/my-products" sticky/>
     <div className="px-5 pb-8 pt-3">
-      <PageHeading eyebrow="MY LAB" title={<>써본 조건과 느낌을<br/>한 흐름으로 봐요.</>} description={<>확인 중인 경험과 실제 사용 루틴을 구분하고,<br/>내가 남긴 기록을 시간순으로 연결합니다.</>}/>
+      <PageHeading eyebrow="RESEARCH FLOW" title={<>사용한 조건과 느낌을<br/>한 흐름으로 봐요.</>} description={<>확인 중인 경험과 실제 사용 루틴을 구분하고,<br/>내가 남긴 기록을 시간순으로 연결합니다.</>}/>
 
       <section className="mt-9" aria-labelledby="active-experience-title">
         <p className="text-[11px] font-medium text-[#5f7396]">7일 동안 사용감을 남기는 조합</p>
@@ -44,7 +44,7 @@ export function ExperienceHubPage() {
           : <Card className="mt-3 border-[#d9e6ff] bg-[#fbfdff] px-5 py-8 text-center">
             <h3 className="text-[17px] font-medium">지금 확인 중인 경험이 없어요</h3>
             <p className="mx-auto mt-3 max-w-[290px] text-[12px] leading-5 text-[#777d88]">{current.data ? '현재 루틴은 그대로 사용 중이에요. 조합을 바꾸면 새 경험 기록이 시작됩니다.' : '실제로 사용할 제품과 순서를 정하면 그 조건으로 경험 기록이 시작됩니다.'}</p>
-            <Link to="/routine/edit" className="mt-6 flex min-h-12 w-full items-center justify-center rounded-full bg-[#0a0a0a] px-5 text-sm font-medium text-white">새 연구 시작하기</Link>
+            <Link to={home.data.productCount ? '/routine/edit' : '/explore'} className="mt-6 flex min-h-12 w-full items-center justify-center rounded-full bg-[#0a0a0a] px-5 text-sm font-medium text-white">{home.data.productCount ? '새 경험 시작하기' : '첫 화장품 추가하기'}</Link>
           </Card>}
       </section>
 

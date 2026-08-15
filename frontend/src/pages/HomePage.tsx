@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { ArrowRight, Check, ChevronRight, Search, Sparkles, X } from 'lucide-react'
+import { ArrowRight, Check, ChevronRight, NotebookText, Search, Sparkles, X } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
-import { api } from '../lib/api'
-import type { Home, Pattern } from '../lib/types'
+import { api, ApiError } from '../lib/api'
+import type { Home, Pattern, Routine } from '../lib/types'
 import { AppHeader, Card, ErrorState, Loading, Screen } from '../components/ui'
 import heroWave from '../assets/figma/hero-wave.webp'
 import insightWave1 from '../assets/figma/insight-wave-1.svg'
@@ -15,9 +15,12 @@ export function HomePage() {
   const navigate = useNavigate()
   const [endOpen, setEndOpen] = useState(false)
   const home = useQuery({ queryKey: ['home'], queryFn: api.home })
+  const current = useQuery({ queryKey: ['current-routine'], queryFn: api.currentRoutine, retry: false })
 
-  if (home.isPending) return <Screen><AppHeader/><Loading/></Screen>
-  if (home.isError) return <Screen><AppHeader/><ErrorState message={home.error.message} onRetry={() => home.refetch()}/></Screen>
+  if (home.isPending || current.isPending) return <Screen><AppHeader/><Loading/></Screen>
+  const currentError = current.error instanceof ApiError && current.error.status === 404 ? null : current.error
+  const loadError = home.error || currentError
+  if (loadError) return <Screen><AppHeader/><ErrorState message={loadError.message} onRetry={() => { home.refetch(); current.refetch() }}/></Screen>
   const data = home.data
   const experience = data.currentExperience
 
@@ -27,9 +30,10 @@ export function HomePage() {
       <h1 className="display-title mt-3 break-words">{data.displayName} 님</h1>
 
       <div className="mt-6">
-        {experience ? <ActiveRoutineCard experience={experience} onOpen={() => navigate(`/experiences/${experience.id}`)} onEnd={() => setEndOpen(true)}/>
-          : <EmptyRoutineCard productCount={data.productCount}/>}
+        {experience ? <ActiveExperienceCard experience={experience} onOpen={() => navigate(`/experiences/${experience.id}`)} onEnd={() => setEndOpen(true)}/>
+          : <EmptyExperienceCard productCount={data.productCount}/>}
       </div>
+      <CurrentRoutineStrip routine={current.data} productCount={data.productCount}/>
 
       <button type="button" onClick={() => navigate('/ai')} className="interactive-card mt-4 flex min-h-[100px] w-full items-center gap-4 rounded-[22px] bg-[#050505] px-5 py-4 text-left text-white shadow-[0_8px_24px_rgba(0,0,0,.12)]">
         <div className="grid size-11 shrink-0 place-items-center text-[#dce6ff]"><Sparkles size={30} strokeWidth={1.45}/></div>
@@ -55,7 +59,7 @@ export function HomePage() {
     </div>
 
     {experience && endOpen && (
-      <EndRoutineDialog
+      <EndExperienceDialog
         onClose={() => setEndOpen(false)}
         onConfirm={() => {
           setEndOpen(false)
@@ -66,32 +70,40 @@ export function HomePage() {
   </Screen>
 }
 
-function ActiveRoutineCard({ experience, onOpen, onEnd }: { experience: NonNullable<Home['currentExperience']>; onOpen: () => void; onEnd: () => void }) {
+function ActiveExperienceCard({ experience, onOpen, onEnd }: { experience: NonNullable<Home['currentExperience']>; onOpen: () => void; onEnd: () => void }) {
   const day = Math.max(1, Math.min(7, experience.day))
-  return <section className="relative min-h-[220px] overflow-hidden rounded-[22px] shadow-[0_4px_18px_rgba(24,36,65,.11)]" aria-label={`현재 확인 중인 루틴, 7일 중 ${day}일`}>
+  return <section className="relative min-h-[220px] overflow-hidden rounded-[22px] shadow-[0_4px_18px_rgba(24,36,65,.11)]" aria-label={`현재 확인 중인 경험, 7일 중 ${day}일`}>
     <img src={heroWave} alt="" aria-hidden className="absolute inset-0 size-full object-cover object-bottom"/>
     <div aria-hidden className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,.88)_0%,rgba(245,249,255,.58)_48%,rgba(224,235,255,.22)_100%)]"/>
     <div className="relative flex min-h-[220px] flex-col p-[18px]">
-      <div className="flex items-center justify-between"><h2 className="text-[15px] font-medium">확인 중인 루틴</h2><p className="text-[14px] font-medium tabular-nums">DAY {day} / 7</p></div>
+      <div className="flex items-center justify-between"><p className="text-[12px] font-medium text-black/65">확인 중인 경험</p><p className="text-[14px] font-medium tabular-nums">DAY {day} / 7</p></div>
       <div role="progressbar" aria-label={`7일 중 ${day}일`} aria-valuemin={1} aria-valuemax={7} aria-valuenow={day} className="mt-3 flex gap-1.5">{Array.from({ length: 7 }, (_, index) => <span key={index} className={`h-1 flex-1 rounded-full ${index < day ? 'bg-[#0a0a0a]' : 'bg-[#0a0a0a]/20'}`}/>)}</div>
-      <div className="flex-1"/>
+      <div className="min-h-0 flex-1 py-3"><h2 className="line-clamp-1 text-[17px] font-medium tracking-[-.025em]">{experience.title}</h2><p className="mt-1 line-clamp-1 text-[11px] text-black/55">{experience.subtitle}</p></div>
       <div className="grid grid-cols-2 gap-2">
-        <button type="button" onClick={onEnd} className="h-12 rounded-full border border-white/70 bg-white/72 text-[14px] font-medium backdrop-blur transition hover:bg-white active:scale-[.98]">연구 마치기</button>
+        <button type="button" onClick={onEnd} className="h-12 rounded-full border border-white/70 bg-white/72 text-[14px] font-medium backdrop-blur transition hover:bg-white active:scale-[.98]">경험 마치기</button>
         <button type="button" onClick={onOpen} className="h-12 rounded-full bg-[#0a0a0a] text-[14px] font-medium text-white shadow-sm transition hover:bg-black active:scale-[.98]">자세히 보기</button>
       </div>
     </div>
   </section>
 }
 
-function EmptyRoutineCard({ productCount }: { productCount: number }) {
+function EmptyExperienceCard({ productCount }: { productCount: number }) {
   return <section className="relative min-h-[188px] overflow-hidden rounded-[22px] shadow-[0_4px_18px_rgba(24,36,65,.11)]">
     <img src={heroWave} alt="" aria-hidden className="absolute inset-0 size-full object-cover object-bottom"/>
     <div aria-hidden className="absolute inset-0 bg-white/38"/>
     <div className="relative flex min-h-[188px] flex-col items-center justify-end px-[18px] pb-[18px] text-center">
-      <p className="mb-5 text-[14px] font-medium">지금 확인 중인 루틴이 없어요.</p>
-      <Link to={productCount ? '/routine/edit' : '/explore'} className="flex h-12 w-full items-center justify-center gap-1 rounded-full border border-[#d4e2ff] bg-white/82 text-[15px] font-medium backdrop-blur transition active:scale-[.98]">새 연구 시작하기<ArrowRight size={17}/></Link>
+      <p className="mb-5 text-[14px] font-medium">지금 확인 중인 경험이 없어요.</p>
+      <Link to={productCount ? '/routine/edit' : '/explore'} className="flex h-12 w-full items-center justify-center gap-1 rounded-full border border-[#d4e2ff] bg-white/82 text-[15px] font-medium backdrop-blur transition active:scale-[.98]">새 경험 시작하기<ArrowRight size={17}/></Link>
     </div>
   </section>
+}
+
+function CurrentRoutineStrip({ routine, productCount }: { routine?: Routine; productCount: number }) {
+  return <Link to={routine ? `/routines/${routine.id}` : productCount ? '/routine/edit' : '/explore'} className="interactive-card mt-3 flex min-h-[72px] items-center gap-3 rounded-[18px] border border-line bg-white px-4 py-3">
+    <span className="grid size-10 shrink-0 place-items-center rounded-[14px] bg-[#f2f4ef] text-[#62685f]"><NotebookText size={18}/></span>
+    <span className="min-w-0 flex-1"><span className="block text-[10px] font-medium text-muted">현재 사용 루틴</span><strong className="mt-0.5 block truncate text-[14px] font-medium">{routine?.name || '아직 등록된 루틴이 없어요'}</strong>{routine && <span className="mt-0.5 block text-[10px] text-muted">{routine.items.length}개 제품 · 확인 경험과 별도로 계속 유지돼요</span>}</span>
+    <ChevronRight size={18} className="shrink-0 text-muted"/>
+  </Link>
 }
 
 function InsightCard({ pattern, wave }: { pattern: Pattern; wave: string }) {
@@ -112,7 +124,7 @@ function ProfilePreview({ recordCount, patternCount }: { recordCount: number; pa
   </section>
 }
 
-function EndRoutineDialog({ onClose, onConfirm }: { onClose: () => void; onConfirm: () => void }) {
+function EndExperienceDialog({ onClose, onConfirm }: { onClose: () => void; onConfirm: () => void }) {
   const dialog = useRef<HTMLElement>(null)
   const close = useRef(onClose)
   close.current = onClose
@@ -128,11 +140,11 @@ function EndRoutineDialog({ onClose, onConfirm }: { onClose: () => void; onConfi
   }, [])
 
   return <div className="fixed inset-0 z-50 grid place-items-center bg-black/35 px-7 backdrop-blur-[2px]" onPointerDown={onClose}>
-    <section ref={dialog} role="dialog" aria-modal="true" aria-labelledby="end-routine-title" aria-describedby="end-routine-description" tabIndex={-1} className="relative w-full max-w-[342px] rounded-[26px] bg-white px-6 pb-6 pt-8 text-center shadow-[0_24px_80px_rgba(0,0,0,.24)] outline-none" onPointerDown={event => event.stopPropagation()}>
+    <section ref={dialog} role="dialog" aria-modal="true" aria-labelledby="end-experience-title" aria-describedby="end-experience-description" tabIndex={-1} className="relative w-full max-w-[342px] rounded-[26px] bg-white px-6 pb-6 pt-8 text-center shadow-[0_24px_80px_rgba(0,0,0,.24)] outline-none" onPointerDown={event => event.stopPropagation()}>
       <button type="button" onClick={onClose} aria-label="닫기" className="absolute right-3 top-3 grid size-9 place-items-center rounded-full text-[#8e8e93] transition active:bg-[#f2f2f7]"><X size={18}/></button>
       <img src="/skn-assets/onboarding-orb.png" alt="" className="mx-auto size-16 object-contain"/>
-      <h2 id="end-routine-title" className="mt-4 text-[24px] font-semibold tracking-[-.035em]">이번 연구를 마칠까요?</h2>
-      <p id="end-routine-description" className="mx-auto mt-3 max-w-[270px] text-[13px] leading-5 text-[#636366]">연구를 마치기 전에 지금까지의 느낌을 남겨요. 현재 사용 루틴은 그대로 유지됩니다.</p>
+      <h2 id="end-experience-title" className="mt-4 text-[24px] font-semibold tracking-[-.035em]">이번 경험 확인을 마칠까요?</h2>
+      <p id="end-experience-description" className="mx-auto mt-3 max-w-[270px] text-[13px] leading-5 text-[#636366]">마치기 전에 지금까지의 느낌을 남겨요. 현재 사용 루틴은 그대로 유지됩니다.</p>
       <div className="mt-7 grid grid-cols-2 gap-2"><button type="button" onClick={onClose} className="h-[52px] rounded-full bg-[#eef3ff] text-[15px] font-semibold transition active:scale-[.98]">취소</button><button type="button" onClick={onConfirm} className="h-[52px] rounded-full bg-[#0a0a0a] text-[15px] font-semibold text-white transition active:scale-[.98]">느낌 남기기</button></div>
     </section>
   </div>

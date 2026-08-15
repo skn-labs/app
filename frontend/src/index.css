@@ -116,8 +116,8 @@ video:not([controls])::-webkit-media-controls { display: none !important; }
   border: 1px solid #e7e9e3;
   border-radius: 22px;
   background: #fff;
-  box-shadow: 0 5px 18px rgba(25, 31, 22, .045);
 }
+.elevated-card { box-shadow: 0 10px 30px rgba(25, 31, 22, .09); }
 .soft-card {
   border: 1px solid rgba(219, 227, 242, .9);
   border-radius: 22px;
