@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { api } from './lib/api'
-import { Loading } from './components/ui'
+import { BrandMotion } from './components/ui'
 import { AuthPage } from './pages/AuthPage'
 import { HomePage } from './pages/HomePage'
 import { ExplorePage, ProductPage, ShelfPage } from './pages/ExplorePages'
@@ -15,7 +15,10 @@ import { OnboardingPage } from './pages/OnboardingPage'
 
 export default function App() {
   const auth = useQuery({ queryKey: ['auth'], queryFn: api.me, retry: false })
-  const content = auth.isPending ? <div className="mobile-shell h-full bg-paper"><Loading label="SKN 준비 중"/></div>
+  // 세션을 확인하는 동안 로고 모션을 보여준다. 스피너 자리를 대신할 뿐 흐름은 그대로다.
+  const content = auth.isPending ? <div className="mobile-shell grid h-full place-items-center bg-white">
+      <BrandMotion name="skn-wordmark-motion" poster="/skn-assets/skn-wordmark.png" alt="SKN" className="w-[62%] max-w-[280px] object-contain"/>
+    </div>
     : auth.isError ? <AuthPage />
     : !auth.data.onboardingCompleted ? <OnboardingPage auth={auth.data}/>
     : <Routes>

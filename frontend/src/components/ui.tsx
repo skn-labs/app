@@ -1,5 +1,5 @@
 import type { ButtonHTMLAttributes, PropsWithChildren, ReactNode } from 'react'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Bell, Bot, ChevronLeft, CircleUserRound, FlaskConical, Home, MessageCircle, NotebookText, Sparkles } from 'lucide-react'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { twMerge } from 'tailwind-merge'
@@ -115,4 +115,39 @@ export function BottomSheet({ open, onClose, title, children }: PropsWithChildre
 
 export function AiBadge() {
   return <span className="inline-flex items-center gap-1 rounded-full bg-accent-soft px-2.5 py-1 text-[11px] font-bold text-accent"><Sparkles size={12}/> SKN AI</span>
+}
+
+/**
+ * 브랜드 모션 재생.
+ *
+ * webm → mp4 → poster 이미지 순으로 대체하므로 코덱이 없거나 자동재생이 막혀도
+ * 화면이 비지 않는다. 재생이 불가능하면 onEnded 를 한 번 불러 흐름이 멈추지 않게 한다.
+ * `prefers-reduced-motion` 을 켠 사용자에게는 정지 이미지만 보여준다.
+ */
+export function BrandMotion({ name, poster, alt = '', loop = false, className = '', onEnded }: {
+  name: string
+  poster: string
+  alt?: string
+  loop?: boolean
+  className?: string
+  onEnded?: () => void
+}) {
+  const video = useRef<HTMLVideoElement>(null)
+  const [failed, setFailed] = useState(() => typeof window !== 'undefined'
+    && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches)
+  const ended = useRef(onEnded)
+  ended.current = onEnded
+
+  useEffect(() => {
+    if (failed) { ended.current?.(); return }
+    video.current?.play().catch(() => { setFailed(true); ended.current?.() })
+  }, [failed, name])
+
+  if (failed) return <img src={poster} alt={alt} aria-hidden={!alt} className={className}/>
+
+  return <video ref={video} poster={poster} autoPlay muted playsInline loop={loop} preload="auto"
+    aria-label={alt || undefined} onEnded={() => ended.current?.()} className={className}>
+    <source src={`/skn-assets/${name}.webm`} type="video/webm"/>
+    <source src={`/skn-assets/${name}.mp4`} type="video/mp4"/>
+  </video>
 }
