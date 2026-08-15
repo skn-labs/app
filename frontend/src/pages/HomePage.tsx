@@ -24,10 +24,9 @@ export function HomePage() {
   return <Screen className="bg-white">
     <AppHeader/>
     <div className="px-5 pb-6">
-      <p className="mt-3 text-sm font-medium text-[#7892bb]">TODAY IN SKN</p>
-      <h1 className="display-title mt-2 break-words">{data.displayName} 님의<br/>오늘을 볼게요</h1>
+      <div className="mt-3"><h1 className="display-title break-words">{data.displayName} 님</h1><p className="mt-2 text-sm leading-6 text-black/50">오늘의 사용 경험을 가볍게 이어가요.</p></div>
 
-      <div className="mt-6">
+      <div className="mt-7">
         {experience ? <ActiveExperienceCard experience={experience} onOpen={() => navigate(`/experiences/${experience.id}`)} onEnd={() => setEndOpen(true)}/>
           : <EmptyExperienceCard productCount={data.productCount}/>}
       </div>
@@ -69,31 +68,34 @@ export function HomePage() {
 
 function ActiveExperienceCard({ experience, onOpen, onEnd }: { experience: NonNullable<Home['currentExperience']>; onOpen: () => void; onEnd: () => void }) {
   const day = Math.max(1, Math.min(7, experience.day))
-  return <div className="relative px-1 pb-3"><div aria-hidden className="absolute inset-x-4 bottom-0 top-5 rounded-[24px] bg-[#e8effc]"/><div aria-hidden className="absolute inset-x-2 bottom-1 top-2 rounded-[24px] border border-[#dbe6f8] bg-[#f5f8ff]"/><section className="relative min-h-[220px] overflow-hidden rounded-[24px] border border-white/80 shadow-[0_10px_30px_rgba(24,36,65,.13)]" aria-label={`현재 확인 중인 경험, 7일 중 ${day}일`}>
-    <img src={heroWave} alt="" aria-hidden className="absolute inset-0 size-full object-cover object-bottom"/>
-    <div aria-hidden className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,.9)_0%,rgba(245,249,255,.58)_48%,rgba(224,235,255,.22)_100%)]"/>
-    <div className="relative flex min-h-[220px] flex-col p-5">
-      <div className="flex items-center justify-between"><p className="text-xs font-medium text-black/65">확인 중인 경험</p><p className="text-sm font-medium tabular-nums">DAY {day} / 7</p></div>
-      <div role="progressbar" aria-label={`7일 중 ${day}일`} aria-valuemin={1} aria-valuemax={7} aria-valuenow={day} className="mt-3 flex gap-1.5">{Array.from({ length: 7 }, (_, index) => <span key={index} className={`h-1 flex-1 rounded-full ${index < day ? 'bg-[#0a0a0a]' : 'bg-[#0a0a0a]/20'}`}/>)}</div>
-      <div className="min-h-0 flex-1 py-4"><h2 className="line-clamp-1 text-lg font-medium tracking-[-.03em]">{experience.title}</h2><p className="mt-1.5 line-clamp-1 text-xs text-black/55">{experience.subtitle}</p></div>
+  return <section className="relative min-h-[286px] overflow-hidden rounded-[30px] border border-[#d8e5fb] shadow-[0_18px_48px_rgba(44,71,122,.16)]" aria-label={`현재 확인 중인 경험, 7일 중 ${day}일`}>
+    <img src={heroWave} alt="" aria-hidden className="absolute inset-0 size-full scale-110 object-cover object-bottom"/>
+    <div aria-hidden className="absolute inset-0 bg-[linear-gradient(145deg,rgba(255,255,255,.96)_0%,rgba(245,249,255,.76)_47%,rgba(206,225,255,.18)_100%)]"/>
+    <div aria-hidden className="absolute -right-10 top-12 size-36 rounded-full border border-white/60 bg-white/20 shadow-[inset_0_0_30px_rgba(255,255,255,.65)] backdrop-blur-[2px]"/>
+    <div className="relative flex min-h-[286px] flex-col p-5">
+      <div className="flex items-center justify-between"><p className="rounded-full bg-white/72 px-3 py-2 text-xs font-medium text-[#52678c] backdrop-blur">확인 중인 경험</p><p className="text-sm font-medium tabular-nums">DAY {day} / 7</p></div>
+      <div role="progressbar" aria-label={`7일 중 ${day}일`} aria-valuemin={1} aria-valuemax={7} aria-valuenow={day} className="mt-4 flex gap-1.5">{Array.from({ length: 7 }, (_, index) => <span key={index} className={`h-1.5 flex-1 rounded-full ${index < day ? 'bg-[#0a0a0a]' : 'bg-[#0a0a0a]/15'}`}/>)}</div>
+      <div className="min-h-0 flex-1 py-6"><p className="text-xs text-black/45">지금 기억할 조합</p><h2 className="mt-2 line-clamp-2 max-w-[290px] text-[28px] font-medium leading-[1.15] tracking-[-.045em]">{experience.title}</h2><p className="mt-2 line-clamp-1 text-sm text-black/55">{experience.subtitle}</p></div>
       <div className="grid grid-cols-2 gap-2">
-        <button type="button" onClick={onEnd} className="h-12 rounded-full border border-white/70 bg-white/72 text-sm font-medium backdrop-blur transition hover:bg-white active:scale-[.98]">경험 마치기</button>
-        <button type="button" onClick={onOpen} className="h-12 rounded-full bg-[#0a0a0a] text-sm font-medium text-white shadow-sm transition hover:bg-black active:scale-[.98]">자세히 보기</button>
+        <button type="button" onClick={onEnd} className="h-[52px] rounded-full border border-white/80 bg-white/68 text-sm font-medium backdrop-blur-md transition hover:bg-white active:scale-[.98]">경험 마치기</button>
+        <button type="button" onClick={onOpen} className="h-[52px] rounded-full bg-[#0a0a0a] text-sm font-medium text-white shadow-[0_8px_20px_rgba(0,0,0,.16)] transition hover:bg-black active:scale-[.98]">자세히 보기</button>
       </div>
     </div>
-  </section></div>
+  </section>
 }
 
 function EmptyExperienceCard({ productCount }: { productCount: number }) {
-  return <div className="relative px-1 pb-4"><div aria-hidden className="absolute inset-x-5 bottom-0 top-7 rounded-[26px] bg-[#dfe9fb]"/><div aria-hidden className="absolute inset-x-3 bottom-2 top-3 rounded-[26px] border border-[#d5e2f6] bg-[#f1f6ff]"/><section className="relative min-h-[252px] overflow-hidden rounded-[26px] border border-white/85 shadow-[0_12px_34px_rgba(24,36,65,.14)]">
-    <img src={heroWave} alt="" aria-hidden className="absolute inset-0 size-full scale-105 object-cover object-bottom"/>
-    <div aria-hidden className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,.94)_0%,rgba(246,250,255,.74)_50%,rgba(222,234,255,.28)_100%)]"/>
-    <div className="relative flex min-h-[252px] flex-col p-5">
-      <span className="w-fit rounded-full bg-white/75 px-3 py-2 text-xs font-medium text-[#5f7396] backdrop-blur">첫 번째 경험 카드</span>
-      <div className="my-auto"><h2 className="text-2xl font-medium leading-[1.2] tracking-[-.04em]">아직 비어 있어도,<br/>오늘부터 채울 수 있어요.</h2><p className="mt-3 max-w-[285px] text-sm leading-5 text-black/55">{productCount ? '가지고 있는 화장품으로 실제 사용 조합을 만들고, 기억이 선명할 때 느낌을 남겨보세요.' : '화장품 하나를 추가하면 제품·루틴·경험이 이어지는 나만의 기록이 시작돼요.'}</p></div>
-      <Link to={productCount ? '/routine/edit' : '/explore'} className="flex h-13 w-full items-center justify-center gap-1 rounded-full bg-black text-base font-medium text-white shadow-[0_7px_20px_rgba(0,0,0,.14)] transition active:scale-[.98]">{productCount ? '새 경험 시작하기' : '첫 화장품 추가하기'}<ArrowRight size={17}/></Link>
+  return <section className="relative min-h-[300px] overflow-hidden rounded-[30px] border border-[#d8e5fb] shadow-[0_18px_48px_rgba(44,71,122,.16)]">
+    <img src={heroWave} alt="" aria-hidden className="absolute inset-0 size-full scale-110 object-cover object-bottom"/>
+    <div aria-hidden className="absolute inset-0 bg-[linear-gradient(145deg,rgba(255,255,255,.97)_0%,rgba(244,249,255,.8)_48%,rgba(204,224,255,.2)_100%)]"/>
+    <div aria-hidden className="absolute -right-7 top-12 size-44 rounded-full border border-white/70 bg-white/22 shadow-[inset_0_0_34px_rgba(255,255,255,.8),0_14px_34px_rgba(106,143,202,.12)] backdrop-blur-[3px]"/>
+    <img src="/skn-assets/onboarding-orb.png" alt="" aria-hidden className="absolute right-2 top-16 size-28 object-contain opacity-80"/>
+    <div className="relative flex min-h-[300px] flex-col p-5">
+      <span className="w-fit rounded-full bg-white/72 px-3 py-2 text-xs font-medium text-[#52678c] backdrop-blur">START YOUR SKN</span>
+      <div className="my-auto max-w-[285px]"><h2 className="text-[28px] font-medium leading-[1.16] tracking-[-.045em]">첫 기록부터<br/>나만의 기준이 생겨요.</h2><p className="mt-3 max-w-[265px] text-sm leading-6 text-black/52">{productCount ? '가지고 있는 화장품으로 실제 사용 조합을 만들고, 느낀 순간을 이어보세요.' : '화장품 하나를 담으면 제품·루틴·경험이 연결되는 나만의 아카이브가 시작돼요.'}</p></div>
+      <Link to={productCount ? '/routine/edit' : '/explore'} className="flex h-[54px] w-full items-center justify-center gap-1 rounded-full bg-black text-base font-medium text-white shadow-[0_9px_24px_rgba(0,0,0,.18)] transition active:scale-[.98]">{productCount ? '새 경험 시작하기' : '첫 화장품 담기'}<ArrowRight size={17}/></Link>
     </div>
-  </section></div>
+  </section>
 }
 
 function InsightCard({ pattern, wave }: { pattern: Pattern; wave: string }) {
