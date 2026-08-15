@@ -3,9 +3,8 @@ package app.skn.service;
 import app.skn.auth.AuthRepository;
 import app.skn.auth.CurrentUser;
 import app.skn.common.ApiException;
+import app.skn.data.SchemaScript;
 import app.skn.data.SkincareRepository;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
 import org.springframework.stereotype.Service;
 
 import javax.sql.DataSource;
@@ -33,7 +32,7 @@ public class DemoService {
             throw ApiException.invalid("INVALID_DEMO_SCENARIO", "지원하지 않는 시연 상태예요.");
         }
         repository.deleteDemoUserData();
-        new ResourceDatabasePopulator(new ClassPathResource("schema.sql")).execute(dataSource);
+        SchemaScript.reapply(dataSource);
         if ("empty-experience".equals(scenario)) repository.clearExperiencesForEmptyScenario();
         if ("cold-start".equals(scenario)) repository.clearAllPersonalDataForColdStart();
     }

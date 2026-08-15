@@ -1,14 +1,13 @@
 package app.skn;
 
+import app.skn.data.SchemaScript;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.MediaType;
 import org.springframework.http.HttpHeaders;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.web.servlet.MockMvc;
 import tools.jackson.databind.JsonNode;
@@ -133,7 +132,7 @@ class CoreFlowIntegrationTest {
                  WHERE product_id = 6
                 """);
 
-        new ResourceDatabasePopulator(new ClassPathResource("schema.sql")).execute(dataSource);
+        SchemaScript.reapply(dataSource);
 
         var guide = jdbc.queryForMap("""
                 SELECT summary, usage_tips_json, observation_points_json, origin
