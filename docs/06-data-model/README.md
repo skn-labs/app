@@ -2,13 +2,14 @@
 
 현재 해커톤 구현은 단일 Spring Boot API와 SQLite 파일 하나를 쓴다. 실제 DDL의 원본은 [`schema.sql`](../../backend/src/main/resources/schema.sql)이고, [DBML](./schema.dbml)은 사람이 관계를 빠르게 읽기 위한 동기화된 표현이다.
 
-Flyway는 놓지 않았다. 시연용 스키마가 자주 바뀌는 현재 단계에서는 하나의 기준 스키마로 복잡도를 줄였고, 실제 운영 배포를 시작할 때 마이그레이션을 도입한다.
+Flyway는 놓지 않았다. 시연용 스키마가 자주 바뀌는 현재 단계에서는 `schema.sql`을 새 DB의 기준 스키마로 유지한다. 이미 배포된 SQLite는 `deploy/oci/migrations/*.sql`의 작은 운영 마이그레이션을 순서대로 적용하므로, `schema.sql`이 바뀌면 같은 PR에서 기존 DB의 동등한 변경도 준비한다.
 
 ## 핵심 관계
 
 ```mermaid
 erDiagram
   APP_USER ||--o| USER_ONBOARDING : completes
+  APP_USER ||--o| USER_PREFERENCE : describes
   APP_USER ||--o{ USER_PRODUCT : owns
   PRODUCT ||--o{ USER_PRODUCT : identifies
   PRODUCT ||--|| PRODUCT_CATALOG_CONTENT : guides
