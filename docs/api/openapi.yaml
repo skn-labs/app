@@ -148,6 +148,28 @@ paths:
       responses:
         '200': { description: 제품, content: { application/json: { schema: { $ref: '#/components/schemas/Product' } } } }
         '404': { $ref: '#/components/responses/Problem' }
+  /me/preferences:
+    get:
+      tags: [Auth]
+      summary: 선택적으로 받은 사용감 선호를 조회한다
+      description: 저장한 적이 없으면 빈 목록과 빈 메모를 돌려준다.
+      operationId: getPreferences
+      responses:
+        '200': { description: 사용감 선호, content: { application/json: { schema: { $ref: '#/components/schemas/Preference' } } } }
+        '401': { $ref: '#/components/responses/Problem' }
+    put:
+      tags: [Auth]
+      summary: 사용감 선호를 통째로 바꾼다
+      operationId: replacePreferences
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Preference' }
+      responses:
+        '200': { description: 저장됨, content: { application/json: { schema: { $ref: '#/components/schemas/Preference' } } } }
+        '401': { $ref: '#/components/responses/Problem' }
+        '422': { $ref: '#/components/responses/Problem' }
   /me/products:
     get:
       tags: [Collection]
@@ -402,7 +424,28 @@ components:
           items: { type: integer, format: int64 }
         entryChoice: { type: string, enum: [PRODUCT, ROUTINE, EXPLORE] }
         focusProductId: { type: [integer, 'null'], format: int64 }
+        preferences:
+          description: ONB-01. 선택 항목이며 생략하면 아무것도 저장하지 않는다.
+          anyOf:
+            - $ref: '#/components/schemas/Preference'
+            - type: 'null'
         clientRequestId: { type: string, minLength: 1 }
+    Preference:
+      type: object
+      description: >-
+        온보딩에서 선택적으로 받는 사용감 선호. 구조화된 실제 경험이 쌓이기 전의 약한 맥락으로만 쓰며
+        피부 타입·연령·성별 같은 고정 속성은 담지 않는다.
+      required: [likes, avoids, note]
+      properties:
+        likes:
+          type: array
+          maxItems: 12
+          items: { type: string, maxLength: 40 }
+        avoids:
+          type: array
+          maxItems: 12
+          items: { type: string, maxLength: 40 }
+        note: { type: string, maxLength: 300 }
     OnboardingResult:
       type: object
       required: [user]

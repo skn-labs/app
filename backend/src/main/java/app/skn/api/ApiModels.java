@@ -273,7 +273,24 @@ public final class ApiModels {
             @Size(max = 8) List<@NotNull Long> productIds,
             @NotBlank String entryChoice,
             Long focusProductId,
+            PreferenceRequest preferences,
             @NotBlank String clientRequestId
+    ) {}
+
+    /**
+     * ONB-01. 온보딩에서 선택적으로 받는 사용감 선호이며 비워서 보내도 된다.
+     * 피부 타입·연령·성별 같은 고정 속성은 받지 않는다(ACC-03, product-rules 10).
+     */
+    public record PreferenceRequest(
+            @Size(max = 12) List<@NotNull @Size(max = 40) String> likes,
+            @Size(max = 12) List<@NotNull @Size(max = 40) String> avoids,
+            @Size(max = 300) String note
+    ) {}
+
+    public record PreferenceView(
+            List<String> likes,
+            List<String> avoids,
+            String note
     ) {}
 
     public record OnboardingResult(

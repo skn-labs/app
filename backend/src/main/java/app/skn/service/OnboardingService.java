@@ -5,6 +5,7 @@ import app.skn.api.ApiModels.AuthView;
 import app.skn.api.ApiModels.CompleteOnboardingRequest;
 import app.skn.api.ApiModels.ExperienceView;
 import app.skn.api.ApiModels.OnboardingResult;
+import app.skn.api.ApiModels.PreferenceRequest;
 import app.skn.api.ApiModels.StartExperienceRequest;
 import app.skn.api.ApiModels.UserProductView;
 import app.skn.auth.AuthRepository;
@@ -68,8 +69,34 @@ public class OnboardingService {
             throw ApiException.invalid("ROUTINE_PRODUCTS_REQUIRED", "루틴으로 시작하려면 화장품을 하나 이상 골라주세요.");
         }
 
+        savePreferences(userId, request.preferences());
         authRepository.completeOnboarding(userId, entryChoice, productIds.size());
         AuthView user = authRepository.findUser(userId).orElseThrow();
         return new OnboardingResult(user, experience);
+    }
+
+    /**
+     * ONB-01. 사용감 선호는 선택 항목이라 통째로 비어 오면 아무것도 쓰지 않는다.
+     * 건너뛴 사용자에게 빈 행을 만들어 두면 "답했지만 비움"과 구분되지 않는다.
+     */
+    private void savePreferences(long userId, PreferenceRequest preferences) {
+        if (preferences == null) return;
+
+        List<String> likes = clean(preferences.likes());
+        List<String> avoids = clean(preferences.avoids());
+        String note = preferences.note() == null ? "" : preferences.note().trim();
+        if (likes.isEmpty() && avoids.isEmpty() && note.isEmpty()) return;
+
+        authRepository.savePreference(userId, likes, avoids, note);
+    }
+
+    private List<String> clean(List<String> values) {
+        if (values == null) return List.of();
+        return values.stream()
+                .filter(value -> value != null && !value.isBlank())
+                .map(String::trim)
+                .distinct()
+                .limit(12)
+                .toList();
     }
 }
