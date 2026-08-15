@@ -1,0 +1,564 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>sktn — 로그인 · 온보딩 프로토타입</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
+<style>
+  :root{
+    --ink:#0a0a0a; --muted:#8e8e93; --faint:#c7c7cc; --line:#e5e5ea;
+    --field:#f2f2f7; --danger:#ff3b30; --kakao:#fee500;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{
+    margin:0;background:#1c1c1e;color:var(--ink);
+    font-family:'Pretendard Variable',Pretendard,-apple-system,system-ui,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;
+    display:flex;align-items:center;justify-content:center;min-height:100dvh;padding:24px;
+  }
+  .phone{
+    width:390px;height:844px;background:#fff;border-radius:44px;overflow:hidden;
+    display:flex;flex-direction:column;box-shadow:0 30px 70px rgba(0,0,0,.5);position:relative;
+  }
+  @media (max-width:430px){
+    body{padding:0}
+    .phone{width:100%;height:100dvh;border-radius:0}
+  }
+  .statusbar{display:flex;justify-content:space-between;align-items:center;padding:12px 28px 4px;font-size:13px;font-weight:600;flex-shrink:0}
+  .statusbar .icons{display:flex;gap:6px;align-items:center}
+  .home{display:flex;justify-content:center;padding:4px 0 8px;flex-shrink:0}
+  .home i{display:block;width:134px;height:5px;border-radius:99px;background:var(--ink)}
+  .mark{display:flex;justify-content:center;padding:8px 0 4px;flex-shrink:0}
+  .mark img{height:26px;width:auto}
+  .overlay{position:absolute;inset:0;z-index:50;background:#fff;display:flex;flex-direction:column;
+           align-items:center;justify-content:center;gap:28px}
+  .overlay video{width:200px;height:200px;object-fit:contain}
+  .overlay p{font-size:13px;color:var(--muted);margin:0}
+  .splash{display:flex;flex:1;align-items:center;justify-content:center}
+  .splash video{width:62%;object-fit:contain}
+  /* 프로필 완성 → 메인창 화면전환 */
+  .fader{display:flex;flex:1;flex-direction:column;opacity:1;transition:opacity .6s ease-out}
+  .fader.out{opacity:0}
+  @keyframes sktn-fade-in{from{opacity:0}to{opacity:1}}
+  .fade-in{animation:sktn-fade-in .5s ease-out both}
+  @media (prefers-reduced-motion:reduce){.fade-in{animation:none}}
+  .body{flex:1;display:flex;flex-direction:column;padding:0 28px;overflow:hidden}
+  .scroll{flex:1;overflow-y:auto;padding-bottom:16px}
+  h1{font-size:21px;line-height:1.4;font-weight:700;letter-spacing:-.02em;margin:0}
+  h1.big{font-size:22px}
+  .sub{margin:10px 0 0;font-size:13px;line-height:1.6;color:var(--muted)}
+  .grow{flex:1;display:flex;align-items:center;justify-content:center}
+
+  /* 진행 표시 */
+  .dashes{display:flex;gap:6px;padding-top:24px;flex-shrink:0}
+  .dashes i{width:20px;height:3px;border-radius:99px;background:var(--line);transition:background .2s}
+  .dashes i.on{background:var(--ink)}
+
+  /* 버튼 */
+  .btn{height:52px;border:0;border-radius:99px;font-size:15px;font-weight:600;cursor:pointer;
+       display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;
+       transition:opacity .15s,background-color .15s}
+  .btn:active{opacity:.8}
+  .btn.primary{background:var(--ink);color:#fff}
+  .btn.primary:disabled{background:var(--line);color:var(--faint);cursor:not-allowed}
+  .btn.secondary{background:var(--field);color:var(--ink);width:110px;flex-shrink:0}
+  .btn.kakao{background:var(--kakao);color:#191600}
+  .btn.apple{background:#fff;color:var(--ink);border:1px solid var(--line)}
+  .navrow{display:flex;gap:8px;padding-bottom:8px;flex-shrink:0}
+  .stack{display:flex;flex-direction:column;gap:10px;padding-bottom:8px}
+
+  /* 구체 */
+  .orb{flex-shrink:0;object-fit:contain;transition:opacity .2s}
+  .genderorb{display:block;transition:opacity .3s,transform .3s}
+  .genderorb.dim{opacity:.35;transform:scale(.95)}
+  .orb.dim{opacity:.35}
+
+  /* 입력 */
+  label.fl{display:block;font-size:13px;font-weight:500;color:var(--muted);margin-bottom:6px}
+  .input{height:50px;width:100%;border-radius:12px;border:1px solid transparent;background:var(--field);
+         padding:0 16px;font-size:15px;outline:0;font-family:inherit}
+  .input:focus{border-color:var(--ink)}
+  .input::placeholder{color:var(--faint)}
+  .err{color:var(--danger);font-size:12px;margin:6px 0 0}
+  .link{color:var(--muted);font-size:12px;text-decoration:underline;text-underline-offset:2px;cursor:pointer;background:none;border:0;font-family:inherit}
+.cbox{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);
+        background:none;border:0;cursor:pointer;font-family:inherit;padding:0}
+  .cbox .box{width:18px;height:18px;border-radius:5px;border:1px solid var(--line);background:#fff;
+             display:flex;align-items:center;justify-content:center;transition:.15s}
+  .cbox.on .box{background:var(--ink);border-color:var(--ink)}
+  .cbox.on span.t{color:var(--ink)}
+  .rules{list-style:none;padding:0;margin:8px 0 0;display:flex;flex-wrap:wrap;gap:4px 12px}
+  .rules li{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--faint)}
+  .rules li.ok{color:var(--ink)}
+  .hint{background:var(--field);border-radius:10px;padding:8px 12px;font-size:11px;color:var(--muted);text-align:center;margin-bottom:12px}
+
+  /* 칩 / 옵션 */
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{height:38px;padding:0 16px;border-radius:99px;border:1px solid var(--line);background:#fff;
+        font-size:14px;cursor:pointer;font-family:inherit;transition:.15s}
+  .chip.on{background:var(--ink);border-color:var(--ink);color:#fff;font-weight:600}
+  .group{margin-bottom:24px}
+  .group h3{font-size:13px;font-weight:600;color:var(--muted);margin:0 0 10px}
+  .opt{height:54px;width:100%;border-radius:14px;border:1px solid var(--line);background:var(--field);
+       font-size:15px;cursor:pointer;font-family:inherit;transition:.15s}
+  .opt.on{background:var(--ink);border-color:var(--ink);color:#fff;font-weight:600}
+  .opts{display:flex;flex-direction:column;gap:10px}
+  textarea{width:100%;border-radius:14px;border:1px solid var(--line);background:var(--field);
+           padding:14px;font-size:14px;font-family:inherit;resize:none;outline:0;margin-top:20px;line-height:1.6}
+  textarea:focus{border-color:var(--ink)}
+
+  /* 척도 */
+  .scale{display:flex;justify-content:space-between}
+  .scale button{width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:#fff;
+                font-size:15px;color:var(--muted);cursor:pointer;font-family:inherit;transition:.15s}
+  .scale button.on{background:var(--ink);border-color:var(--ink);color:#fff;font-weight:600}
+  .scalelabels{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:12px}
+
+  /* 연령 휠 */
+  .wheel{position:relative;height:280px}
+  .wheel .band{position:absolute;left:32px;right:32px;top:50%;transform:translateY(-50%);height:52px;border-radius:12px;background:var(--field)}
+  .wheel .list{position:relative;height:100%;overflow-y:auto;scroll-snap-type:y mandatory;padding:112px 0;scrollbar-width:none}
+  .wheel .list::-webkit-scrollbar{display:none}
+  .wheel .list button{display:block;width:100%;height:56px;border:0;background:none;cursor:pointer;
+                      scroll-snap-align:center;font-size:22px;font-weight:500;color:var(--faint);font-family:inherit;transition:.15s}
+  .wheel .list button.on{font-size:26px;font-weight:700;color:var(--ink)}
+  .wheel .fade{position:absolute;left:0;right:0;height:64px;pointer-events:none}
+  .wheel .fade.top{top:0;background:linear-gradient(#fff,rgba(255,255,255,0))}
+  .wheel .fade.bot{bottom:0;background:linear-gradient(rgba(255,255,255,0),#fff)}
+
+  /* 요약 테이블 */
+  .card{border:1px solid var(--line);border-radius:14px}
+  .row{display:flex;gap:16px;padding:14px 16px;border-top:1px solid var(--line)}
+  .row:first-child{border-top:0}
+  .row .k{width:80px;flex-shrink:0;font-size:13px;color:var(--muted)}
+  .row .v{font-size:13px;line-height:1.6;word-break:keep-all}
+</style>
+</head>
+<body>
+<div class="phone" id="app"></div>
+
+<script>
+/* ─────────── 질문 데이터 (React 앱의 src/config/onboarding.ts 와 동일) ─────────── */
+const AGE_RANGES = ['10대','20대','30대','40대','50대','60대 이상'];
+const SKIN_TYPES = ['건성','지성','복합성','중성','잘 모르겠어요'];
+const CONCERN_GROUPS = [
+  {key:'moisture', title:'수분·유분', options:['건조함','당김','유분기','번들거림']},
+  {key:'trouble',  title:'트러블·자극', options:['여드름','좁쌀 트러블','홍조','민감함']},
+  {key:'tone',     title:'톤·색소', options:['잡티','칙칙함','다크서클','색소침착']},
+  {key:'texture',  title:'결·모공', options:['각질','거친 피부결','모공','블랙헤드']},
+  {key:'aging',    title:'탄력·주름', options:['주름','탄력 저하','처짐']},
+];
+const TEXTURE_GROUPS = [
+  {key:'apply',  title:'발림', options:['가벼운','촉촉한','쫀쫀한','무거운']},
+  {key:'finish', title:'마무리감', options:['산뜻한','보송한','촉촉한','윤기 있는']},
+  {key:'scent',  title:'향', options:['무향','시트러스·허브','플로럴','우디·머스크','기타']},
+];
+const AVOID_GROUPS = [
+  {key:'ingredient', title:'성분', options:['알러지 유발 성분','향료','알코올','에센셜 오일','실리콘']},
+  {key:'feel',       title:'사용감', options:['답답함','끈적거림','따가움','향이 강한 것','무거운 잔여감']},
+];
+const TRIAL_FREQUENCIES = ['거의 시도하지 않아요','몇 달에 한 번 시도해요','한 달에 1~2개 정도 시도해요','한 달에 3개 이상 시도해요'];
+const STEPS = [
+  {key:'age',            title:'현재 연령대를 알려주세요.',            sub:'나이대에 따라 피부 변화와 추천할 케어 방향이 달라져요.'},
+  {key:'gender',         title:'성별을 선택해주세요.',                sub:'성별에 따라 피부 분비와 추천 제품이 달라질 수 있어요.'},
+  {key:'skinType',       title:'피부 타입은 어떻게 알고 있나요?',      sub:'정확하지 않아도 괜찮아요. 나중에 다시 바꿀 수 있어요.'},
+  {key:'skinCondition',  title:'지금 피부 상태는 어떤가요?',          sub:'최근 2주 정도의 컨디션을 기준으로 골라주세요.'},
+  {key:'concerns',       title:'지금 가장 해결하고 싶은 것은?',        sub:'가장 신경 쓰이는 고민을 골라주세요. (복수 선택 가능)'},
+  {key:'textures',       title:'어떤 사용감을 선호하시나요?',          sub:'평소에 손이 자주 가는 제형을 떠올리면 쉬워요.'},
+  {key:'avoids',         title:'사용하면서 피하고 싶은 것이 있나요?',  sub:'피해야 할 성분이 있다면 추천에서 빼드릴게요.'},
+  {key:'trialFrequency', title:'새로운 제품을 얼마나 자주 시도하시나요?', sub:'추천 주기와 제품 수를 정하는 데 쓰여요.'},
+];
+
+/* ─────────── 상태 ─────────── */
+// 목 계정 저장소 — 가입하면 그 계정으로 바로 로그인됩니다
+const accounts = new Map([['sktn_test','password123']]);
+
+const state = {
+  screen: 'splash',       // splash | welcome | login | signup | onboarding | complete | main
+  step: 0, loading:false, username:'', confirm:'', remember:false,
+  password:'', loginError:'',
+  profile:{ ageRange:null, gender:null, skinType:null, skinCondition:null,
+            concerns:[], textures:[], avoids:[], avoidNote:'', trialFrequency:null },
+};
+const p = () => state.profile;
+
+const statusbar = `<div class="statusbar"><span>12:06</span><div class="icons">
+  <svg width="17" height="11"><rect y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.5" width="3" height="11" rx="1"/></svg>
+  <svg width="25" height="12"><rect x=".5" y=".5" width="21" height="11" rx="3.5" fill="none" stroke="currentColor" opacity=".4"/><rect x="2" y="2" width="16" height="8" rx="2"/></svg>
+</div></div>`;
+const home = `<div class="home"><i></i></div>`;
+const mark = `<div class="mark"><img src="./media/logo-symbol.png" alt="sktn"></div>`;
+// WebM(VP9) + MP4(H.264) 두 벌을 넣어 브라우저를 가리지 않게 한다
+const POSTER = {
+  'logo-intro':'logo-intro-poster', 'check':'check-poster', 'petri':'petri-poster',
+  'gender-male':'gender-male-poster', 'gender-female':'gender-female-poster', 'loading':'orb',
+};
+const vid = (name, attrs, style) =>
+  `<video ${attrs} muted playsinline preload="auto" poster="./media/${POSTER[name] || 'orb'}.png" style="${style}">
+     <source src="./media/${name}.webm" type="video/webm">
+     <source src="./media/${name}.mp4" type="video/mp4">
+   </video>`;
+const overlayHtml = (label='피부 데이터를 불러오는 중이에요') =>
+  `<div class="overlay">${vid('loading','autoplay loop','width:200px;height:200px;object-fit:contain')}<p>${label}</p></div>`;
+
+function canProceed(){
+  const v = p();
+  switch(STEPS[state.step].key){
+    case 'age': return !!v.ageRange;
+    case 'gender': return !!v.gender;
+    case 'skinType': return !!v.skinType;
+    case 'skinCondition': return v.skinCondition!==null;
+    case 'concerns': return v.concerns.length>0;
+    case 'textures': return v.textures.length>0;
+    case 'avoids': return true;
+    case 'trialFrequency': return !!v.trialFrequency;
+  }
+}
+
+/* ─────────── 화면 ─────────── */
+function viewSplash(){
+  return `<div class="splash">${vid('logo-intro','id="intro" autoplay','width:62%;object-fit:contain')}</div>`;
+}
+
+function viewWelcome(){
+  return statusbar + mark + `<div class="body">
+    <div style="padding-top:40px">
+      <h1 class="big">당신의 피부를 연구할<br>준비가 되었어요.</h1>
+      <p class="sub">몇 가지 질문으로 당신에게 맞는<br>케어를 시작할게요.</p>
+    </div>
+    <div class="grow">${vid('petri','autoplay loop','width:86%;object-fit:contain')}</div>
+    <button class="btn primary" data-go="login">로그인</button>
+    <p style="text-align:center;padding:16px 0 8px;margin:0;font-size:12px;color:var(--muted)">
+      아직 계정이 없으신가요? <button class="link" style="color:var(--ink);font-weight:500" data-go="signup">회원가입</button>
+    </p>
+  </div>` + home;
+}
+
+function viewLogin(){
+  return statusbar + `<div class="body" style="padding-top:40px">
+    <img src="./media/logo-mark.png" alt="sktn" style="height:34px;width:auto;align-self:flex-start;object-fit:contain">
+    <p class="sub">아이디로 로그인하고<br>내 피부 기록을 이어가세요.</p>
+    <div style="margin-top:36px;display:flex;flex-direction:column;gap:16px">
+      <div><label class="fl">아이디</label><input class="input" id="username" type="text" placeholder="sktn_user" value="${state.username}"></div>
+      <div><label class="fl">비밀번호</label><input class="input" id="password" type="password" placeholder="비밀번호" value="${state.password}"></div>
+    </div>
+    <div style="margin-top:16px">
+      <button class="cbox ${state.remember?'on':''}" id="remember" type="button" role="checkbox" aria-checked="${state.remember}">
+        <span class="box">${state.remember?'<svg width="11" height="11" viewBox="0 0 12 12"><path d="M2.5 6.2l2.4 2.4L9.6 3.9" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>':''}</span>
+        <span class="t">아이디 저장</span>
+      </button>
+    </div>
+    ${state.loginError?`<p class="err">${state.loginError}</p>`:''}
+    <div class="grow"></div>
+    <p class="hint">목 모드 — sktn_test / password123</p>
+    <button class="btn primary" id="submit">로그인</button>
+    <p style="text-align:center;padding:16px 0 8px;margin:0;font-size:12px;color:var(--muted)">
+      아직 계정이 없으신가요? <button class="link" style="color:var(--ink);font-weight:500" data-go="signup">회원가입</button>
+    </p>
+  </div>` + home + (state.loading ? overlayHtml() : '');
+}
+
+const tick = (ok)=>`<svg width="13" height="13" viewBox="0 0 14 14"><circle cx="7" cy="7" r="6.25" fill="none" stroke="currentColor" stroke-width="1" opacity="${ok?1:.45}"/>${ok?'<path d="M4.2 7.2l1.9 1.9 3.7-3.9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>':''}</svg>`;
+const rulesHtml = (list)=>list.map(c=>`<li class="${c.ok?'ok':''}">${tick(c.ok)}${c.label}</li>`).join('');
+
+const usernameChecks = (u)=>[
+  {label:'영문 소문자·숫자·밑줄(_)만', ok:/^[a-z0-9_]*$/.test(u) && u!==''},
+  {label:'4~24자', ok:u.length>=4 && u.length<=24},
+];
+// ★ src/lib/passwordRules.ts 의 ENFORCE_COMPOSITION 과 같은 스위치
+const ENFORCE_COMPOSITION = true;
+const SPECIAL = /[!-\/:-@[-`{-~]/;
+const passwordChecks = (pw)=>{
+  const len = {label:'8~72자', ok:pw.length>=8 && pw.length<=72};
+  if(!ENFORCE_COMPOSITION) return [len];
+  return [len,
+    {label:'영문 포함', ok:/[A-Za-z]/.test(pw)},
+    {label:'숫자 포함', ok:/[0-9]/.test(pw)},
+    {label:'특수문자 포함', ok:SPECIAL.test(pw)},
+  ];
+};
+const PW_PLACEHOLDER = ENFORCE_COMPOSITION ? '영문·숫자·특수문자 조합' : '8자 이상';
+const passwordOk = (pw)=>passwordChecks(pw).every(c=>c.ok);
+
+function viewSignUp(){
+  const mismatch = state.confirm.length>0 && state.confirm!==state.password;
+  return statusbar + `<div class="body" style="padding-top:40px">
+    <img src="./media/logo-mark.png" alt="sktn" style="height:34px;width:auto;align-self:flex-start;object-fit:contain">
+    <p class="sub">아이디와 비밀번호만 있으면 돼요.<br>피부 기록은 이 계정에 쌓입니다.</p>
+    <div class="scroll" style="margin-top:32px;display:flex;flex-direction:column;gap:16px">
+      <div>
+        <label class="fl">아이디</label>
+        <input class="input" id="username" type="text" placeholder="sktn_user" value="${state.username}">
+        <ul class="rules" id="uRules">${rulesHtml(usernameChecks(state.username))}</ul>
+      </div>
+      <div>
+        <label class="fl">비밀번호</label>
+        <input class="input" id="password" type="password" placeholder="${PW_PLACEHOLDER}" value="${state.password}">
+        <ul class="rules" id="pRules">${rulesHtml(passwordChecks(state.password))}</ul>
+      </div>
+      <div>
+        <label class="fl">비밀번호 확인</label>
+        <input class="input" id="confirm" type="password" placeholder="한 번 더 입력해주세요" value="${state.confirm}">
+        <p class="err" id="cErr" style="${mismatch?'':'display:none'}">비밀번호가 서로 달라요.</p>
+      </div>
+      <p class="err" id="fErr" style="${state.loginError?'':'display:none'}">${state.loginError}</p>
+    </div>
+    <button class="btn primary" id="signupSubmit">회원가입</button>
+    <p style="text-align:center;padding:16px 0 8px;margin:0;font-size:12px;color:var(--muted)">
+      이미 계정이 있으신가요? <button class="link" style="color:var(--ink);font-weight:500" data-go="login">로그인</button>
+    </p>
+  </div>` + home + (state.loading ? overlayHtml('계정을 만드는 중이에요') : '');
+}
+
+function stepContent(key){
+  const v = p();
+  if(key==='age') return `<div class="wheel"><div class="band"></div>
+    <div class="list" id="wheel">${AGE_RANGES.map(a=>`<button class="${v.ageRange===a?'on':''}" data-age="${a}">${a}</button>`).join('')}</div>
+    <div class="fade top"></div><div class="fade bot"></div></div>`;
+
+  if(key==='gender') return `<div style="display:flex;gap:16px;padding-top:24px">
+    ${[['male','남성'],['female','여성']].map(([g,l])=>`
+      <button style="flex:1;display:flex;flex-direction:column;align-items:center;gap:16px;background:none;border:0;cursor:pointer" data-gender="${g}">
+        <span class="genderorb ${v.gender&&v.gender!==g?'dim':''}">${vid('gender-'+g, v.gender===g?'autoplay loop':'', 'width:138px;height:138px;object-fit:contain')}</span>
+        <span style="font-size:15px;${v.gender===g?'font-weight:700;color:var(--ink)':'color:var(--faint)'}">${l}</span>
+      </button>`).join('')}
+  </div>`;
+
+  if(key==='skinType') return `<div class="opts">${SKIN_TYPES.map(t=>`<button class="opt ${v.skinType===t?'on':''}" data-skintype="${t}">${t}</button>`).join('')}</div>`;
+
+  if(key==='skinCondition') return `<div style="padding-top:16px">
+    <div class="scalelabels"><span>매우 불안정</span><span>보통</span><span>매우 안정</span></div>
+    <div class="scale">${[1,2,3,4,5].map(n=>`<button class="${v.skinCondition===n?'on':''}" data-scale="${n}">${n}</button>`).join('')}</div>
+  </div>`;
+
+  if(key==='concerns') return chipGroups(CONCERN_GROUPS, v.concerns, 'concerns');
+  if(key==='textures') return chipGroups(TEXTURE_GROUPS, v.textures, 'textures');
+  if(key==='avoids') return chipGroups(AVOID_GROUPS, v.avoids, 'avoids') +
+    `<textarea id="avoidNote" rows="3" placeholder="피하고 싶은 성분을 직접 적어주세요. (선택)">${v.avoidNote}</textarea>`;
+  if(key==='trialFrequency') return `<div class="opts">${TRIAL_FREQUENCIES.map(f=>`<button class="opt ${v.trialFrequency===f?'on':''}" data-freq="${f}">${f}</button>`).join('')}</div>`;
+  return '';
+}
+
+// 저장 값은 보이는 글자가 아니라 '그룹키:선택지'.
+// 「촉촉한」이 발림·마무리감 양쪽에 있어서 이름만 쓰면 같이 눌립니다.
+const chipId = (groupKey, option)=>`${groupKey}:${option}`;
+const ALL_CHIP_GROUPS = [...CONCERN_GROUPS, ...TEXTURE_GROUPS, ...AVOID_GROUPS];
+function describeChip(id){
+  const at = id.indexOf(':');
+  if(at<0) return id;
+  const g = ALL_CHIP_GROUPS.find(x=>x.key===id.slice(0,at));
+  return g ? `${g.title} ${id.slice(at+1)}` : id.slice(at+1);
+}
+function chipGroups(groups, selected, field){
+  return groups.map(g=>`<div class="group"><h3>${g.title}</h3><div class="chips">
+    ${g.options.map(o=>{ const id=chipId(g.key,o);
+      return `<button class="chip ${selected.includes(id)?'on':''}" data-toggle="${field}" data-value="${id}">${o}</button>`;
+    }).join('')}
+  </div></div>`).join('');
+}
+
+function viewOnboarding(){
+  const s = STEPS[state.step];
+  const last = state.step === STEPS.length-1;
+  return statusbar + mark + `<div class="body">
+    <div class="dashes" style="padding-top:20px">${STEPS.map((_,i)=>`<i class="${i<=state.step?'on':''}"></i>`).join('')}</div>
+    <div style="padding-top:24px"><h1>${s.title}</h1><p class="sub">${s.sub}</p></div>
+    <div class="scroll" style="margin-top:28px">${stepContent(s.key)}</div>
+    <div class="navrow">
+      <button class="btn secondary" id="prev">이전</button>
+      <button class="btn primary" id="next" ${canProceed()?'':'disabled'}>${last?'완료':'다음'}</button>
+    </div>
+  </div>` + home;
+}
+
+function viewCompletion({title, subtitle, hint}){
+  return `<div class="fader" id="fader">` + statusbar + mark + `<div class="body">
+    <div style="padding-top:48px;text-align:center">
+      <h1 class="big">${title}</h1>
+      ${subtitle?`<p class="sub">${subtitle}</p>`:''}
+    </div>
+    <div class="grow">${vid('check','id="checkvid" autoplay','width:240px;height:240px;object-fit:contain')}</div>
+    ${hint?`<p style="text-align:center;padding-bottom:40px;margin:0;font-size:12px;color:var(--faint)">${hint}</p>`:''}
+  </div>` + home + `</div>`;
+}
+
+function viewSignupComplete(){
+  return viewCompletion({
+    title:'회원가입이<br>완료됐어요.',
+    subtitle: state.username,
+    hint:'로그인 화면으로 이동해요',
+  });
+}
+
+function viewComplete(){
+  const v = p();
+  const summary = [v.ageRange, v.gender==='male'?'남성':v.gender==='female'?'여성':null, v.skinType].filter(Boolean).join(' · ');
+  return viewCompletion({
+    title:'나만의 피부 프로필이<br>완성됐어요.',
+    subtitle: summary,
+    hint:'잠시 후 메인 화면으로 이동해요',
+  });
+}
+
+function viewMain(){
+  const v = p();
+  const rows = [
+    ['연령대', v.ageRange||'-'],
+    ['성별', v.gender==='male'?'남성':v.gender==='female'?'여성':'-'],
+    ['피부 타입', v.skinType||'-'],
+    ['피부 상태', v.skinCondition?v.skinCondition+' / 5':'-'],
+    ['고민', v.concerns.map(describeChip).join(', ')||'-'],
+    ['선호 사용감', v.textures.map(describeChip).join(', ')||'-'],
+    ['기피', [...v.avoids.map(describeChip), v.avoidNote].filter(Boolean).join(', ')||'-'],
+    ['시도 빈도', v.trialFrequency||'-'],
+  ];
+  return `<div class="fade-in" style="display:flex;flex:1;flex-direction:column">` + statusbar + `<div class="body">
+    <div style="padding-top:32px"><h1 style="font-size:24px">메인창</h1>
+    <p class="sub">${state.username||'sktn_test'}</p></div>
+    <div class="scroll" style="margin-top:28px"><div class="card">
+      ${rows.map(([k,val])=>`<div class="row"><span class="k">${k}</span><span class="v">${val}</span></div>`).join('')}
+    </div></div>
+    <div style="padding:16px 0 8px"><button class="btn secondary" style="width:100%" data-go="reset">처음부터 다시</button></div>
+  </div>` + home + `</div>`;
+}
+
+/* ─────────── 렌더 & 이벤트 ─────────── */
+function render(){
+  const app = document.getElementById('app');
+  app.innerHTML =
+    state.screen==='splash' ? viewSplash() :
+    state.screen==='welcome' ? viewWelcome() :
+    state.screen==='login' ? viewLogin() :
+    state.screen==='signup' ? viewSignUp() :
+    state.screen==='onboarding' ? viewOnboarding() :
+    state.screen==='signupComplete' ? viewSignupComplete() :
+    state.screen==='complete' ? viewComplete() : viewMain();
+
+  if(state.screen==='onboarding' && STEPS[state.step].key==='age'){
+    const wheel = document.getElementById('wheel');
+    const idx = Math.max(0, AGE_RANGES.indexOf(p().ageRange));
+    wheel.scrollTop = idx*56;
+  }
+  if(state.screen==='splash'){
+    const v = document.getElementById('intro');
+    const go = ()=>{ if(state.screen==='splash'){ state.screen='welcome'; render(); } };
+    v.addEventListener('ended', go);
+    v.play().catch(()=>{});
+    setTimeout(go, 2400);   // 자동재생이 막혀도 넘어가도록
+  }
+
+  // 완료 화면: 체크 애니메이션 → 잠깐 멈춤 → 불투명도 100→0 → 다음 화면
+  if(state.screen==='complete' || state.screen==='signupComplete'){
+    const nextScreen = state.screen==='signupComplete' ? 'login' : 'main';
+    const HOLD=700, FADE=600, MIN_VISIBLE=2600;
+    const fader = document.getElementById('fader');
+    const v = document.getElementById('checkvid');
+    const shownAt = Date.now();
+    let done = false;
+    const goNext = ()=>{ if(done) return; done=true; state.screen=nextScreen; state.password=''; state.confirm=''; render(); };
+    const startExit = (delay=0)=>{
+      if(done || fader.classList.contains('out')) return;
+      setTimeout(()=>{
+        if(done) return;
+        fader.classList.add('out');
+        fader.addEventListener('transitionend', e=>{ if(e.propertyName==='opacity') goNext(); });
+        setTimeout(goNext, FADE+120);          // transitionend 백업
+      }, delay);
+    };
+    const onEnd = ()=> startExit(Math.max(HOLD, MIN_VISIBLE-(Date.now()-shownAt)));
+    v.addEventListener('ended', onEnd);
+    v.play().catch(onEnd);                     // 영상을 못 틀어도 흐름은 이어진다
+    setTimeout(()=>startExit(0), 6000);        // 안전장치
+    fader.addEventListener('click', ()=>startExit(0));   // 누르면 바로 넘어가기
+  }
+}
+
+document.getElementById('app').addEventListener('click', (e)=>{
+  const t = e.target.closest('[data-go],[data-age],[data-gender],[data-skintype],[data-scale],[data-toggle],[data-freq],#prev,#next,#submit,#signupSubmit,#remember');
+  if(!t) return;
+  const v = p();
+
+  if(t.dataset.go){
+    const go = t.dataset.go;
+    if(go==='reset'){ location.reload(); return; }
+    if(go==='onboarding'){ state.screen='onboarding'; state.step=0; }
+    else state.screen = go;
+    return render();
+  }
+  if(t.id==='submit'){
+    state.username = document.getElementById('username').value.trim().toLowerCase();
+    state.password = document.getElementById('password').value;
+    if(!state.username){ state.loginError='아이디를 입력해주세요.'; return render(); }
+    if(!state.password){ state.loginError='비밀번호를 입력해주세요.'; return render(); }
+    if(accounts.get(state.username) !== state.password){
+      state.loginError='아이디 또는 비밀번호가 일치하지 않아요.'; return render();
+    }
+    state.loginError=''; state.loading=true; render();
+    setTimeout(()=>{ state.loading=false; state.screen='onboarding'; state.step=0; render(); }, 1600);
+    return;
+  }
+  if(t.id==='remember'){
+    state.username = document.getElementById('username').value.trim().toLowerCase();
+    state.password = document.getElementById('password').value;
+    state.remember = !state.remember;
+    return render();
+  }
+  if(t.id==='signupSubmit'){
+    state.username = document.getElementById('username').value.trim().toLowerCase();
+    state.password = document.getElementById('password').value;
+    state.confirm  = document.getElementById('confirm').value;
+    if(!/^[a-z0-9_]{4,24}$/.test(state.username)){ state.loginError='아이디 형식을 확인해주세요.'; return render(); }
+    if(!passwordOk(state.password)){ state.loginError='비밀번호 조건을 모두 채워주세요.'; return render(); }
+    if(state.password!==state.confirm){ state.loginError='비밀번호가 서로 달라요.'; return render(); }
+    if(accounts.has(state.username)){ state.loginError='이미 사용 중인 아이디예요. 다른 아이디를 써주세요.'; return render(); }
+    accounts.set(state.username, state.password);
+    state.loginError=''; state.loading=true; render();
+    setTimeout(()=>{ state.loading=false; state.screen='signupComplete'; render(); }, 1600);
+    return;
+  }
+  if(t.dataset.age){ v.ageRange = t.dataset.age; return render(); }
+  if(t.dataset.gender){ v.gender = t.dataset.gender; return render(); }
+  if(t.dataset.skintype){ v.skinType = t.dataset.skintype; return render(); }
+  if(t.dataset.scale){ v.skinCondition = Number(t.dataset.scale); return render(); }
+  if(t.dataset.freq){ v.trialFrequency = t.dataset.freq; return render(); }
+  if(t.dataset.toggle){
+    const f = t.dataset.toggle, val = t.dataset.value;
+    v[f] = v[f].includes(val) ? v[f].filter(x=>x!==val) : [...v[f], val];
+    return render();
+  }
+  if(t.id==='prev'){
+    const note = document.getElementById('avoidNote'); if(note) v.avoidNote = note.value;
+    if(state.step===0) state.screen='welcome'; else state.step--;
+    return render();
+  }
+  if(t.id==='next'){
+    const note = document.getElementById('avoidNote'); if(note) v.avoidNote = note.value;
+    if(state.step===STEPS.length-1) state.screen='complete';
+    else state.step++;
+    return render();
+  }
+});
+
+document.getElementById('app').addEventListener('input', (e)=>{
+  const id = e.target.id;
+  if(id==='username') state.username = e.target.value.trim().toLowerCase();
+  else if(id==='password') state.password = e.target.value;
+  else if(id==='confirm') state.confirm = e.target.value;
+  else return;
+
+  if(state.screen!=='signup') return;
+  const u = document.getElementById('uRules');
+  const pr = document.getElementById('pRules');
+  const ce = document.getElementById('cErr');
+  if(u) u.innerHTML = rulesHtml(usernameChecks(state.username));
+  if(pr) pr.innerHTML = rulesHtml(passwordChecks(state.password));
+  if(ce) ce.style.display = (state.confirm.length>0 && state.confirm!==state.password) ? '' : 'none';
+  // 고치는 중에 옛 에러 문구가 남아 있지 않도록
+  const fe = document.getElementById('fErr');
+  if(fe){ state.loginError=''; fe.style.display='none'; }
+});
+
+render();
+</script>
+</body>
+</html>

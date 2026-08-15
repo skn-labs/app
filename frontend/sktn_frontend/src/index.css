@@ -1,0 +1,80 @@
+@import 'tailwindcss';
+
+/* ────────────────────────────────────────────────────────────
+   디자인 토큰
+   피그마의 색/폰트/간격 값을 여기에만 옮겨두면
+   전체 화면에 한 번에 반영됩니다. (Tailwind v4 @theme)
+   ──────────────────────────────────────────────────────────── */
+@theme {
+  --color-ink: #0a0a0a; /* 기본 텍스트 / 주요 버튼 배경 */
+  --color-ink-muted: #8e8e93; /* 보조 설명 텍스트 */
+  --color-ink-faint: #c7c7cc; /* 비활성 텍스트 */
+  --color-line: #e5e5ea; /* 구분선 / 테두리 */
+  --color-field: #f2f2f7; /* 입력창 / 보조 버튼 배경 */
+  --color-surface: #ffffff;
+  --color-accent: #2f6bff; /* 선택 강조 (진행 표시 등) */
+  --color-danger: #ff3b30;
+  --color-kakao: #fee500;
+
+  --font-sans: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont,
+    system-ui, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+
+  --radius-card: 14px;
+  --radius-chip: 999px;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-[#1c1c1e] font-sans text-ink antialiased;
+    margin: 0;
+  }
+  button {
+    font: inherit;
+    color: inherit;
+  }
+  input {
+    font: inherit;
+  }
+  /* 모바일에서 탭 하이라이트 제거 */
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+@keyframes sktn-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@layer utilities {
+  /* 프로필 완성 화면이 사라진 뒤 메인창이 이어서 나타나는 효과 */
+  .fade-in {
+    animation: sktn-fade-in 500ms ease-out both;
+  }
+
+  /* 화면 전환 효과를 끄기로 설정한 사용자는 존중 */
+  @media (prefers-reduced-motion: reduce) {
+    .fade-in {
+      animation: none;
+    }
+  }
+
+  /* 숫자 휠(연령대 선택)에서 스크롤바 숨기기 */
+  .no-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .snap-y-mandatory {
+    scroll-snap-type: y mandatory;
+  }
+}
