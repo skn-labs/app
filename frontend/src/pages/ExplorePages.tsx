@@ -5,7 +5,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { api, ApiError } from '../lib/api'
 import { startChatPath } from '../lib/chat'
 import type { Product, ProductFact, ProductGuide, UserProduct } from '../lib/types'
-import { Button, EmptyState, ErrorState, Loading, ProductGlyph, Screen, SknMark, TopBar } from '../components/ui'
+import { Button, EmptyState, ErrorState, Loading, PageHeading, ProductGlyph, Screen, SknMark, StickyActionBar, TopBar } from '../components/ui'
 
 export function ExplorePage() {
   const navigate = useNavigate()
@@ -36,10 +36,10 @@ export function ExplorePage() {
   return <Screen>
     <TopBar title="탐색" right={<Link to="/my-products" className="whitespace-nowrap text-xs font-semibold text-muted">내 화장품</Link>}/>
     <div className="px-5 pt-6">
-      <h1 className="text-[28px] font-bold tracking-[-.045em]">다음에 써볼 제품</h1><p className="mt-2 text-sm leading-6 text-muted">인기 순위보다, 이전에 남긴 내 경험과<br/>비교하며 탐색해요.</p>
+      <PageHeading title="다음에 써볼 제품" description={<>인기 순위보다, 이전에 남긴 내 경험과<br/>비교하며 탐색해요.</>}/>
       <div className="sticky top-[calc(64px+env(safe-area-inset-top))] z-10 -mx-1 mt-5 bg-paper/95 px-1 py-3 backdrop-blur"><label className="flex h-12 items-center gap-3 rounded-2xl border border-line bg-white px-4 transition focus-within:border-accent focus-within:ring-4 focus-within:ring-accent-soft"><Search size={19} className="text-muted"/><input value={query} onChange={e => setQuery(e.target.value)} aria-label="제품 검색" enterKeyHint="search" autoComplete="off" placeholder="브랜드 또는 제품명" className="min-w-0 flex-1 bg-transparent text-sm outline-none"/>{searching && <span aria-label="검색 중" className="size-4 animate-spin rounded-full border-2 border-line border-t-accent"/>}{query && <button type="button" aria-label="검색어 지우기" onClick={() => setQuery('')} className="grid size-9 place-items-center rounded-full hover:bg-soft"><X size={17} className="text-muted"/></button>}</label></div>
       {!deferredQuery && contextualProduct && <section className="mb-7"><h2 className="text-sm font-bold">{hasPersonalContext ? '내 기록에서 다시 볼 제품' : '제품 정보부터 둘러보기'}</h2><div className="mt-3 grid grid-cols-2 gap-3"><Link to={`/products/${contextualProduct.id}`} className="rounded-[22px] border border-line bg-white p-4 transition hover:border-[#cfd4cc] active:scale-[.99]"><ProductGlyph category={contextualProduct.category} src={contextualProduct.imageUrl}/><p className="mt-3 text-[10px] font-semibold text-muted">{contextualProduct.brand}</p><h3 className="mt-1 line-clamp-2 text-sm font-bold leading-5">{contextualProduct.name}</h3><p className="mt-2 text-[10px] font-bold text-accent">{hasPersonalContext ? `내 기록 ${contextualProduct.personalRecordCount}건과 비교` : '제품 정보 살펴보기'}</p></Link><button type="button" onClick={openRecommendationChat} className="rounded-[22px] border border-[#d9ddff] bg-[#f8f8ff] p-4 text-left transition hover:border-[#bfc6f5] active:scale-[.99]"><div className="grid size-12 place-items-center rounded-2xl bg-accent-soft text-accent"><Sparkles size={20}/></div><p className="mt-4 text-[10px] font-semibold text-accent">SKN AI</p><h3 className="mt-1 text-sm font-bold leading-5">내 경험에서<br/>다음 제품 찾기</h3><p className="mt-2 text-[10px] text-muted">근거가 부족하면 그대로 알려드려요</p></button></div></section>}
-      <h2 className="mb-3 text-sm font-bold">{deferredQuery ? '검색 결과' : '전체 제품'}</h2>
+      <h2 className="mb-3 text-[15px] font-medium">{deferredQuery ? '검색 결과' : '전체 제품'}</h2>
       {products.isPending ? <Loading/> : products.isError && !productItems.length ? <ErrorState message={products.error.message} onRetry={() => products.refetch()}/> : productItems.length ? <><div className="space-y-2">{productItems.map(product => <ProductRow key={product.id} product={product}/>)}</div><div ref={loadMoreRef} className="grid min-h-24 place-items-center pb-4" aria-live="polite">{isFetchingNextPage ? <div className="flex items-center gap-2 text-xs text-muted"><span className="size-4 animate-spin rounded-full border-2 border-line border-t-accent"/>제품 더 불러오는 중</div> : products.isFetchNextPageError ? <button type="button" onClick={() => fetchNextPage()} className="rounded-full border border-line bg-white px-4 py-2 text-xs font-semibold">다시 불러오기</button> : !hasNextPage ? <p className="text-[11px] text-muted">{deferredQuery ? '검색된 제품을 모두 봤어요.' : '모든 제품을 봤어요.'}</p> : null}</div></> : <EmptyState icon={<Search/>} title="검색 결과가 없어요" body="브랜드나 제품명을 다시 확인해주세요." action={deferredQuery ? <Button variant="secondary" onClick={() => setQuery('')}>전체 제품 보기</Button> : undefined}/>}
     </div>
   </Screen>
@@ -103,14 +103,14 @@ export function ProductPage() {
         <div className="py-8"><ProductAiAction product={data} onClick={openProductChat}/></div>
       </div>
     </div>
-    <div className="safe-bottom fixed inset-x-0 bottom-0 z-20 mx-auto max-w-[430px] border-t border-line/70 bg-white/97 px-4 pb-4 pt-3 backdrop-blur-xl">
+    <StickyActionBar className="px-4 pb-4 pt-3">
       {added && <p className="mb-2 text-center text-[11px] font-semibold text-[#52722d]">내 화장품에 담았어요. 현재 루틴은 바뀌지 않아요.</p>}
       {add.error && <p className="mb-2 text-center text-[11px] font-semibold leading-5 text-danger">{add.error.message}</p>}
       {owned ? <div className="grid grid-cols-2 gap-2.5"><Button className="rounded-full border-0 bg-[#edf3ff]" variant="secondary" onClick={() => navigate('/my-products')}>내 화장품</Button><Button className="rounded-full bg-black" onClick={openProductChat}>{data.personalRecordCount > 0 ? '내 기록 비교' : 'AI에게 묻기'}</Button></div> : <div className="grid grid-cols-2 gap-2.5">
         <Button className="rounded-full border-0 bg-[#edf3ff]" variant="secondary" onClick={openProductChat} aria-label="AI에게 이 제품 물어보기">AI에게 묻기</Button>
         <Button className="rounded-full bg-black" disabled={add.isPending} onClick={() => add.mutate()}>{add.isPending ? '추가하는 중…' : '내 화장품 추가'}</Button>
       </div>}
-    </div>
+    </StickyActionBar>
   </Screen>
 }
 
@@ -231,7 +231,7 @@ export function ShelfPage() {
   if (products.isError || currentError) return <Screen><CatalogHeader onBack={() => navigate(-1)} onAdd={() => navigate('/explore')}/><ErrorState message={(products.error || currentError)?.message || '내 화장품을 불러오지 못했어요.'} onRetry={() => { products.refetch(); current.refetch() }}/></Screen>
   return <Screen className="bg-white">
     <CatalogHeader onBack={() => navigate(-1)} onAdd={() => navigate('/explore')}/>
-    <div className="px-5 pb-8"><h1 className="text-[31px] font-semibold tracking-[-.055em]">내가 가진 화장품</h1><p className="mt-2 text-[14px] text-[#8c8c8c]">루틴에 넣을 제품을 고를 수 있어요.</p>
+    <div className="px-5 pb-8"><PageHeading title="내가 가진 화장품" description="루틴에 넣을 제품을 고를 수 있어요."/>
       {!!products.data?.length && <div className="hide-scrollbar mt-8 flex gap-2 overflow-x-auto pb-1">{([['ALL',`전체 ${products.data.length}`],['ROUTINE',`현재 루틴 ${routineIds.size}`],['UNUSED',`아직 안 써봄 ${unusedCount}`]] as const).map(([value,label]) => <button type="button" aria-pressed={filter === value} key={value} onClick={() => setFilter(value)} className={`whitespace-nowrap rounded-full border px-4 py-2 text-[13px] font-medium ${filter === value ? 'border-black bg-black text-white' : 'border-[#cfe0ff] bg-white text-[#5f7396]'}`}>{label}</button>)}</div>}
       {products.data?.length ? filtered?.length ? <div className="mt-4 grid grid-cols-2 gap-3">{filtered.map(item => <ShelfCard key={item.id} item={item} inRoutine={routineIds.has(item.id)} onStart={() => {
         if (item.product) navigate(`/products/${item.product.id}`)
@@ -254,5 +254,5 @@ function ShelfEmpty({ filter, onAdd }: { filter: 'ALL' | 'ROUTINE' | 'UNUSED'; o
 }
 
 function CatalogHeader({ onBack, onAdd }: { onBack: () => void; onAdd: () => void }) {
-  return <header className="safe-top sticky top-0 z-30 grid min-h-[72px] shrink-0 grid-cols-3 items-center bg-white/95 px-5 backdrop-blur-xl"><button type="button" onClick={onBack} aria-label="뒤로" className="-ml-2 grid size-11 place-items-center justify-self-start rounded-full hover:bg-[#f5f8fc] active:scale-95"><ChevronLeft size={27}/></button><SknMark className="h-9 w-9 justify-self-center"/><button type="button" onClick={onAdd} aria-label="화장품 추가" className="grid size-11 place-items-center justify-self-end rounded-full bg-white shadow-[0_3px_12px_rgba(0,0,0,.09)] transition active:scale-95"><Plus size={22}/></button></header>
+  return <header className="safe-top sticky top-0 z-30 grid min-h-[72px] shrink-0 grid-cols-3 items-center bg-white/95 px-5 backdrop-blur-xl"><button type="button" onClick={onBack} aria-label="뒤로" className="-ml-2 grid size-11 place-items-center justify-self-start rounded-full transition hover:bg-soft active:scale-95"><ChevronLeft size={24}/></button><SknMark className="h-10 w-10 justify-self-center"/><button type="button" onClick={onAdd} aria-label="화장품 추가" className="grid size-11 place-items-center justify-self-end rounded-full border border-line bg-white shadow-[0_3px_12px_rgba(0,0,0,.06)] transition hover:bg-soft active:scale-95"><Plus size={21}/></button></header>
 }

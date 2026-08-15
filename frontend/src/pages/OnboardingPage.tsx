@@ -133,8 +133,8 @@ export function OnboardingPage({ auth }: { auth: Auth }) {
       </div>
       <header key={`heading-${current.key}`} className={`${direction === 'forward' ? 'animate-onboard-forward' : 'animate-onboard-back'} pt-6`}>
         {current.key === 'avoids' && <span className="mb-2 inline-flex rounded-full bg-[#f2f2f7] px-2.5 py-1 text-[10px] font-semibold text-[#8e8e93]">선택 사항</span>}
-        <h1 ref={heading} tabIndex={-1} className="text-[21px] font-bold leading-[1.4] tracking-[-.02em] outline-none">{current.title}</h1>
-        <p className="mt-2.5 text-[13px] leading-[1.6] text-[#8e8e93]">{current.subtitle}</p>
+        <h1 ref={heading} tabIndex={-1} className="text-[24px] font-medium leading-[1.35] tracking-[-.035em] outline-none">{current.title}</h1>
+        <p className="mt-2.5 text-[13px] leading-[1.65] text-[#73766f]">{current.subtitle}</p>
         <div aria-live="polite" className="mt-3 min-h-7">
           {selectionSummary && <span className="inline-flex max-w-full items-center gap-1.5 rounded-full bg-[#f2f2f7] px-3 py-1.5 text-[11px] font-semibold text-[#3a3a3c]"><Check size={12} strokeWidth={2.5}/><span className="truncate">{selectionSummary}</span></span>}
         </div>
@@ -154,7 +154,7 @@ export function OnboardingPage({ auth }: { auth: Auth }) {
       {complete.error && <p role="alert" className="mb-3 text-xs text-danger">{complete.error.message}</p>}
       <div className="safe-bottom -mx-1 flex shrink-0 gap-2 border-t border-[#f2f2f7] bg-white px-1 pt-3">
         <button type="button" aria-label="이전 단계" onClick={() => move(Math.max(0, step - 1), 'back')} disabled={step === 0 || complete.isPending} className="grid size-[52px] shrink-0 place-items-center rounded-full bg-[#f2f2f7] text-[#0a0a0a] transition active:scale-[.96] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:text-[#c7c7cc] disabled:active:scale-100"><ChevronLeft size={21}/></button>
-        <button type="button" disabled={!canProceed || complete.isPending} onClick={() => step === STEPS.length - 1 ? complete.mutate() : move(step + 1, 'forward')} className="flex h-[52px] flex-1 items-center justify-center gap-1.5 rounded-full bg-[#0a0a0a] px-5 text-[15px] font-semibold text-white shadow-[0_8px_20px_rgba(0,0,0,.12)] transition active:scale-[.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:bg-[#e5e5ea] disabled:text-[#a1a1a6] disabled:shadow-none disabled:active:scale-100">{complete.isPending ? <><LoaderCircle size={17} className="animate-spin"/>프로필 저장 중…</> : step === STEPS.length - 1 ? <>프로필 완성하기<ChevronRight size={17}/></> : <>{optionalEmpty ? '건너뛰기' : '다음'}<ChevronRight size={17}/></>}</button>
+        <button type="button" disabled={!canProceed || complete.isPending} onClick={() => step === STEPS.length - 1 ? complete.mutate() : move(step + 1, 'forward')} className="flex h-[52px] flex-1 items-center justify-center gap-1.5 rounded-full bg-[#0a0a0a] px-5 text-[15px] font-medium text-white shadow-[0_8px_20px_rgba(0,0,0,.12)] transition active:scale-[.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:bg-[#e5e5ea] disabled:text-[#a1a1a6] disabled:shadow-none disabled:active:scale-100">{complete.isPending ? <><LoaderCircle size={17} className="animate-spin"/>프로필 저장 중…</> : step === STEPS.length - 1 ? <>프로필 완성하기<ChevronRight size={17}/></> : <>{optionalEmpty ? '건너뛰기' : '다음'}<ChevronRight size={17}/></>}</button>
       </div>
     </div>
     <PrototypeHomeIndicator/>
@@ -200,14 +200,14 @@ function GenderPicker({ value, onChange }: { value: DraftProfile['gender']; onCh
   return <div role="radiogroup" aria-label="성별" className="grid grid-cols-2 gap-3 pt-2">
     {GENDERS.map(([code, label]) => { const asset = `onboarding-gender-${code === 'MALE' ? 'male' : 'female'}`; const selected = value === code; return <button type="button" role="radio" aria-checked={selected} key={code} onClick={() => onChange(code)} className={`relative flex min-w-0 flex-col items-center gap-2 rounded-[24px] border bg-[#fff] px-2 pb-4 pt-2 transition-all duration-200 active:scale-[.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 ${selected ? 'border-[#0a0a0a] shadow-[0_10px_28px_rgba(0,0,0,.09)]' : 'border-[#e5e5ea]'}`}>
       <AssetMotion name={asset} poster={`/skn-assets/${asset}-poster.png`} loop playing={selected} className={`size-[128px] transition-all duration-200 ${value && !selected ? 'scale-[.94] opacity-40 grayscale-[.2]' : 'scale-100 opacity-100'}`}/>
-      <span className={`text-[15px] ${selected ? 'font-bold text-[#0a0a0a]' : 'font-medium text-[#636366]'}`}>{label}</span>
+      <span className={`text-[15px] font-medium ${selected ? 'text-[#0a0a0a]' : 'text-[#636366]'}`}>{label}</span>
       <span aria-hidden="true" className={`absolute right-3 top-3 grid size-6 place-items-center rounded-full border transition-all ${selected ? 'scale-100 border-[#0a0a0a] bg-[#0a0a0a] text-white' : 'scale-90 border-[#d1d1d6] bg-white text-transparent'}`}><Check size={13} strokeWidth={3}/></span>
     </button>})}
   </div>
 }
 
 function OptionList<T extends string>({ options, value, onChange }: { options: readonly (readonly [T, string])[]; value: T | null; onChange: (value: T) => void }) {
-  return <div role="radiogroup" aria-label="선택 항목" className="flex flex-col gap-2.5">{options.map(([code, label]) => { const selected = value === code; return <button type="button" role="radio" aria-checked={selected} key={code} onClick={() => onChange(code)} className={`flex min-h-[56px] w-full items-center justify-between rounded-[16px] border px-5 text-left text-[15px] transition-all duration-200 active:scale-[.99] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 ${selected ? 'border-[#0a0a0a] bg-white font-semibold text-[#0a0a0a] shadow-[0_7px_20px_rgba(0,0,0,.08)]' : 'border-transparent bg-[#f2f2f7] font-medium text-[#3a3a3c]'}`}><span>{label}</span><span aria-hidden="true" className={`grid size-6 place-items-center rounded-full border transition-all ${selected ? 'border-[#0a0a0a] bg-[#0a0a0a] text-white' : 'border-[#c7c7cc] bg-white text-transparent'}`}><Check size={13} strokeWidth={3}/></span></button>})}</div>
+  return <div role="radiogroup" aria-label="선택 항목" className="flex flex-col gap-2.5">{options.map(([code, label]) => { const selected = value === code; return <button type="button" role="radio" aria-checked={selected} key={code} onClick={() => onChange(code)} className={`interactive-card flex min-h-[58px] w-full items-center justify-between rounded-[18px] border px-5 text-left text-[15px] font-medium ${selected ? 'border-[#0a0a0a] bg-white text-[#0a0a0a] shadow-[0_7px_20px_rgba(0,0,0,.07)]' : 'border-transparent bg-[#f2f4ef] text-[#3a3a3c]'}`}><span>{label}</span><span aria-hidden="true" className={`grid size-6 place-items-center rounded-full border transition-all ${selected ? 'border-[#0a0a0a] bg-[#0a0a0a] text-white' : 'border-[#c7c7cc] bg-white text-transparent'}`}><Check size={13} strokeWidth={3}/></span></button>})}</div>
 }
 
 function ConditionScale({ value, onChange }: { value: number | null; onChange: (value: number) => void }) {
@@ -227,7 +227,7 @@ function ChipGroups({ groups, selected, onToggle }: { groups: readonly { title: 
     return <section key={group.title}><div className="mb-2.5 flex items-center justify-between"><h2 className="text-[13px] font-semibold text-[#636366]">{group.title}</h2><span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold transition-colors ${groupCount > 0 ? 'bg-[#0a0a0a] text-white' : 'bg-transparent text-transparent'}`}>{groupCount}개</span></div><div className="flex flex-wrap gap-2">{group.options.map(option => {
       const value = chipValue(option)
       const selectedOption = selected.includes(value)
-      return <button type="button" aria-pressed={selectedOption} key={`${group.title}-${value}`} onClick={() => onToggle(value)} className={`inline-flex min-h-11 items-center rounded-full border px-4 py-2 text-sm transition-all duration-200 active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 ${selectedOption ? 'border-[#0a0a0a] bg-[#0a0a0a] font-semibold text-white shadow-[0_5px_14px_rgba(0,0,0,.1)]' : 'border-transparent bg-[#f2f2f7] font-medium text-[#3a3a3c]'}`}>{selectedOption && <Check aria-hidden="true" size={13} strokeWidth={3} className="mr-1.5"/>}{chipLabel(option)}</button>
+      return <button type="button" aria-pressed={selectedOption} key={`${group.title}-${value}`} onClick={() => onToggle(value)} className={`inline-flex min-h-11 items-center rounded-full border px-4 py-2 text-sm font-medium transition-all duration-200 active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 ${selectedOption ? 'border-[#0a0a0a] bg-[#0a0a0a] text-white shadow-[0_5px_14px_rgba(0,0,0,.08)]' : 'border-transparent bg-[#f2f4ef] text-[#3a3a3c]'}`}>{selectedOption && <Check aria-hidden="true" size={13} strokeWidth={3} className="mr-1.5"/>}{chipLabel(option)}</button>
     })}</div></section>
   })}</div>
 }

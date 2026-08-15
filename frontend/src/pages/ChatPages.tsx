@@ -26,8 +26,8 @@ export function AiLandingPage() {
     <AiHeader onBack={() => navigate(-1)}/>
     <div className="hide-scrollbar flex-1 overflow-y-auto px-9 pb-8 pt-10">
       <AiMotion size="hero"/>
-      <h1 className="mt-7 text-[30px] font-semibold leading-[1.2] tracking-[-.055em]">무엇이 궁금하신가요?</h1>
-      <p className="mt-3 max-w-[320px] text-[14px] leading-[1.45] text-[#8c8c8c]">AI는 제품의 적합성을 판정하지 않아요.<br/>나의 취향과 제품 정보를 바탕으로 다음 선택을 도와드려요.</p>
+      <h1 className="page-title mt-7">무엇이 궁금하신가요?</h1>
+      <p className="supporting-copy mt-3 max-w-[320px]">AI는 제품의 적합성을 판정하지 않아요.<br/>나의 취향과 제품 정보를 바탕으로 다음 선택을 도와드려요.</p>
     </div>
     <Composer value={text} onChange={setText} onSubmit={submit} pending={false} suggestions={INITIAL_PROMPTS.map(item => item.label)} onSuggestion={label => { if (label === '제품 검색') { navigate('/ai/search'); return } const item = INITIAL_PROMPTS.find(prompt => prompt.label === label); if (item) submit(item.text, item.mode) }} placeholder="내 화장품 경험에 대해서 물어보세요"/>
   </Screen>
@@ -46,7 +46,7 @@ export function ProductSearchPage() {
     <AiHeader onBack={() => navigate('/ai')}/>
     <div className="hide-scrollbar flex-1 overflow-y-auto px-5 pb-8 pt-5">
       <p className="text-[12px] font-semibold text-[#68708a]">제품 비교 시작하기</p>
-      <h1 className="mt-2 text-[27px] font-semibold leading-tight tracking-[-.05em]">어떤 제품이 궁금한가요?</h1>
+      <h1 className="page-title mt-2">어떤 제품이 궁금한가요?</h1>
       <p className="mt-2 text-[13px] leading-5 text-[#7c8087]">정확한 제품과 버전을 고르면 현재 루틴·과거 경험과 함께 살펴봐요.</p>
       <label className="mt-6 flex h-[58px] items-center gap-3 rounded-[19px] border border-[#dce4f4] bg-[#f7f9fd] px-4 focus-within:border-[#91a8e8] focus-within:bg-white focus-within:ring-4 focus-within:ring-[#eaf0ff]"><Search size={20} className="shrink-0 text-[#6d7582]"/><input autoFocus value={query} onChange={event => setQuery(event.target.value)} placeholder="브랜드 또는 제품명" className="min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-[#a4a9b0]"/>{query && <button type="button" onClick={() => setQuery('')} aria-label="검색어 지우기" className="grid size-8 place-items-center rounded-full bg-white text-[#777d85]"><X size={15}/></button>}</label>
       <section className="mt-7" aria-live="polite"><div className="mb-3 flex items-center justify-between"><p className="text-[12px] font-semibold text-[#646a72]">{deferredQuery ? `'${deferredQuery}' 검색 결과` : '내 화장품을 먼저 보여드려요'}</p>{products.data && <span className="text-[11px] text-[#9a9fa5]">{products.data.items.length}개</span>}</div>{products.isPending ? <ProductResultsSkeleton/> : products.isError ? <div className="rounded-[20px] bg-[#fff5f5] p-5 text-center"><p className="text-sm font-semibold">제품을 불러오지 못했어요</p><button type="button" onClick={() => products.refetch()} className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-danger"><RefreshCw size={14}/>다시 불러오기</button></div> : products.data?.items.length ? <div className="space-y-2.5">{products.data.items.map(product => <ProductSearchResult key={product.id} product={product} onSelect={() => selectProduct(product)}/>)}</div> : <div className="rounded-[22px] bg-[#f7f8fa] px-5 py-10 text-center"><PackageSearch className="mx-auto text-[#9ba1aa]"/><p className="mt-3 text-sm font-semibold">일치하는 제품이 없어요</p><p className="mt-1 text-xs leading-5 text-[#858a91]">제품명의 일부나 브랜드명으로 다시 찾아보세요.</p></div>}</section>
@@ -137,7 +137,7 @@ function Composer({ value, onChange, onSubmit, pending, suggestions, placeholder
       const caution = isCautionSuggestion(suggestion)
       return <button type="button" key={suggestion} disabled={pending} onClick={() => (onSuggestion || onSubmit)(suggestion)} className={`inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full border px-4 py-2.5 text-[14px] font-medium transition active:scale-[.98] disabled:opacity-50 ${caution ? 'border-[#efcaca] bg-white text-[#b44d4d]' : 'border-[#cfe0ff] bg-white text-black'}`}>{caution && <AlertCircle size={13}/>}<span>{suggestion}</span></button>
     })}</div>}
-    <form onSubmit={submit} className="flex items-end gap-2 rounded-[21px] bg-[#f5f8fc] p-1.5 pl-5 focus-within:ring-1 focus-within:ring-[#cfe0ff]"><textarea ref={inputRef} disabled={pending} rows={1} value={value} onChange={e => onChange(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); onSubmit(value) } }} placeholder={placeholder} aria-label="AI에게 메시지 보내기" className="max-h-28 min-h-12 flex-1 resize-none overflow-y-auto bg-transparent py-3 text-[14px] leading-5 outline-none placeholder:text-[#b4b7bb] disabled:cursor-wait"/><button type="submit" disabled={pending || !value.trim()} aria-label="보내기" className="grid size-11 shrink-0 place-items-center rounded-full text-black transition active:scale-95 disabled:opacity-35"><Send size={22} strokeWidth={1.8}/></button></form>
+    <form onSubmit={submit} className="field-control flex items-end gap-2 rounded-[21px] p-1.5 pl-5"><textarea ref={inputRef} disabled={pending} rows={1} value={value} onChange={e => onChange(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); onSubmit(value) } }} placeholder={placeholder} aria-label="AI에게 메시지 보내기" className="max-h-28 min-h-12 flex-1 resize-none overflow-y-auto bg-transparent py-3 text-[14px] leading-5 outline-none disabled:cursor-wait"/><button type="submit" disabled={pending || !value.trim()} aria-label="보내기" className="grid size-11 shrink-0 place-items-center rounded-full bg-white text-black shadow-sm transition active:scale-95 disabled:bg-transparent disabled:opacity-35 disabled:shadow-none"><Send size={21} strokeWidth={1.8}/></button></form>
   </div>
 }
 
@@ -146,9 +146,9 @@ function AiHeader({ onBack }: { onBack?: () => void }) {
   const conversations = useQuery({ queryKey: ['conversations'], queryFn: api.conversations, enabled: historyOpen })
   return <>
     <header className="safe-top z-30 grid min-h-[72px] shrink-0 grid-cols-3 items-center bg-white/95 px-5 backdrop-blur-xl">
-      {onBack ? <button type="button" onClick={onBack} aria-label="뒤로" className="-ml-2 grid size-11 place-items-center justify-self-start rounded-full hover:bg-[#f5f8fc] active:scale-95"><ChevronLeft size={27}/></button> : <span/>}
-      <SknMark className="h-9 w-9 justify-self-center"/>
-      <button type="button" onClick={() => setHistoryOpen(true)} aria-label="최근 AI 대화" className="-mr-2 grid size-11 place-items-center justify-self-end rounded-full hover:bg-[#f5f8fc] active:scale-95"><History size={22}/></button>
+      {onBack ? <button type="button" onClick={onBack} aria-label="뒤로" className="-ml-2 grid size-11 place-items-center justify-self-start rounded-full transition hover:bg-soft active:scale-95"><ChevronLeft size={24}/></button> : <span/>}
+      <SknMark className="h-10 w-10 justify-self-center"/>
+      <button type="button" onClick={() => setHistoryOpen(true)} aria-label="최근 AI 대화" className="-mr-2 grid size-11 place-items-center justify-self-end rounded-full transition hover:bg-soft active:scale-95"><History size={21}/></button>
     </header>
     {historyOpen && <AiHistory conversations={conversations.data || []} loading={conversations.isPending} error={conversations.error?.message} onRetry={() => conversations.refetch()} onClose={() => setHistoryOpen(false)}/>}
   </>

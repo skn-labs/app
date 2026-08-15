@@ -1,3 +1,4 @@
+@import "pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css";
 @import "tailwindcss";
 
 @theme {
@@ -10,30 +11,41 @@
   --color-accent-soft: #eef0ff;
   --color-lime: #dff5a7;
   --color-danger: #d65454;
+  --color-canvas: #fff;
+  --color-surface-subtle: #f7f8f5;
+  --color-surface-blue: #f6f9ff;
 }
 
 :root {
   color: #171816;
   background: #fff;
-  font-family: Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", "Segoe UI", sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  letter-spacing: -.011em;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color-scheme: light;
 }
 
 * { box-sizing: border-box; }
 html, body { width: 100%; height: 100%; overflow: hidden; background: #fff; }
-body { margin: 0; min-width: 320px; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; min-width: 320px; font-weight: 400; }
 button, input, textarea { font: inherit; }
 input, textarea, select { min-width: 0; }
 button, a { -webkit-tap-highlight-color: transparent; }
 button { touch-action: manipulation; }
 button:enabled, a[href] { cursor: pointer; }
 :focus-visible {
-  outline: 2px solid #171816;
-  outline-offset: 3px;
+  outline: 2px solid #5365f5;
+  outline-offset: 2px;
 }
 ::selection { background: #dce8ff; color: #171816; }
+input::placeholder, textarea::placeholder { color: #a5a8a2; opacity: 1; }
+button, a, input, textarea, select { transition-timing-function: cubic-bezier(.2, .75, .2, 1); }
 video {
   display: block;
   border: 0;
@@ -70,6 +82,70 @@ video:not([controls])::-webkit-media-controls { display: none !important; }
   width: 100%;
   max-width: 430px;
   margin-inline: auto;
+  background: #fff;
+}
+
+/* Figma의 12/14/16 본문과 24/30/36 제목 축을 제품 전역에서 재사용한다. */
+.display-title {
+  font-size: clamp(30px, 8.7vw, 36px);
+  font-weight: 500;
+  line-height: 1.12;
+  letter-spacing: -.045em;
+  text-wrap: balance;
+}
+.page-title {
+  font-size: clamp(26px, 7.4vw, 30px);
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: -.04em;
+  text-wrap: balance;
+}
+.section-title {
+  font-size: 17px;
+  font-weight: 500;
+  line-height: 1.35;
+  letter-spacing: -.02em;
+}
+.supporting-copy {
+  color: #73766f;
+  font-size: 14px;
+  line-height: 1.65;
+  letter-spacing: -.01em;
+}
+.surface-card {
+  border: 1px solid #e7e9e3;
+  border-radius: 22px;
+  background: #fff;
+  box-shadow: 0 5px 18px rgba(25, 31, 22, .045);
+}
+.soft-card {
+  border: 1px solid rgba(219, 227, 242, .9);
+  border-radius: 22px;
+  background: #f7f9fd;
+}
+.field-control {
+  border: 1px solid transparent;
+  border-radius: 16px;
+  background: #f2f4ef;
+  outline: none;
+}
+.field-control:focus-within,
+.field-control:focus {
+  border-color: #9aa8ff;
+  background: #fff;
+  box-shadow: 0 0 0 4px #eef0ff;
+}
+.interactive-card {
+  transition-property: border-color, background-color, box-shadow, color, opacity, transform;
+  transition-duration: 180ms;
+}
+.interactive-card:hover { border-color: #d4d8cf; }
+.interactive-card:active { transform: scale(.992); }
+.sticky-action-bar {
+  border-top: 1px solid rgba(231, 233, 227, .86);
+  background: rgba(255, 255, 255, .96);
+  box-shadow: 0 -10px 30px rgba(25, 31, 22, .035);
+  backdrop-filter: blur(18px);
 }
 
 .quick-login-panel { display: none; }
