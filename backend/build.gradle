@@ -32,8 +32,15 @@ dependencies {
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
+// 소스와 리소스는 모두 UTF-8 이다. 지정하지 않으면 JVM 플랫폼 기본 문자셋을 따라가서
+// 한국어 Windows(MS949) 에서만 한글 문자열이 깨지고, 리눅스 CI 는 통과하는 차이가 생긴다.
+tasks.withType(JavaCompile).configureEach {
+	options.encoding = 'UTF-8'
+}
+
 tasks.named('test') {
 	useJUnitPlatform()
+	defaultCharacterEncoding = 'UTF-8'
 }
 
 tasks.named('bootJar') {

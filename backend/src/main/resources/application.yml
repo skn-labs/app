@@ -15,6 +15,9 @@ spring:
     init:
       mode: always
       schema-locations: classpath:schema.sql
+      # schema.sql 은 UTF-8 이다. 지정하지 않으면 JVM 플랫폼 기본 문자셋으로 읽어서
+      # 한국어 Windows(MS949) 에서는 시드 문자열이 깨진 채로 들어간다.
+      encoding: UTF-8
   jackson:
     default-property-inclusion: non_null
   mvc:
