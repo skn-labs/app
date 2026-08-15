@@ -5,7 +5,7 @@ import { Link, useParams } from 'react-router-dom'
 import { api, ApiError } from '../lib/api'
 import { startChatPath } from '../lib/chat'
 import type { Routine } from '../lib/types'
-import { AppHeader, ErrorState, Loading, Screen } from '../components/ui'
+import { AppHeader, ErrorState, Loading, PageHeading, Screen } from '../components/ui'
 import routineCard1 from '../assets/figma/routine-card-1.webp'
 import routineCard2 from '../assets/figma/routine-card-2.webp'
 import routineCard3 from '../assets/figma/routine-card-3.webp'
@@ -49,10 +49,7 @@ export function RoutineListPage() {
   return <Screen className="bg-white">
     <AppHeader/>
     <div className="px-5 pt-4">
-      <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0"><h1 className="break-words text-[clamp(30px,9vw,36px)] font-medium leading-[1.08] tracking-[-.045em]">{auth.data?.displayName} 님의 루틴</h1><p className="mt-3 text-[14px] text-[#8e8e93]">현재·비교 기준 루틴 {routines.length}개</p></div>
-        <Link to="/routine/edit" aria-label="새 루틴 만들기" className="mt-1 grid size-12 shrink-0 place-items-center rounded-full bg-white shadow-[0_5px_18px_rgba(0,0,0,.12)] transition active:scale-95"><Plus size={23} strokeWidth={1.8}/></Link>
-      </div>
+      <PageHeading title={<>{auth.data?.displayName} 님의<br/>루틴</>} description={`현재·비교 기준 루틴 ${routines.length}개`} action={<Link to="/routine/edit" aria-label="새 루틴 만들기" className="mt-1 grid size-12 shrink-0 place-items-center rounded-full border border-line bg-white shadow-[0_5px_18px_rgba(0,0,0,.08)] transition active:scale-95"><Plus size={23} strokeWidth={1.8}/></Link>}/>
     </div>
 
     {routines.length === 0 ? <EmptyRoutineList/>
@@ -76,7 +73,7 @@ function RoutineCarouselCard({ routine, current, image, expanded, onExpand, onCo
     <h2 className="mt-8 text-[25px] font-medium leading-tight tracking-[-.035em]">{routine.name}</h2>
     <dl className="mt-8 space-y-3 text-[13px] leading-5"><div><dt className="inline text-[#8e8e93]">사용 시점&nbsp; | &nbsp;</dt><dd className="inline font-medium">{dayPartLabel(routine.dayPart)}</dd></div><div><dt className="inline text-[#8e8e93]">제품 구성&nbsp; | &nbsp;</dt><dd className="inline font-medium">{routine.items.length}개 제품 조합</dd></div><div><dt className="inline text-[#8e8e93]">현재 상태&nbsp; | &nbsp;</dt><dd className="inline font-medium">{statusLabel(routine, current)}</dd></div></dl>
     <p className="mt-5 line-clamp-2 text-[11px] leading-5 text-[#a1a1a6]">{routine.items.map(item => item.productName).join(' · ')}</p>
-    <Link to={`/routines/${routine.id}`} className="absolute inset-x-5 bottom-5 flex h-[52px] items-center justify-center rounded-full bg-[#0a0a0a] text-[15px] font-medium text-white transition active:scale-[.98]">세부 내용 보기</Link>
+    <Link to={`/routines/${routine.id}`} className="absolute inset-x-5 bottom-5 flex h-12 items-center justify-center rounded-full bg-[#0a0a0a] text-[15px] font-medium text-white transition active:scale-[.98]">세부 내용 보기</Link>
   </article>
 
   return <button data-routine-card type="button" onClick={onExpand} aria-expanded="false" aria-label={`${routine.name} 요약 보기`} className="relative h-[360px] w-[260px] shrink-0 snap-center overflow-hidden rounded-[22px] text-left shadow-[0_8px_26px_rgba(0,0,0,.12)] transition active:scale-[.99]">

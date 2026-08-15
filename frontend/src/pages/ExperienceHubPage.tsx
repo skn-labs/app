@@ -1,10 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
-import type { ReactNode } from 'react'
 import { ArrowRight, Clock3, History } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { api, ApiError } from '../lib/api'
 import type { Experience, Routine } from '../lib/types'
-import { AppHeader, Card, ErrorState, Loading, Screen } from '../components/ui'
+import { AppHeader, Card, ErrorState, Loading, PageHeading, Screen, SectionHeading } from '../components/ui'
 
 function isNotFound(error: unknown) {
   return error instanceof ApiError && error.status === 404
@@ -35,19 +34,17 @@ export function ExperienceHubPage() {
   return <Screen className="bg-white">
     <AppHeader/>
     <div className="px-5 pb-8 pt-3">
-      <p className="text-[12px] font-medium uppercase tracking-[.1em] text-[#8e8e93]">My Lab</p>
-      <h1 className="mt-2 text-[31px] font-semibold leading-[1.18] tracking-[-.05em]">써본 조건과 느낌을<br/>한 흐름으로 봐요.</h1>
-      <p className="mt-3 text-[13px] leading-5 text-[#777d88]">확인 중인 경험과 실제 사용 루틴을 구분하고,<br/>내가 남긴 기록을 시간순으로 연결합니다.</p>
+      <PageHeading eyebrow="MY LAB" title={<>써본 조건과 느낌을<br/>한 흐름으로 봐요.</>} description={<>확인 중인 경험과 실제 사용 루틴을 구분하고,<br/>내가 남긴 기록을 시간순으로 연결합니다.</>}/>
 
       <section className="mt-9" aria-labelledby="active-experience-title">
-        <p className="text-[11px] font-semibold text-[#5f7396]">7일 동안 사용감을 남기는 조합</p>
-        <h2 id="active-experience-title" className="mt-1.5 text-[20px] font-semibold tracking-[-.035em]">확인 중인 경험</h2>
+        <p className="text-[11px] font-medium text-[#5f7396]">7일 동안 사용감을 남기는 조합</p>
+        <h2 id="active-experience-title" className="mt-1.5 text-[20px] font-medium tracking-[-.035em]">확인 중인 경험</h2>
         {experience
           ? <ActiveExperienceCard experience={experience} onRecord={() => navigate(`/experiences/${experience.id}/record`)} onDiscomfort={() => navigate(`/experiences/${experience.id}/record?discomfort=1`)}/>
           : <Card className="mt-3 border-[#d9e6ff] bg-[#fbfdff] px-5 py-8 text-center">
-            <h3 className="text-[17px] font-semibold">지금 확인 중인 경험이 없어요</h3>
+            <h3 className="text-[17px] font-medium">지금 확인 중인 경험이 없어요</h3>
             <p className="mx-auto mt-3 max-w-[290px] text-[12px] leading-5 text-[#777d88]">{current.data ? '현재 루틴은 그대로 사용 중이에요. 조합을 바꾸면 새 경험 기록이 시작됩니다.' : '실제로 사용할 제품과 순서를 정하면 그 조건으로 경험 기록이 시작됩니다.'}</p>
-            <Link to="/routine/edit" className="mt-6 flex min-h-12 w-full items-center justify-center rounded-full bg-[#0a0a0a] px-5 text-sm font-semibold text-white">새 연구 시작하기</Link>
+            <Link to="/routine/edit" className="mt-6 flex min-h-12 w-full items-center justify-center rounded-full bg-[#0a0a0a] px-5 text-sm font-medium text-white">새 연구 시작하기</Link>
           </Card>}
       </section>
 
@@ -80,19 +77,15 @@ function ActiveExperienceCard({ experience, onRecord, onDiscomfort }: { experien
   return <Card className="mt-3 overflow-hidden border-[#cfe0ff] bg-white p-0 text-black shadow-[0_8px_28px_rgba(37,63,112,.07)]">
     <Link to={`/experiences/${experience.id}`} className="block p-5">
       <div className="flex items-center justify-between gap-3"><span className="rounded-full bg-black px-3 py-1 text-[11px] font-medium text-white">확인 중 · DAY {day}</span><span className="text-[11px] text-[#73766f]">{experience.reviewDue ? '오늘 돌아보기' : `${experience.daysUntilReview}일 뒤 돌아보기`}</span></div>
-      <h3 className="mt-5 text-xl font-semibold tracking-[-.03em]">{experience.title}</h3>
+      <h3 className="mt-5 text-xl font-medium tracking-[-.03em]">{experience.title}</h3>
       <p className="mt-2 line-clamp-1 text-xs text-[#73766f]">{experience.subtitle}</p>
       <div role="progressbar" aria-label={`7일 중 ${day}일`} aria-valuemin={1} aria-valuemax={7} aria-valuenow={day} className="mt-5 h-1.5 overflow-hidden rounded-full bg-[#edf3ff]"><div className="h-full rounded-full bg-black" style={{ width: `${day / 7 * 100}%` }}/></div>
     </Link>
     <div className="grid grid-cols-[1fr_auto] gap-2 border-t border-[#dce8ff] p-3">
-      <button type="button" onClick={onRecord} className="min-h-12 rounded-full bg-black px-4 text-sm font-semibold text-white">지금 느낌 남기기</button>
-      <button type="button" onClick={onDiscomfort} aria-label="피부 불편함 기록" className="min-h-12 rounded-full border border-[#efcaca] bg-white px-4 text-xs font-semibold text-[#b44d4d]">불편함</button>
+      <button type="button" onClick={onRecord} className="min-h-12 rounded-full bg-black px-4 text-sm font-medium text-white">지금 느낌 남기기</button>
+      <button type="button" onClick={onDiscomfort} aria-label="피부 불편함 기록" className="min-h-12 rounded-full border border-[#efcaca] bg-white px-4 text-xs font-medium text-[#b44d4d]">불편함</button>
     </div>
   </Card>
-}
-
-function SectionHeading({ eyebrow, title, id, action }: { eyebrow: string; title: string; id: string; action?: ReactNode }) {
-  return <div className="flex items-end justify-between gap-3"><div><p className="text-[11px] font-semibold tracking-[.08em] text-[#73766f]">{eyebrow}</p><h2 id={id} className="mt-1 text-xl font-semibold tracking-[-.035em]">{title}</h2></div>{action}</div>
 }
 
 function RoutineSummary({ routine, baseline = false }: { routine: Routine; baseline?: boolean }) {

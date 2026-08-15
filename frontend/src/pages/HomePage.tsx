@@ -24,14 +24,14 @@ export function HomePage() {
   return <Screen className="bg-white">
     <AppHeader/>
     <div className="px-5 pb-6">
-      <h1 className="mt-4 break-words text-[clamp(30px,9vw,36px)] font-medium leading-[1.08] tracking-[-.045em]">{data.displayName} 님</h1>
+      <h1 className="display-title mt-3 break-words">{data.displayName} 님</h1>
 
-      <div className="mt-8">
+      <div className="mt-6">
         {experience ? <ActiveRoutineCard experience={experience} onOpen={() => navigate(`/experiences/${experience.id}`)} onEnd={() => setEndOpen(true)}/>
           : <EmptyRoutineCard productCount={data.productCount}/>}
       </div>
 
-      <button type="button" onClick={() => navigate('/ai')} className="mt-4 flex min-h-[108px] w-full items-center gap-4 rounded-[22px] bg-[#050505] px-5 py-4 text-left text-white shadow-[0_8px_24px_rgba(0,0,0,.12)] transition active:scale-[.99]">
+      <button type="button" onClick={() => navigate('/ai')} className="interactive-card mt-4 flex min-h-[100px] w-full items-center gap-4 rounded-[22px] bg-[#050505] px-5 py-4 text-left text-white shadow-[0_8px_24px_rgba(0,0,0,.12)]">
         <div className="grid size-11 shrink-0 place-items-center text-[#dce6ff]"><Sparkles size={30} strokeWidth={1.45}/></div>
         <div className="min-w-0 flex-1"><p className="text-[12px] font-medium text-[#cdd0d6]">SKN AI에게 편하게 물어보세요.</p><p className="mt-1 text-[17px] font-medium leading-snug tracking-[-.02em]">피부에 대해 궁금한 게 있나요?</p></div>
         <ChevronRight size={24} className="shrink-0 text-white/75"/>
@@ -45,7 +45,7 @@ export function HomePage() {
         {data.patterns.length > 0 && <Link to="/records" className="mt-3 flex items-center justify-end gap-1 text-xs font-medium text-[#3a3a3c]">더보기<ChevronRight size={13}/></Link>}
       </section>
 
-      <button type="button" onClick={() => navigate('/explore')} className="mt-7 flex min-h-[96px] w-full items-center gap-4 rounded-[22px] border border-[#d9e6ff] bg-[#fbfdff] px-5 py-4 text-left transition active:scale-[.99]">
+      <button type="button" onClick={() => navigate('/explore')} className="interactive-card mt-7 flex min-h-[92px] w-full items-center gap-4 rounded-[22px] border border-[#d9e6ff] bg-[#fbfdff] px-5 py-4 text-left">
         <Search size={31} strokeWidth={1.6} className="shrink-0 text-[#7892bb]"/>
         <div className="min-w-0 flex-1"><p className="text-[12px] text-[#5f7396]">검색해서 내 LAB에 등록해보세요.</p><p className="mt-1 text-[17px] font-medium tracking-[-.02em]">궁금한 제품이 있나요?</p></div>
         <ChevronRight size={23} className="shrink-0 text-[#7892bb]"/>
@@ -68,28 +68,28 @@ export function HomePage() {
 
 function ActiveRoutineCard({ experience, onOpen, onEnd }: { experience: NonNullable<Home['currentExperience']>; onOpen: () => void; onEnd: () => void }) {
   const day = Math.max(1, Math.min(7, experience.day))
-  return <section className="relative min-h-[270px] overflow-hidden rounded-[22px] shadow-[0_4px_18px_rgba(24,36,65,.12)]" aria-label={`현재 확인 중인 루틴, 7일 중 ${day}일`}>
+  return <section className="relative min-h-[220px] overflow-hidden rounded-[22px] shadow-[0_4px_18px_rgba(24,36,65,.11)]" aria-label={`현재 확인 중인 루틴, 7일 중 ${day}일`}>
     <img src={heroWave} alt="" aria-hidden className="absolute inset-0 size-full object-cover object-bottom"/>
     <div aria-hidden className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,.88)_0%,rgba(245,249,255,.58)_48%,rgba(224,235,255,.22)_100%)]"/>
-    <div className="relative flex min-h-[270px] flex-col p-5">
-      <div className="flex items-center justify-between"><h2 className="text-[16px] font-medium">현재 연구 중인 루틴</h2><p className="text-[16px] font-medium tabular-nums">DAY {day} / 7</p></div>
-      <div role="progressbar" aria-label={`7일 중 ${day}일`} aria-valuemin={1} aria-valuemax={7} aria-valuenow={day} className="mt-4 flex gap-2">{Array.from({ length: 7 }, (_, index) => <span key={index} className={`h-1 flex-1 rounded-full ${index < day ? 'bg-[#0a0a0a]' : 'bg-[#0a0a0a]/20'}`}/>)}</div>
+    <div className="relative flex min-h-[220px] flex-col p-[18px]">
+      <div className="flex items-center justify-between"><h2 className="text-[15px] font-medium">확인 중인 루틴</h2><p className="text-[14px] font-medium tabular-nums">DAY {day} / 7</p></div>
+      <div role="progressbar" aria-label={`7일 중 ${day}일`} aria-valuemin={1} aria-valuemax={7} aria-valuenow={day} className="mt-3 flex gap-1.5">{Array.from({ length: 7 }, (_, index) => <span key={index} className={`h-1 flex-1 rounded-full ${index < day ? 'bg-[#0a0a0a]' : 'bg-[#0a0a0a]/20'}`}/>)}</div>
       <div className="flex-1"/>
       <div className="grid grid-cols-2 gap-2">
-        <button type="button" onClick={onEnd} className="h-[52px] rounded-full border border-white/70 bg-white/72 text-[14px] font-medium backdrop-blur transition hover:bg-white active:scale-[.98]">연구 마치기</button>
-        <button type="button" onClick={onOpen} className="h-[52px] rounded-full bg-[#0a0a0a] text-[14px] font-semibold text-white shadow-sm transition hover:bg-black active:scale-[.98]">자세히 보기</button>
+        <button type="button" onClick={onEnd} className="h-12 rounded-full border border-white/70 bg-white/72 text-[14px] font-medium backdrop-blur transition hover:bg-white active:scale-[.98]">연구 마치기</button>
+        <button type="button" onClick={onOpen} className="h-12 rounded-full bg-[#0a0a0a] text-[14px] font-medium text-white shadow-sm transition hover:bg-black active:scale-[.98]">자세히 보기</button>
       </div>
     </div>
   </section>
 }
 
 function EmptyRoutineCard({ productCount }: { productCount: number }) {
-  return <section className="relative min-h-[220px] overflow-hidden rounded-[22px] shadow-[0_4px_18px_rgba(24,36,65,.12)]">
+  return <section className="relative min-h-[188px] overflow-hidden rounded-[22px] shadow-[0_4px_18px_rgba(24,36,65,.11)]">
     <img src={heroWave} alt="" aria-hidden className="absolute inset-0 size-full object-cover object-bottom"/>
     <div aria-hidden className="absolute inset-0 bg-white/38"/>
-    <div className="relative flex min-h-[220px] flex-col items-center justify-end px-5 pb-5 text-center">
-      <p className="mb-8 text-[15px] font-medium">현재 연구 중인 루틴이 없습니다.</p>
-      <Link to={productCount ? '/routine/edit' : '/explore'} className="flex h-[52px] w-full items-center justify-center gap-1 rounded-full border border-[#d4e2ff] bg-white/80 text-[16px] font-medium backdrop-blur transition active:scale-[.98]">새 연구 시작하기<ArrowRight size={17}/></Link>
+    <div className="relative flex min-h-[188px] flex-col items-center justify-end px-[18px] pb-[18px] text-center">
+      <p className="mb-5 text-[14px] font-medium">지금 확인 중인 루틴이 없어요.</p>
+      <Link to={productCount ? '/routine/edit' : '/explore'} className="flex h-12 w-full items-center justify-center gap-1 rounded-full border border-[#d4e2ff] bg-white/82 text-[15px] font-medium backdrop-blur transition active:scale-[.98]">새 연구 시작하기<ArrowRight size={17}/></Link>
     </div>
   </section>
 }

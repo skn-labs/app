@@ -5,7 +5,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { api, ApiError } from '../lib/api'
 import { startChatPath } from '../lib/chat'
 import type { ExperienceRecord, SkinProfile } from '../lib/types'
-import { AiBadge, AppHeader, BottomSheet, Button, Card, ErrorState, Loading, Screen, TopBar } from '../components/ui'
+import { AiBadge, AppHeader, BottomSheet, Button, Card, ErrorState, Loading, PageHeading, Screen, StickyActionBar, TopBar } from '../components/ui'
 
 const SKIN_TYPE_LABELS: Record<SkinProfile['skinType'], string> = {
   DRY: '건성',
@@ -67,8 +67,8 @@ export function RecordsPage() {
       </div>
 
       <section className="mt-6 rounded-[22px] bg-[#f6f9fe] p-5" aria-labelledby="archive-summary-title">
-        <p className="text-[11px] font-semibold tracking-[.08em] text-[#5f7396]">MY SKINCARE ARCHIVE</p>
-        <h2 id="archive-summary-title" className="mt-2 text-[20px] font-semibold tracking-[-.03em]">{records.data.length ? `${records.data.length}개의 경험을 다음 탐색에 연결해요` : '첫 경험부터 차곡차곡 보관해요'}</h2>
+        <p className="text-[11px] font-medium tracking-[.08em] text-[#5f7396]">MY SKINCARE ARCHIVE</p>
+        <h2 id="archive-summary-title" className="mt-2 text-[20px] font-medium tracking-[-.03em]">{records.data.length ? `${records.data.length}개의 경험을 다음 탐색에 연결해요` : '첫 경험부터 차곡차곡 보관해요'}</h2>
         <p className="mt-2 text-xs leading-5 text-[#646b76]">원문 기록과 AI 해석을 구분하고, 반복된 경험만 패턴으로 보여줍니다.</p>
       </section>
 
@@ -148,11 +148,11 @@ export function PatternPage() {
   const openPatternChat = () => navigate(startChatPath('PATTERN', `“${data.title}” 패턴을 지지하는 기록과 반대하는 기록을 함께 설명해줘.`))
   return <Screen nav={false} className="pb-28">
     <TopBar title="내 패턴" back/>
-    <div className="px-5 py-7"><AiBadge/><h1 className="mt-4 text-[27px] font-bold leading-9 tracking-[-.045em]">{data.title}</h1><p className="mt-4 text-sm leading-6 text-muted">{data.summary}</p><div className="mt-5 flex gap-2"><span className="rounded-full bg-[#ecf5d5] px-3 py-1.5 text-xs font-bold">지지 {data.supportingCount}</span><span className="rounded-full bg-[#f6eaea] px-3 py-1.5 text-xs font-bold">반대 {data.contradictingCount}</span></div><p className="mt-3 text-[11px] leading-5 text-muted">{data.confidenceNote}</p>
+    <div className="px-5 py-7"><AiBadge/><PageHeading className="mt-4" title={data.title} description={data.summary}/><div className="mt-5 flex gap-2"><span className="rounded-full bg-[#ecf5d5] px-3 py-1.5 text-xs font-medium">지지 {data.supportingCount}</span><span className="rounded-full bg-[#f6eaea] px-3 py-1.5 text-xs font-medium">반대 {data.contradictingCount}</span></div><p className="mt-3 text-[11px] leading-5 text-muted">{data.confidenceNote}</p>
       <section className="mt-9"><h2 className="text-lg font-bold">연결된 경험</h2><div className="mt-3 space-y-3">{data.evidence.map(item => <Card key={item.recordId}><div className="flex items-center justify-between"><span className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${item.polarity === 'SUPPORTS' ? 'bg-[#ecf5d5]' : 'bg-[#f6eaea]'}`}>{item.polarity === 'SUPPORTS' ? '지지하는 기록' : '다른 경험'}</span><span className="text-[10px] text-muted">{formatDate(item.createdAt)}</span></div><h3 className="mt-3 text-sm font-bold">{item.productName}</h3><p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-muted">“{item.note}”</p></Card>)}</div></section>
       <div className="mt-7 rounded-2xl bg-soft p-4 text-xs leading-5 text-muted">이 패턴은 피부 타입이나 성분 효과 판정이 아니에요. 내가 남긴 경험 사이의 반복과 차이를 보여줍니다.</div>
     </div>
-    <div className="safe-bottom fixed inset-x-0 bottom-0 z-20 mx-auto max-w-[430px] border-t border-line bg-white/96 p-4 backdrop-blur"><Button onClick={openPatternChat} className="w-full">이 패턴을 AI와 살펴보기<Sparkles size={17}/></Button></div>
+    <StickyActionBar><Button onClick={openPatternChat} className="w-full">이 패턴을 AI와 살펴보기<Sparkles size={17}/></Button></StickyActionBar>
   </Screen>
 }
 
