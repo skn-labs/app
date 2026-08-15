@@ -2,8 +2,11 @@ package app.skn.api;
 
 import app.skn.api.ApiModels.PreferenceRequest;
 import app.skn.api.ApiModels.PreferenceView;
+import app.skn.api.ApiModels.SkinProfileRequest;
+import app.skn.api.ApiModels.SkinProfileView;
 import app.skn.auth.AuthRepository;
 import app.skn.auth.CurrentUser;
+import app.skn.common.ApiException;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -42,5 +45,23 @@ public class PreferenceController {
                 request.avoids() == null ? List.of() : request.avoids(),
                 request.note());
         return repository.findPreference(userId);
+    }
+
+    @GetMapping("/me/skin-profile")
+    SkinProfileView skinProfile() {
+        return repository.findSkinProfile(currentUser.id())
+                .orElseThrow(() -> ApiException.notFound("저장된 피부 프로필이 없어요."));
+    }
+
+    @PutMapping("/me/skin-profile")
+    SkinProfileView replaceSkinProfile(@Valid @RequestBody SkinProfileRequest request) {
+        long userId = currentUser.id();
+        repository.saveSkinProfile(userId, request);
+        repository.savePreference(
+                userId,
+                request.textures().stream().distinct().limit(12).toList(),
+                request.avoids().stream().distinct().limit(12).toList(),
+                request.avoidNote());
+        return repository.findSkinProfile(userId).orElseThrow();
     }
 }

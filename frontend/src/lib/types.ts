@@ -2,6 +2,17 @@ export type Auth = { userId: number; username: string; displayName: string; demo
 export type QuickAccount = { username: string; displayName: string }
 /** ONB-01. 온보딩에서 선택적으로 받는 사용감 선호. 비어 있는 상태가 정상이다. */
 export type Preference = { likes: string[]; avoids: string[]; note: string }
+export type SkinProfile = {
+  ageRange: '10S' | '20S' | '30S' | '40S' | '50S' | '60_PLUS';
+  gender: 'MALE' | 'FEMALE';
+  skinType: 'DRY' | 'OILY' | 'COMBINATION' | 'NORMAL' | 'UNSURE';
+  skinCondition: number;
+  concerns: string[];
+  textures: string[];
+  avoids: string[];
+  avoidNote: string;
+  trialFrequency: 'RARELY' | 'EVERY_FEW_MONTHS' | 'ONE_OR_TWO_MONTHLY' | 'THREE_PLUS_MONTHLY';
+}
 
 export type ProductGuide = {
   summary: string;
@@ -104,5 +115,5 @@ export type Conversation = {
 }
 
 export type SavedRecord = { record: ExperienceRecord; linkedPatternId?: number; rescueSuggested: boolean }
-export type OnboardingResult = { user: Auth; experience?: Experience }
+export type OnboardingResult = { user: Auth; profile: SkinProfile }
 export type Problem = { detail?: string; code?: string; status?: number; retryable?: boolean }

@@ -4,6 +4,9 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 import java.util.List;
@@ -271,11 +274,33 @@ public final class ApiModels {
     ) {}
 
     public record CompleteOnboardingRequest(
-            @Size(max = 8) List<@NotNull Long> productIds,
-            @NotBlank String entryChoice,
-            Long focusProductId,
-            @Valid PreferenceRequest preferences,
+            @NotNull @Valid SkinProfileRequest profile,
             @NotBlank String clientRequestId
+    ) {}
+
+    /** 사용자가 prototype_2의 8단계에서 직접 선택한 피부 프로필이다. */
+    public record SkinProfileRequest(
+            @NotBlank @Pattern(regexp = "10S|20S|30S|40S|50S|60_PLUS") String ageRange,
+            @NotBlank @Pattern(regexp = "MALE|FEMALE") String gender,
+            @NotBlank @Pattern(regexp = "DRY|OILY|COMBINATION|NORMAL|UNSURE") String skinType,
+            @NotNull @Min(1) @Max(5) Integer skinCondition,
+            @NotEmpty @Size(max = 20) List<@NotBlank @Size(max = 40) String> concerns,
+            @NotEmpty @Size(max = 20) List<@NotBlank @Size(max = 40) String> textures,
+            @NotNull @Size(max = 20) List<@NotBlank @Size(max = 40) String> avoids,
+            @Size(max = 300) String avoidNote,
+            @NotBlank @Pattern(regexp = "RARELY|EVERY_FEW_MONTHS|ONE_OR_TWO_MONTHLY|THREE_PLUS_MONTHLY") String trialFrequency
+    ) {}
+
+    public record SkinProfileView(
+            String ageRange,
+            String gender,
+            String skinType,
+            int skinCondition,
+            List<String> concerns,
+            List<String> textures,
+            List<String> avoids,
+            String avoidNote,
+            String trialFrequency
     ) {}
 
     /**
@@ -296,6 +321,6 @@ public final class ApiModels {
 
     public record OnboardingResult(
             AuthView user,
-            ExperienceView experience
+            SkinProfileView profile
     ) {}
 }

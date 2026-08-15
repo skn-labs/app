@@ -41,6 +41,18 @@ SKN의 모든 애셋은 하나의 시각 언어를 공유한다: **맑은 물방
 
 ---
 
+## 온보딩 구체 — `assets/온보딩/`
+
+`sktn-prototype_2.html`에 내장되어 전달된 8단계 온보딩 전용 구체다. 모두 402×402 RGB PNG이며 흰 배경을 포함한다.
+
+| 파일 | 형태 | 용도 |
+| --- | --- | --- |
+| `orb.png` | 거의 투명한 유리·세럼 구체에 옅은 노랑·분홍·파랑 광택 | 온보딩 시작 화면. 배포 복사본은 `frontend/public/skn-assets/onboarding-orb.png`. |
+| `orb-male.png` | 같은 구체에 옅은 파란색을 입힌 변형 | 성별 선택의 남성 항목. 배포 복사본은 `frontend/public/skn-assets/onboarding-gender-male.png`. |
+| `orb-female.png` | 같은 구체에 옅은 분홍색을 입힌 변형 | 성별 선택의 여성 항목. 배포 복사본은 `frontend/public/skn-assets/onboarding-gender-female.png`. |
+
+---
+
 ## 제품 이미지 — `assets/제품 이미지/`
 
 | 파일 | 형태 | 크기·포맷 | 배경 | 용도 |

@@ -12,6 +12,8 @@ import java.util.Optional;
 
 import app.skn.api.ApiModels.PreferenceView;
 import app.skn.api.ApiModels.QuickAccountView;
+import app.skn.api.ApiModels.SkinProfileRequest;
+import app.skn.api.ApiModels.SkinProfileView;
 
 @Repository
 public class AuthRepository {
@@ -99,6 +101,48 @@ public class AuthRepository {
                         readList(rs.getString("texture_avoids_json")),
                         rs.getString("note")), userId);
         return rows.isEmpty() ? new PreferenceView(List.of(), List.of(), "") : rows.get(0);
+    }
+
+    public void saveSkinProfile(long userId, SkinProfileRequest profile) {
+        jdbc.update("""
+                INSERT INTO user_skin_profile(
+                    user_id, age_range, gender, skin_type, skin_condition,
+                    concerns_json, textures_json, avoids_json, avoid_note,
+                    trial_frequency, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                ON CONFLICT(user_id) DO UPDATE SET
+                    age_range = excluded.age_range,
+                    gender = excluded.gender,
+                    skin_type = excluded.skin_type,
+                    skin_condition = excluded.skin_condition,
+                    concerns_json = excluded.concerns_json,
+                    textures_json = excluded.textures_json,
+                    avoids_json = excluded.avoids_json,
+                    avoid_note = excluded.avoid_note,
+                    trial_frequency = excluded.trial_frequency,
+                    updated_at = excluded.updated_at
+                """, userId, profile.ageRange(), profile.gender(), profile.skinType(),
+                profile.skinCondition(), writeList(profile.concerns()), writeList(profile.textures()),
+                writeList(profile.avoids()), profile.avoidNote() == null ? "" : profile.avoidNote().trim(),
+                profile.trialFrequency());
+    }
+
+    public Optional<SkinProfileView> findSkinProfile(long userId) {
+        return jdbc.query("""
+                SELECT age_range, gender, skin_type, skin_condition,
+                       concerns_json, textures_json, avoids_json, avoid_note, trial_frequency
+                  FROM user_skin_profile
+                 WHERE user_id = ?
+                """, (rs, index) -> new SkinProfileView(
+                rs.getString("age_range"),
+                rs.getString("gender"),
+                rs.getString("skin_type"),
+                rs.getInt("skin_condition"),
+                readList(rs.getString("concerns_json")),
+                readList(rs.getString("textures_json")),
+                readList(rs.getString("avoids_json")),
+                rs.getString("avoid_note"),
+                rs.getString("trial_frequency")), userId).stream().findFirst();
     }
 
     private String writeList(List<String> values) {

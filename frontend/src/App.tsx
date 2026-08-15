@@ -11,14 +11,15 @@ import { PatternPage, RecordsPage } from './pages/RecordsPages'
 import { RoutineDetailPage, RoutineListPage } from './pages/RoutinesPages'
 import { ExperienceHubPage } from './pages/ExperienceHubPage'
 import { DesktopQuickLogin } from './components/DesktopQuickLogin'
+import { PrototypePhone } from './components/PrototypeChrome'
 import { OnboardingPage } from './pages/OnboardingPage'
 
 export default function App() {
   const auth = useQuery({ queryKey: ['auth'], queryFn: api.me, retry: false })
   // 세션을 확인하는 동안 로고 모션을 보여준다. 스피너 자리를 대신할 뿐 흐름은 그대로다.
-  const content = auth.isPending ? <div className="mobile-shell grid h-full place-items-center bg-white">
+  const content = auth.isPending ? <PrototypePhone><div className="grid min-h-0 flex-1 place-items-center bg-white">
       <BrandMotion name="skn-wordmark-motion" poster="/skn-assets/skn-wordmark.png" alt="SKN" className="w-[62%] max-w-[280px] object-contain"/>
-    </div>
+    </div></PrototypePhone>
     : auth.isError ? <AuthPage />
     : !auth.data.onboardingCompleted ? <OnboardingPage auth={auth.data}/>
     : <Routes>

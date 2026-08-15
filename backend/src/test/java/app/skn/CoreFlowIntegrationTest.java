@@ -181,94 +181,69 @@ class CoreFlowIntegrationTest {
     }
 
     @Test
-    void onboardingSavesSelectedProductsStartsExperienceAndDoesNotRepeat() throws Exception {
+    void onboardingStoresPrototypeTwoProfileAndMarksAccountComplete() throws Exception {
         MockHttpSession session = signUpSession("onboarding_user");
         String request = """
-                {"productIds":[1,2],"entryChoice":"PRODUCT","focusProductId":1,
-                 "clientRequestId":"test-onboarding-product"}
+                {"profile":{"ageRange":"20S","gender":"FEMALE","skinType":"UNSURE",
+                  "skinCondition":3,"concerns":["건조함","민감함"],
+                  "textures":["가벼운","촉촉한"],"avoids":["향료"],
+                  "avoidNote":"에센셜 오일은 피하고 싶어요",
+                  "trialFrequency":"EVERY_FEW_MONTHS"},
+                 "clientRequestId":"prototype-two-onboarding"}
                 """;
 
         mvc.perform(post("/api/v1/auth/onboarding").session(session)
                         .contentType(MediaType.APPLICATION_JSON).content(request))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.user.onboardingCompleted").value(true))
-                .andExpect(jsonPath("$.experience.status").value("ACTIVE"))
-                .andExpect(jsonPath("$.experience.product.product.id").value(1));
-        mvc.perform(get("/api/v1/me/products").session(session))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(2));
-        mvc.perform(post("/api/v1/auth/onboarding").session(session)
-                        .contentType(MediaType.APPLICATION_JSON).content(request))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.experience.status").value("ACTIVE"));
-        mvc.perform(get("/api/v1/me/products").session(session))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(2));
-    }
+                .andExpect(jsonPath("$.profile.ageRange").value("20S"))
+                .andExpect(jsonPath("$.profile.skinCondition").value(3))
+                .andExpect(jsonPath("$.profile.concerns.length()").value(2));
 
-    @Test
-    void onboardingSkipsPreferenceWhenNothingIsChosen() throws Exception {
-        // ONB-01. 사용감 선호는 선택 항목이라 안 보내도 온보딩은 끝나야 한다.
-        MockHttpSession session = signUpSession("pref_skip_user");
-        mvc.perform(post("/api/v1/auth/onboarding").session(session)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"productIds":[],"entryChoice":"EXPLORE","clientRequestId":"pref-skip"}
-                                """))
+        mvc.perform(get("/api/v1/me/skin-profile").session(session))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.user.onboardingCompleted").value(true));
+                .andExpect(jsonPath("$.gender").value("FEMALE"))
+                .andExpect(jsonPath("$.trialFrequency").value("EVERY_FEW_MONTHS"));
 
         mvc.perform(get("/api/v1/me/preferences").session(session))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.likes.length()").value(0))
-                .andExpect(jsonPath("$.avoids.length()").value(0))
-                .andExpect(jsonPath("$.note").value(""));
+                .andExpect(jsonPath("$.likes[0]").value("가벼운"))
+                .andExpect(jsonPath("$.avoids[0]").value("향료"))
+                .andExpect(jsonPath("$.note").value("에센셜 오일은 피하고 싶어요"));
     }
 
     @Test
-    void onboardingRejectsPreferencesOutsideContractLimits() throws Exception {
-        MockHttpSession session = signUpSession("pref_limits_user");
+    void onboardingRejectsIncompletePrototypeTwoProfile() throws Exception {
+        MockHttpSession session = signUpSession("profile_limits_user");
         String request = """
-                {"productIds":[],"entryChoice":"EXPLORE",
-                 "preferences":{"likes":["%s"],"avoids":[],"note":"%s"},
-                 "clientRequestId":"pref-limits"}
-                """.formatted("x".repeat(41), "n".repeat(301));
+                {"profile":{"ageRange":"20S","gender":"FEMALE","skinType":"UNSURE",
+                  "skinCondition":7,"concerns":[],"textures":[],"avoids":[],
+                  "avoidNote":"","trialFrequency":"EVERY_FEW_MONTHS"},
+                 "clientRequestId":"profile-limits"}
+                """;
 
         mvc.perform(post("/api/v1/auth/onboarding").session(session)
                         .contentType(MediaType.APPLICATION_JSON).content(request))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
-                .andExpect(jsonPath("$.fieldErrors['preferences.likes[0]']").exists())
-                .andExpect(jsonPath("$.fieldErrors['preferences.note']").exists());
+                .andExpect(jsonPath("$.fieldErrors['profile.skinCondition']").exists())
+                .andExpect(jsonPath("$.fieldErrors['profile.concerns']").exists())
+                .andExpect(jsonPath("$.fieldErrors['profile.textures']").exists());
     }
 
     @Test
-    void onboardingStoresOptionalPreferenceAndKeepsItEditable() throws Exception {
-        MockHttpSession session = signUpSession("pref_user");
-        mvc.perform(post("/api/v1/auth/onboarding").session(session)
+    void skinProfileCanBeReplacedByItsOwner() throws Exception {
+        MockHttpSession session = signUpSession("profile_edit_user");
+        mvc.perform(put("/api/v1/me/skin-profile").session(session)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"productIds":[],"entryChoice":"EXPLORE",
-                                 "preferences":{"likes":["가벼운","가벼운"],"avoids":["끈적임"],"note":" 향이 강한 건 피하고 싶어요 "},
-                                 "clientRequestId":"pref-save"}
-                                """))
-                .andExpect(status().isOk());
-
-        mvc.perform(get("/api/v1/me/preferences").session(session))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.likes.length()").value(1))
-                .andExpect(jsonPath("$.likes[0]").value("가벼운"))
-                .andExpect(jsonPath("$.avoids[0]").value("끈적임"))
-                .andExpect(jsonPath("$.note").value("향이 강한 건 피하고 싶어요"));
-
-        mvc.perform(put("/api/v1/me/preferences").session(session)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"likes":["산뜻한"],"avoids":[],"note":""}
+                                {"ageRange":"30S","gender":"MALE","skinType":"DRY",
+                                 "skinCondition":2,"concerns":["당김"],"textures":["촉촉한"],
+                                 "avoids":[],"avoidNote":"","trialFrequency":"RARELY"}
                                 """))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.likes[0]").value("산뜻한"))
-                .andExpect(jsonPath("$.avoids.length()").value(0));
+                .andExpect(jsonPath("$.ageRange").value("30S"))
+                .andExpect(jsonPath("$.skinType").value("DRY"));
     }
 
     @Test

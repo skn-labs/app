@@ -1,4 +1,4 @@
-import type { Auth, Conversation, Experience, ExperienceRecord, Home, OnboardingResult, Pattern, Preference, Product, ProductPage, QuickAccount, Routine, RoutineItemInput, SavedRecord, UserProduct } from './types'
+import type { Auth, Conversation, Experience, ExperienceRecord, Home, OnboardingResult, Pattern, Preference, Product, ProductPage, QuickAccount, Routine, RoutineItemInput, SavedRecord, SkinProfile, UserProduct } from './types'
 
 export class ApiError extends Error {
   status: number
@@ -31,7 +31,9 @@ export const api = {
   quickLogin: (username: string) => request<Auth>(`/api/v1/auth/quick-login/${encodeURIComponent(username)}`, { method: 'POST', body: '{}' }),
   logout: () => request<void>('/api/v1/auth/logout', { method: 'POST', body: '{}' }),
   deleteAccount: () => request<void>('/api/v1/auth/me', { method: 'DELETE' }),
-  completeOnboarding: (value: { productIds: number[]; entryChoice: string; focusProductId?: number; preferences?: Preference; clientRequestId: string }) => request<OnboardingResult>('/api/v1/auth/onboarding', { method: 'POST', body: JSON.stringify(value) }),
+  completeOnboarding: (profile: SkinProfile, clientRequestId: string = uid()) => request<OnboardingResult>('/api/v1/auth/onboarding', { method: 'POST', body: JSON.stringify({ profile, clientRequestId }) }),
+  skinProfile: () => request<SkinProfile>('/api/v1/me/skin-profile'),
+  saveSkinProfile: (profile: SkinProfile) => request<SkinProfile>('/api/v1/me/skin-profile', { method: 'PUT', body: JSON.stringify(profile) }),
   preferences: () => request<Preference>('/api/v1/me/preferences'),
   savePreferences: (value: Preference) => request<Preference>('/api/v1/me/preferences', { method: 'PUT', body: JSON.stringify(value) }),
   home: () => request<Home>('/api/v1/home'),

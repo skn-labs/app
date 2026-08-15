@@ -106,8 +106,8 @@ paths:
   /auth/onboarding:
     post:
       tags: [Auth]
-      summary: 선택한 화장품을 저장하고 온보딩을 마친다
-      description: PRODUCT를 고르면 focusProductId의 사용 경험까지 멱등적으로 시작한다. ROUTINE은 루틴 편집, EXPLORE는 제품 탐색으로 이어진다.
+      summary: 8단계 자기보고 피부 프로필을 저장하고 온보딩을 마친다
+      description: sktn-prototype_2의 연령대·성별·피부 타입·최근 상태·고민·사용감·기피·시도 빈도를 한 번에 저장한다.
       operationId: completeOnboarding
       requestBody:
         required: true
@@ -119,6 +119,27 @@ paths:
         '400': { $ref: '#/components/responses/Problem' }
         '401': { $ref: '#/components/responses/Problem' }
         '422': { $ref: '#/components/responses/Problem' }
+  /me/skin-profile:
+    get:
+      tags: [Auth]
+      summary: 온보딩에서 직접 입력한 피부 프로필을 조회한다
+      operationId: getSkinProfile
+      responses:
+        '200': { description: 자기보고 피부 프로필, content: { application/json: { schema: { $ref: '#/components/schemas/SkinProfile' } } } }
+        '404': { $ref: '#/components/responses/Problem' }
+    put:
+      tags: [Auth]
+      summary: 자기보고 피부 프로필을 통째로 바꾼다
+      operationId: replaceSkinProfile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SkinProfile' }
+      responses:
+        '200': { description: 저장됨, content: { application/json: { schema: { $ref: '#/components/schemas/SkinProfile' } } } }
+        '400': { $ref: '#/components/responses/Problem' }
+        '401': { $ref: '#/components/responses/Problem' }
   /home:
     get:
       tags: [Home]
@@ -417,26 +438,39 @@ components:
         displayName: { type: string }
     CompleteOnboardingRequest:
       type: object
-      required: [productIds, entryChoice, clientRequestId]
+      required: [profile, clientRequestId]
       properties:
-        productIds:
-          type: array
-          maxItems: 8
-          uniqueItems: true
-          items: { type: integer, format: int64 }
-        entryChoice: { type: string, enum: [PRODUCT, ROUTINE, EXPLORE] }
-        focusProductId: { type: [integer, 'null'], format: int64 }
-        preferences:
-          description: ONB-01. 선택 항목이며 생략하면 아무것도 저장하지 않는다.
-          anyOf:
-            - $ref: '#/components/schemas/Preference'
-            - type: 'null'
+        profile: { $ref: '#/components/schemas/SkinProfile' }
         clientRequestId: { type: string, minLength: 1 }
+    SkinProfile:
+      type: object
+      description: 사용자가 prototype_2의 8단계에서 직접 선택한 자기보고 맥락. AI 추론이나 진단이 아니다.
+      required: [ageRange, gender, skinType, skinCondition, concerns, textures, avoids, avoidNote, trialFrequency]
+      properties:
+        ageRange: { type: string, enum: [10S, 20S, 30S, 40S, 50S, 60_PLUS] }
+        gender: { type: string, enum: [MALE, FEMALE] }
+        skinType: { type: string, enum: [DRY, OILY, COMBINATION, NORMAL, UNSURE] }
+        skinCondition: { type: integer, minimum: 1, maximum: 5 }
+        concerns:
+          type: array
+          minItems: 1
+          maxItems: 20
+          items: { type: string, maxLength: 40 }
+        textures:
+          type: array
+          minItems: 1
+          maxItems: 20
+          items: { type: string, maxLength: 40 }
+        avoids:
+          type: array
+          maxItems: 20
+          items: { type: string, maxLength: 40 }
+        avoidNote: { type: string, maxLength: 300 }
+        trialFrequency: { type: string, enum: [RARELY, EVERY_FEW_MONTHS, ONE_OR_TWO_MONTHLY, THREE_PLUS_MONTHLY] }
     Preference:
       type: object
       description: >-
-        온보딩에서 선택적으로 받는 사용감 선호. 구조화된 실제 경험이 쌓이기 전의 약한 맥락으로만 쓰며
-        피부 타입·연령·성별 같은 고정 속성은 담지 않는다.
+        온보딩 피부 프로필과 설정에서 받는 사용감 선호. 구조화된 실제 경험보다 약한 자기보고 맥락으로 쓴다.
       required: [likes, avoids, note]
       properties:
         likes:
@@ -450,10 +484,10 @@ components:
         note: { type: string, maxLength: 300 }
     OnboardingResult:
       type: object
-      required: [user]
+      required: [user, profile]
       properties:
         user: { $ref: '#/components/schemas/Auth' }
-        experience: { anyOf: [ { $ref: '#/components/schemas/Experience' }, { type: 'null' } ] }
+        profile: { $ref: '#/components/schemas/SkinProfile' }
     Product:
       type: object
       required: [id, brand, name, category, verified, guide, facts, personalRecordCount, owned]

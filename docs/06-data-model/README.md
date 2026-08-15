@@ -9,6 +9,7 @@ Flyway는 놓지 않았다. 시연용 스키마가 자주 바뀌는 현재 단�
 ```mermaid
 erDiagram
   APP_USER ||--o| USER_ONBOARDING : completes
+  APP_USER ||--o| USER_SKIN_PROFILE : reports
   APP_USER ||--o| USER_PREFERENCE : describes
   APP_USER ||--o{ USER_PRODUCT : owns
   PRODUCT ||--o{ USER_PRODUCT : identifies
@@ -37,8 +38,9 @@ erDiagram
 | 테이블 | 의미 | 중요한 규칙 |
 | --- | --- | --- |
 | `app_user` | 아이디·비밀번호 계정 | 아이디는 대소문자 무관 유일, 비밀번호는 BCrypt hash만 저장 |
-| `user_onboarding` | 최초 설정의 완료와 선택한 시작 방식 | 행이 있어야 온보딩 완료로 보며, 제품 개수와 무관하게 재접속 후에도 유지 |
-| `user_preference` | 온보딩에서 선택적으로 받은 사용감 선호 (ONB-01) | 건너뛰면 행을 만들지 않아 `답했지만 비움`과 구분된다. 실제 경험이 쌓이기 전의 약한 맥락으로만 쓰고, 피부 타입·연령·성별 같은 고정 속성은 담지 않는다 |
+| `user_onboarding` | 최초 설정의 완료 상태 | 행이 있어야 온보딩 완료로 보며 재접속 후에도 유지. 현재 8단계 프로필 흐름은 `EXPLORE`, 제품 0개로 기록 |
+| `user_skin_profile` | `prototype_2` 8단계에서 직접 받은 자기보고 피부 프로필 | 연령대·성별·피부 타입·최근 상태·고민·사용감·기피·시도 빈도를 한 사용자당 한 행으로 저장하고 수정 시 통째로 갱신 |
+| `user_preference` | 온보딩과 설정에서 받은 사용감 선호 (ONB-01) | `user_skin_profile`의 사용감·기피 항목을 기존 개인화 소비자와 연결하며 실제 경험보다 약한 자기보고 맥락으로 취급 |
 | `product` | 검색 가능한 카탈로그 제품 식별 정보 | `description`, `facts_json`은 출처 미확인 카탈로그 입력으로 제품별 AI 가이드에만 사용. 확인 사실·추천·Rescue 근거로 승격하지 않음 |
 | `product_catalog_content` | 모든 제품에 제공하는 제품 안내 | 제품별 설명·특징·category·등록 제형을 바탕으로 정체와 일반 사용법을 설명하며, 입력에 없는 적합성·효능·성분을 만들지 않고 생성 출처와 시각을 저장 |
 | `product_source_fact` | 출처를 다시 열 수 있는 제품 사실 | 출처명·URL·확인 시각이 모두 있는 행만 API와 AI의 `출처 확인 사실`로 노출 |
