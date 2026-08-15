@@ -2,6 +2,7 @@ package app.skn.data;
 
 import app.skn.api.ApiModels.*;
 import app.skn.auth.CurrentUser;
+import app.skn.common.ApiException;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -112,6 +113,12 @@ public class SkincareRepository {
                 SELECT up.id AS user_product_id, up.custom_brand, up.custom_name, up.custom_category,
                        up.memo, up.added_at, p.*,
                        CASE WHEN p.id IS NULL THEN 0 ELSE 1 END AS owned,
+                       EXISTS(
+                           SELECT 1 FROM routine r
+                           JOIN routine_item ri ON ri.routine_id = r.id
+                           WHERE r.user_id = up.user_id AND r.status = 'CURRENT'
+                             AND ri.user_product_id = up.id
+                       ) AS in_current_routine,
                        (SELECT COUNT(DISTINCT er.id) FROM experience_record er
                           LEFT JOIN experience_session es ON es.id = er.session_id
                          WHERE er.user_id = up.user_id AND (
@@ -132,6 +139,12 @@ public class SkincareRepository {
                 SELECT up.id AS user_product_id, up.custom_brand, up.custom_name, up.custom_category,
                        up.memo, up.added_at, p.*,
                        CASE WHEN p.id IS NULL THEN 0 ELSE 1 END AS owned,
+                       EXISTS(
+                           SELECT 1 FROM routine r
+                           JOIN routine_item ri ON ri.routine_id = r.id
+                           WHERE r.user_id = up.user_id AND r.status = 'CURRENT'
+                             AND ri.user_product_id = up.id
+                       ) AS in_current_routine,
                        (SELECT COUNT(DISTINCT er.id) FROM experience_record er
                           LEFT JOIN experience_session es ON es.id = er.session_id
                          WHERE er.user_id = up.user_id AND (
@@ -150,6 +163,12 @@ public class SkincareRepository {
         return jdbc.query("""
                 SELECT up.id AS user_product_id, up.custom_brand, up.custom_name, up.custom_category,
                        up.memo, up.added_at, p.*, 1 AS owned,
+                       EXISTS(
+                           SELECT 1 FROM routine r
+                           JOIN routine_item ri ON ri.routine_id = r.id
+                           WHERE r.user_id = up.user_id AND r.status = 'CURRENT'
+                             AND ri.user_product_id = up.id
+                       ) AS in_current_routine,
                        (SELECT COUNT(DISTINCT er.id) FROM experience_record er
                           LEFT JOIN experience_session es ON es.id = er.session_id
                          WHERE er.user_id = up.user_id AND (
@@ -263,6 +282,15 @@ public class SkincareRepository {
                    SET status = 'CANCELLED', ended_at = datetime('now'), end_reason = ?
                  WHERE user_id = ? AND status = 'ACTIVE'
                 """, reason, userId());
+        jdbc.update("""
+                UPDATE notification
+                   SET cancelled_at = COALESCE(cancelled_at, datetime('now'))
+                 WHERE user_id = ? AND completed_at IS NULL AND cancelled_at IS NULL
+                   AND experience_id IN (
+                       SELECT id FROM experience_session
+                        WHERE user_id = ? AND status = 'CANCELLED'
+                   )
+                """, userId(), userId());
     }
 
     public Optional<Long> findSessionIdByClientRequest(String clientRequestId) {
@@ -277,7 +305,9 @@ public class SkincareRepository {
                     started_at, review_due_at, client_request_id
                 ) VALUES (?, ?, ?, ?, ?, 'ACTIVE', datetime('now'), datetime('now', '+6 day'), ?) RETURNING id
                 """, Long.class, userId(), subjectType, routineId, userProductId, title, clientRequestId);
-        return id == null ? 0 : id;
+        long sessionId = id == null ? 0 : id;
+        insertExperienceNotifications(sessionId);
+        return sessionId;
     }
 
     public Optional<ExperienceView> findActiveExperience() {
@@ -297,6 +327,11 @@ public class SkincareRepository {
                 UPDATE experience_session SET status = 'COMPLETED', ended_at = datetime('now'), end_reason = ?
                  WHERE id = ? AND user_id = ? AND status = 'ACTIVE'
                 """, reason, sessionId, userId());
+        jdbc.update("""
+                UPDATE notification
+                   SET completed_at = COALESCE(completed_at, datetime('now'))
+                 WHERE user_id = ? AND experience_id = ? AND cancelled_at IS NULL
+                """, userId(), sessionId);
     }
 
     public void promoteComparisonBaseline(long routineId, long recordId) {
@@ -325,6 +360,13 @@ public class SkincareRepository {
                 jdbc.update("INSERT OR IGNORE INTO experience_tag(record_id, label) VALUES (?, ?)", id, tag.trim());
             }
         }
+        jdbc.update("""
+                UPDATE notification
+                   SET completed_at = COALESCE(completed_at, datetime('now'))
+                 WHERE user_id = ? AND experience_id = ?
+                   AND notification_type = 'EXPERIENCE_CHECK_IN'
+                   AND cancelled_at IS NULL
+                """, userId(), sessionId);
         return id;
     }
 
@@ -402,6 +444,7 @@ public class SkincareRepository {
                 for (Long evidenceId : findTaggedRecordIds(tag, oppositeSentiment)) {
                     connectPatternEvidence(supporting, evidenceId, "CONTRADICTS");
                 }
+                insertPatternNotification(supporting);
             } else if (supporting != null) {
                 connectPatternEvidence(supporting, recordId, "SUPPORTS");
             }
@@ -663,6 +706,7 @@ public class SkincareRepository {
         jdbc.update("DELETE FROM experience_record WHERE user_id = ?", userId());
         jdbc.update("DELETE FROM experience_session WHERE user_id = ?", userId());
         jdbc.update("DELETE FROM routine WHERE user_id = ?", userId());
+        jdbc.update("DELETE FROM notification WHERE user_id = ? AND notification_type <> 'PROFILE_READY'", userId());
     }
 
     public void clearAllPersonalDataForColdStart() {
@@ -694,7 +738,139 @@ public class SkincareRepository {
         return new UserProductView(
                 rs.getLong("user_product_id"), product, rs.getString("custom_brand"),
                 rs.getString("custom_name"), rs.getString("custom_category"), rs.getString("memo"),
-                rs.getString("added_at")
+                rs.getString("added_at"), rs.getInt("personal_record_count"),
+                rs.getInt("in_current_routine") == 1
+        );
+    }
+
+    public NotificationInboxView findNotificationInbox() {
+        List<NotificationView> items = jdbc.query("""
+                SELECT * FROM notification
+                 WHERE user_id = ? AND cancelled_at IS NULL
+                   AND datetime(available_at) <= datetime('now')
+                   AND (snoozed_until IS NULL OR datetime(snoozed_until) <= datetime('now'))
+                 ORDER BY datetime(available_at) DESC, id DESC
+                 LIMIT 50
+                """, this::mapNotification, userId());
+        Integer unread = jdbc.queryForObject("""
+                SELECT COUNT(*) FROM notification
+                 WHERE user_id = ? AND cancelled_at IS NULL AND completed_at IS NULL AND read_at IS NULL
+                   AND datetime(available_at) <= datetime('now')
+                   AND (snoozed_until IS NULL OR datetime(snoozed_until) <= datetime('now'))
+                """, Integer.class, userId());
+        return new NotificationInboxView(items, unread == null ? 0 : unread);
+    }
+
+    public Optional<NotificationView> findNotification(long notificationId) {
+        return jdbc.query("SELECT * FROM notification WHERE id = ? AND user_id = ?",
+                this::mapNotification, notificationId, userId()).stream().findFirst();
+    }
+
+    public NotificationView markNotificationRead(long notificationId) {
+        int updated = jdbc.update("""
+                UPDATE notification SET read_at = COALESCE(read_at, datetime('now'))
+                 WHERE id = ? AND user_id = ? AND cancelled_at IS NULL
+                """, notificationId, userId());
+        if (updated == 0) throw ApiException.notFound("알림을 찾을 수 없어요.");
+        return findNotification(notificationId).orElseThrow();
+    }
+
+    public NotificationView snoozeNotification(long notificationId, int durationHours) {
+        int updated = jdbc.update("""
+                UPDATE notification SET snoozed_until = datetime('now', ?)
+                 WHERE id = ? AND user_id = ? AND completed_at IS NULL AND cancelled_at IS NULL
+                """, "+" + durationHours + " hours", notificationId, userId());
+        if (updated == 0) throw ApiException.notFound("미룰 수 있는 알림을 찾을 수 없어요.");
+        return findNotification(notificationId).orElseThrow();
+    }
+
+    public void markAllNotificationsRead() {
+        jdbc.update("""
+                UPDATE notification SET read_at = COALESCE(read_at, datetime('now'))
+                 WHERE user_id = ? AND cancelled_at IS NULL
+                   AND datetime(available_at) <= datetime('now')
+                   AND (snoozed_until IS NULL OR datetime(snoozed_until) <= datetime('now'))
+                """, userId());
+    }
+
+    public void insertProfileReadyNotification() {
+        jdbc.update("""
+                INSERT OR IGNORE INTO notification(
+                    user_id, notification_type, title, body, available_at, dedupe_key
+                ) VALUES (?, 'PROFILE_READY', '첫 피부 프로필이 생성되었어요',
+                          '온보딩에서 직접 고른 스킨케어 맥락을 확인해보세요.',
+                          datetime('now'), 'profile-ready')
+                """, userId());
+    }
+
+    public void insertProfileUpdatedNotification() {
+        jdbc.update("""
+                INSERT OR IGNORE INTO notification(
+                    user_id, notification_type, title, body, available_at, dedupe_key
+                ) VALUES (?, 'PROFILE_UPDATED', '스킨케어 프로필이 업데이트되었어요',
+                          '직접 수정한 내용이 다음 탐색 맥락에 반영됐어요.',
+                          datetime('now'), 'profile-updated:' || strftime('%Y-%m-%dT%H:%M:%S', 'now'))
+                """, userId());
+    }
+
+    private void insertExperienceNotifications(long sessionId) {
+        jdbc.update("""
+                INSERT OR IGNORE INTO notification(
+                    user_id, notification_type, experience_id, title, body, available_at, dedupe_key
+                )
+                SELECT user_id, 'EXPERIENCE_CHECK_IN', id,
+                       'DAY 2, 오늘은 어땠나요?',
+                       '작은 변화라도 괜찮아요. 느낀 점을 남겨보세요.',
+                       datetime(started_at, '+1 day'), 'experience-check-in:' || id
+                  FROM experience_session WHERE id = ? AND user_id = ?
+                """, sessionId, userId());
+        jdbc.update("""
+                INSERT OR IGNORE INTO notification(
+                    user_id, notification_type, experience_id, title, body, available_at, dedupe_key
+                )
+                SELECT user_id, 'EXPERIENCE_REVIEW_DUE', id,
+                       '7일 경험을 돌아볼 시간이에요',
+                       title || '에서 느낀 점을 남겨보세요.',
+                       review_due_at, 'experience-review:' || id
+                  FROM experience_session WHERE id = ? AND user_id = ?
+                """, sessionId, userId());
+    }
+
+    private void insertPatternNotification(long patternId) {
+        jdbc.update("""
+                INSERT OR IGNORE INTO notification(
+                    user_id, notification_type, pattern_id, title, body, available_at, dedupe_key
+                )
+                SELECT user_id, 'PATTERN_READY', id, '새로운 취향 패턴을 발견했어요',
+                       '최근 기록을 바탕으로 근거와 반대 기록을 함께 연결했어요.',
+                       datetime('now'), 'pattern-ready:' || id
+                  FROM personal_pattern WHERE id = ? AND user_id = ?
+                """, patternId, userId());
+    }
+
+    private NotificationView mapNotification(ResultSet rs, int rowNum) throws SQLException {
+        String type = rs.getString("notification_type");
+        Long experienceId = nullableLong(rs, "experience_id");
+        Long patternId = nullableLong(rs, "pattern_id");
+        String completedAt = rs.getString("completed_at");
+        NotificationActionView action;
+        if (type.startsWith("EXPERIENCE_") && experienceId != null) {
+            action = completedAt == null
+                    ? new NotificationActionView("RECORD_EXPERIENCE", "느낌 남기기", "/experiences/" + experienceId + "/record")
+                    : new NotificationActionView("RECORDS", "남긴 기록 보기", "/records");
+        } else if (type.equals("PATTERN_READY") && patternId != null) {
+            action = new NotificationActionView("PATTERN", "패턴 보기", "/patterns/" + patternId);
+        } else if (type.startsWith("PROFILE_")) {
+            action = new NotificationActionView("PROFILE", "프로필 보기", "/records");
+        } else {
+            action = new NotificationActionView("EXPLORE", "제품 탐색하기", "/explore");
+        }
+        String readAt = rs.getString("read_at");
+        return new NotificationView(
+                rs.getLong("id"), type, rs.getString("title"), rs.getString("body"),
+                rs.getString("created_at"), rs.getString("available_at"), readAt,
+                rs.getString("snoozed_until"), completedAt,
+                readAt != null, completedAt != null, action
         );
     }
 

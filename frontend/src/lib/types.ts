@@ -45,6 +45,7 @@ export type ProductPage = { items: Product[]; nextCursor?: string; hasMore: bool
 export type UserProduct = {
   id: number; product?: Product; customBrand?: string; customName?: string;
   customCategory?: string; memo?: string; addedAt: string;
+  personalRecordCount: number; inCurrentRoutine: boolean;
 }
 
 export type RoutineItem = {
@@ -87,6 +88,21 @@ export type Home = {
   displayName: string; currentExperience?: Experience; patterns: Pattern[];
   productCount: number; recordCount: number; primaryAction: string;
 }
+
+export type NotificationAction = {
+  type: 'RECORD_EXPERIENCE' | 'RECORDS' | 'PATTERN' | 'PROFILE' | 'EXPLORE';
+  label: string; href: string;
+}
+
+export type AppNotification = {
+  id: number;
+  type: 'EXPERIENCE_CHECK_IN' | 'EXPERIENCE_REVIEW_DUE' | 'PROFILE_READY' | 'PROFILE_UPDATED' | 'PATTERN_READY' | 'PRODUCT_DISCOVERY';
+  title: string; body: string; createdAt: string; availableAt: string;
+  readAt?: string; snoozedUntil?: string; completedAt?: string;
+  read: boolean; completed: boolean; action: NotificationAction;
+}
+
+export type NotificationInbox = { items: AppNotification[]; unreadCount: number }
 
 export type Message = {
   id: number; role: 'USER' | 'ASSISTANT'; content: string; suggestedReplies: string[];

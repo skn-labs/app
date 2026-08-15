@@ -172,6 +172,29 @@ Table pattern_evidence {
   indexes { (pattern_id, record_id) [pk] }
 }
 
+Table notification {
+  id integer [pk, increment]
+  user_id integer [not null, ref: > app_user.id]
+  notification_type text [not null, note: 'EXPERIENCE_CHECK_IN | EXPERIENCE_REVIEW_DUE | PROFILE_READY | PROFILE_UPDATED | PATTERN_READY | PRODUCT_DISCOVERY']
+  experience_id integer [ref: > experience_session.id]
+  pattern_id integer [ref: > personal_pattern.id]
+  title text [not null]
+  body text [not null]
+  available_at text [not null]
+  read_at text
+  snoozed_until text
+  completed_at text
+  cancelled_at text
+  dedupe_key text [not null]
+  created_at text [not null]
+
+  indexes {
+    (user_id, dedupe_key) [unique]
+    (user_id, available_at, id)
+  }
+  note: '경험 due와 별도로 앱 안 알림의 읽음·미루기·완료·취소 상태를 저장'
+}
+
 Table conversation {
   id integer [pk, increment]
   user_id integer [not null, ref: > app_user.id]

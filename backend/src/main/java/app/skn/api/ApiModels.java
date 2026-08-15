@@ -66,7 +66,9 @@ public final class ApiModels {
             String customName,
             String customCategory,
             String memo,
-            String addedAt
+            String addedAt,
+            int personalRecordCount,
+            boolean inCurrentRoutine
     ) {
         public String displayName() {
             return product != null ? product.name() : customName;
@@ -157,6 +159,36 @@ public final class ApiModels {
             String primaryAction
     ) {}
 
+    public record NotificationActionView(
+            String type,
+            String label,
+            String href
+    ) {}
+
+    public record NotificationView(
+            long id,
+            String type,
+            String title,
+            String body,
+            String createdAt,
+            String availableAt,
+            String readAt,
+            String snoozedUntil,
+            String completedAt,
+            boolean read,
+            boolean completed,
+            NotificationActionView action
+    ) {}
+
+    public record NotificationInboxView(
+            List<NotificationView> items,
+            int unreadCount
+    ) {}
+
+    public record SnoozeNotificationRequest(
+            @NotNull @Min(1) @Max(168) Integer durationHours
+    ) {}
+
     public record StartExperienceRequest(
             @NotNull Long userProductId,
             @NotBlank String mode,
@@ -181,10 +213,10 @@ public final class ApiModels {
 
     public record AddUserProductRequest(
             Long productId,
-            String customBrand,
-            String customName,
-            String customCategory,
-            String memo
+            @Size(max = 120) String customBrand,
+            @Size(max = 160) String customName,
+            @Size(max = 80) String customCategory,
+            @Size(max = 1000) String memo
     ) {}
 
     public record UpdateRoutineRequest(

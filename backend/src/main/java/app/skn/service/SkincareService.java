@@ -39,6 +39,26 @@ public class SkincareService {
         );
     }
 
+    public NotificationInboxView notifications() {
+        return repository.findNotificationInbox();
+    }
+
+    @Transactional
+    public NotificationView readNotification(long notificationId) {
+        return repository.markNotificationRead(notificationId);
+    }
+
+    @Transactional
+    public NotificationView snoozeNotification(long notificationId, SnoozeNotificationRequest request) {
+        return repository.snoozeNotification(notificationId, request.durationHours());
+    }
+
+    @Transactional
+    public ApiMessage readAllNotifications() {
+        repository.markAllNotificationsRead();
+        return new ApiMessage("현재 도착한 알림을 모두 읽음으로 표시했어요.");
+    }
+
     public List<ProductView> products(String query) {
         return repository.findProducts(query);
     }
@@ -89,6 +109,9 @@ public class SkincareService {
     @Transactional
     public UserProductView addUserProduct(AddUserProductRequest request) {
         if (request.productId() != null) {
+            if (request.customName() != null && !request.customName().isBlank()) {
+                throw ApiException.invalid("PRODUCT_REFERENCE_CONFLICT", "카탈로그 제품과 직접 입력 제품 중 하나만 선택해주세요.");
+            }
             repository.findProduct(request.productId())
                     .orElseThrow(() -> ApiException.notFound("등록할 카탈로그 제품을 찾을 수 없어요."));
             return repository.findOwnedCatalogProduct(request.productId()).orElseGet(() -> {

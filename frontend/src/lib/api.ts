@@ -1,4 +1,4 @@
-import type { Auth, Conversation, Experience, ExperienceRecord, Home, OnboardingResult, Pattern, Preference, Product, ProductPage, QuickAccount, Routine, RoutineItemInput, SavedRecord, SkinProfile, UserProduct } from './types'
+import type { AppNotification, Auth, Conversation, Experience, ExperienceRecord, Home, NotificationInbox, OnboardingResult, Pattern, Preference, Product, ProductPage, QuickAccount, Routine, RoutineItemInput, SavedRecord, SkinProfile, UserProduct } from './types'
 
 export class ApiError extends Error {
   status: number
@@ -44,6 +44,7 @@ export const api = {
   },
   product: (id: number) => request<Product>(`/api/v1/products/${id}`),
   userProducts: () => request<UserProduct[]>('/api/v1/me/products'),
+  userProduct: (id: number) => request<UserProduct>(`/api/v1/me/products/${id}`),
   addProduct: (productId: number) => request<UserProduct>('/api/v1/me/products', { method: 'POST', body: JSON.stringify({ productId }) }),
   addCustomProduct: (customBrand: string, customName: string, customCategory: string) => request<UserProduct>('/api/v1/me/products', { method: 'POST', body: JSON.stringify({ customBrand, customName, customCategory }) }),
   currentRoutine: () => request<Routine>('/api/v1/me/routines/current'),
@@ -56,6 +57,10 @@ export const api = {
   records: () => request<ExperienceRecord[]>('/api/v1/me/experience-records'),
   patterns: () => request<Pattern[]>('/api/v1/me/patterns'),
   pattern: (id: number) => request<Pattern>(`/api/v1/me/patterns/${id}`),
+  notifications: () => request<NotificationInbox>('/api/v1/me/notifications'),
+  readNotification: (id: number) => request<AppNotification>(`/api/v1/me/notifications/${id}/read`, { method: 'POST', body: '{}' }),
+  snoozeNotification: (id: number, durationHours: number) => request<AppNotification>(`/api/v1/me/notifications/${id}/snooze`, { method: 'POST', body: JSON.stringify({ durationHours }) }),
+  readAllNotifications: () => request<{ message: string }>('/api/v1/me/notifications/read-all', { method: 'POST', body: '{}' }),
   conversations: () => request<Conversation[]>('/api/v1/ai/conversations'),
   conversation: (id: number) => request<Conversation>(`/api/v1/ai/conversations/${id}`),
   createConversation: (mode: string, initialPrompt: string, extras: { productId?: number; experienceId?: number } = {}, clientRequestId: string = uid()) => request<Conversation>('/api/v1/ai/conversations', { method: 'POST', body: JSON.stringify({ mode, initialPrompt, ...extras, clientRequestId }) }),
