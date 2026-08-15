@@ -13,7 +13,7 @@ GitHub Issues와 Projects는 작업 관리나 기능명세 원본으로 사용�
 ## 작업 원칙
 
 - 사용자가 요청한 결과·예외·완료 조건을 지키되 내부 구현은 현재 코드에 맞게 정한다.
-- API 변경은 OpenAPI와 계약 테스트를, 데이터 의미 변경은 ERD·데이터 사전·`schema.sql`을 같이 수정한다. 현재 해커톤 범위에서는 Flyway를 두지 않는다. 다만 이미 배포된 SQLite를 보존해야 하므로 `schema.sql` 변경은 같은 PR의 `deploy/oci/migrations/*.sql` 운영 마이그레이션으로 준비한다.
+- API 변경은 OpenAPI와 계약 테스트를, 데이터 의미 변경은 ERD·데이터 사전·`schema.sql`을 같이 수정한다. 현재 해커톤 범위에서는 Flyway를 두지 않는다. 다만 이미 배포된 SQLite를 보존해야 하므로 `schema.sql` 변경은 같은 PR의 새 `deploy/oci/migrations/*.sql` 운영 마이그레이션으로 준비한다. 적용한 기존 마이그레이션은 수정·삭제하지 않는다.
 - SQLite 모든 연결에서 FK를 켜고 AI·Object Storage 호출을 쓰기 트랜잭션 밖에서 수행한다.
 - 다른 사용자의 데이터 접근, 빈 상태, AI 실패, 중복 제출과 재시도를 정상 흐름과 함께 확인한다.
 - 제품 결정이 필요하면 관련 제품 문서에 배경·선택지·영향을 남긴다.

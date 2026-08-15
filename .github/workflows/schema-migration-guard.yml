@@ -1,0 +1,33 @@
+name: Schema migration guard
+
+on:
+  pull_request:
+    paths:
+      - backend/src/main/resources/schema.sql
+      - deploy/oci/migrations/**
+      - scripts/check_schema_migration.sh
+      - .github/workflows/schema-migration-guard.yml
+  push:
+    branches: [main]
+    paths:
+      - backend/src/main/resources/schema.sql
+      - deploy/oci/migrations/**
+      - scripts/check_schema_migration.sh
+      - .github/workflows/schema-migration-guard.yml
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Require migration for schema changes
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Compare schema and migrations
+        env:
+          SCHEMA_GUARD_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+          SCHEMA_GUARD_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: scripts/check_schema_migration.sh "$SCHEMA_GUARD_BASE" "$SCHEMA_GUARD_HEAD"
