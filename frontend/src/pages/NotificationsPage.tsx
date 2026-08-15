@@ -28,8 +28,8 @@ export function NotificationsPage() {
     <AppHeader back backTo="/" profile={false} notifications={false} sticky/>
     <div className="px-5 pb-12 pt-8">
       <div className="flex items-end justify-between gap-4">
-        <div><p className="text-[11px] font-medium tracking-[.08em] text-muted">NOTIFICATIONS</p><h1 className="mt-2 text-[44px] font-medium leading-none tracking-[-.06em]">알림창</h1></div>
-        {!!inbox.data?.unreadCount && <button type="button" disabled={readAll.isPending} onClick={() => readAll.mutate()} className="min-h-11 rounded-full px-3 text-[12px] font-medium text-muted transition hover:bg-soft disabled:opacity-50">모두 읽음</button>}
+        <div><p className="text-xs font-medium tracking-[.08em] text-muted">NOTIFICATIONS</p><h1 className="mt-2 text-4xl font-medium leading-none tracking-[-.06em]">알림창</h1></div>
+        {!!inbox.data?.unreadCount && <button type="button" disabled={readAll.isPending} onClick={() => readAll.mutate()} className="min-h-11 rounded-full px-3 text-xs font-medium text-muted transition hover:bg-soft disabled:opacity-50">모두 읽음</button>}
       </div>
 
       {inbox.isPending ? <Loading label="알림을 불러오는 중"/>
@@ -39,7 +39,7 @@ export function NotificationsPage() {
     </div>
 
     <BottomSheet open={Boolean(snoozeTarget)} onClose={() => setSnoozeTarget(null)} title="언제 다시 알려드릴까요?">
-      <p className="-mt-2 mb-5 text-[13px] leading-5 text-muted">회고 시점은 그대로 두고 이 알림만 잠시 숨겨요.</p>
+      <p className="-mt-2 mb-5 text-sm leading-5 text-muted">회고 시점은 그대로 두고 이 알림만 잠시 숨겨요.</p>
       <div className="space-y-2">
         {[[1, '1시간 뒤'], [24, '내일 이 시간'], [72, '3일 뒤']].map(([hours, label]) => <Button key={hours} variant="secondary" disabled={snooze.isPending} onClick={() => snoozeTarget && snooze.mutate({ id: snoozeTarget.id, hours: Number(hours) })} className="w-full">{label}</Button>)}
       </div>
@@ -55,10 +55,10 @@ function NotificationRow({ item, onOpen, onSnooze }: { item: AppNotification; on
     <button type="button" onClick={onOpen} className="interactive-card flex min-w-0 flex-1 items-center gap-4 rounded-[18px] px-1 text-left">
       <span aria-hidden="true" className={`size-3 shrink-0 rounded-full ${quiet ? 'bg-[#d9e6ff]' : 'bg-black'}`}/>
       <span className="min-w-0 flex-1">
-        <span className={`block truncate text-[16px] font-medium tracking-[-.025em] ${quiet ? 'text-[#656565]' : 'text-black'}`}>{item.title}</span>
-        <span className="mt-2 block truncate text-[12px] text-[#9abfff]">{item.body}</span>
+        <span className={`block truncate text-base font-medium tracking-[-.025em] ${quiet ? 'text-[#656565]' : 'text-black'}`}>{item.title}</span>
+        <span className="mt-2 block truncate text-xs text-[#9abfff]">{item.body}</span>
       </span>
-      <span className="shrink-0 self-start pt-5 text-[11px] tabular-nums text-[#8c8c8c]">{relativeTime(item.availableAt)}</span>
+      <span className="shrink-0 self-start pt-5 text-xs tabular-nums text-[#8c8c8c]">{relativeTime(item.availableAt)}</span>
     </button>
     {canSnooze && <button type="button" onClick={onSnooze} aria-label={`${item.title} 알림 미루기`} className="grid w-10 shrink-0 place-items-center rounded-full text-[#9a9a9a] transition hover:bg-soft"><Clock3 size={16}/></button>}
   </article>

@@ -11,7 +11,7 @@ export function PrototypePhone({ children }: PropsWithChildren) {
 }
 
 export function PrototypeStatusBar() {
-  return <div aria-hidden="true" className="hidden shrink-0 items-center justify-between px-7 pb-1 pt-3 text-[13px] font-semibold sm:flex">
+  return <div aria-hidden="true" className="hidden shrink-0 items-center justify-between px-7 pb-1 pt-3 text-sm font-medium sm:flex">
     <span>12:06</span>
     <div className="flex items-center gap-1.5">
       <svg width="17" height="11" viewBox="0 0 17 11"><rect y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.5" width="3" height="11" rx="1"/></svg>
