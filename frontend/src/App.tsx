@@ -1,19 +1,29 @@
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { api } from './lib/api'
-import { AssetMotion } from './components/ui'
-import { AuthPage } from './pages/AuthPage'
-import { HomePage } from './pages/HomePage'
-import { ExplorePage, ProductPage, ShelfPage } from './pages/ExplorePages'
-import { ExperiencePage, RecordPage, RoutineEditPage } from './pages/ExperiencePages'
-import { AiLandingPage, ChatPage, ChatStartPage, ProductSearchPage } from './pages/ChatPages'
-import { PatternPage, RecordsPage } from './pages/RecordsPages'
-import { RoutineDetailPage, RoutineListPage } from './pages/RoutinesPages'
-import { ExperienceHubPage } from './pages/ExperienceHubPage'
+import { AssetMotion, Loading } from './components/ui'
 import { DesktopQuickLogin } from './components/DesktopQuickLogin'
 import { PrototypePhone } from './components/PrototypeChrome'
-import { OnboardingPage } from './pages/OnboardingPage'
+
+const AuthPage = lazy(() => import('./pages/AuthPage').then(module => ({ default: module.AuthPage })))
+const OnboardingPage = lazy(() => import('./pages/OnboardingPage').then(module => ({ default: module.OnboardingPage })))
+const HomePage = lazy(() => import('./pages/HomePage').then(module => ({ default: module.HomePage })))
+const ExplorePage = lazy(() => import('./pages/ExplorePages').then(module => ({ default: module.ExplorePage })))
+const ProductPage = lazy(() => import('./pages/ExplorePages').then(module => ({ default: module.ProductPage })))
+const ShelfPage = lazy(() => import('./pages/ExplorePages').then(module => ({ default: module.ShelfPage })))
+const ExperiencePage = lazy(() => import('./pages/ExperiencePages').then(module => ({ default: module.ExperiencePage })))
+const RecordPage = lazy(() => import('./pages/ExperiencePages').then(module => ({ default: module.RecordPage })))
+const RoutineEditPage = lazy(() => import('./pages/ExperiencePages').then(module => ({ default: module.RoutineEditPage })))
+const AiLandingPage = lazy(() => import('./pages/ChatPages').then(module => ({ default: module.AiLandingPage })))
+const ChatPage = lazy(() => import('./pages/ChatPages').then(module => ({ default: module.ChatPage })))
+const ChatStartPage = lazy(() => import('./pages/ChatPages').then(module => ({ default: module.ChatStartPage })))
+const ProductSearchPage = lazy(() => import('./pages/ChatPages').then(module => ({ default: module.ProductSearchPage })))
+const PatternPage = lazy(() => import('./pages/RecordsPages').then(module => ({ default: module.PatternPage })))
+const RecordsPage = lazy(() => import('./pages/RecordsPages').then(module => ({ default: module.RecordsPage })))
+const RoutineDetailPage = lazy(() => import('./pages/RoutinesPages').then(module => ({ default: module.RoutineDetailPage })))
+const RoutineListPage = lazy(() => import('./pages/RoutinesPages').then(module => ({ default: module.RoutineListPage })))
+const ExperienceHubPage = lazy(() => import('./pages/ExperienceHubPage').then(module => ({ default: module.ExperienceHubPage })))
 
 export default function App() {
   const auth = useQuery({ queryKey: ['auth'], queryFn: api.me, retry: false })
@@ -57,5 +67,8 @@ export default function App() {
     <Route path="*" element={<Navigate to="/" replace/>}/>
   </Routes>
 
-  return <>{content}<DesktopQuickLogin currentUsername={auth.data?.username}/></>
+  return <Suspense fallback={<PrototypePhone><Loading label="화면을 준비하는 중"/></PrototypePhone>}>
+    {content}
+    <DesktopQuickLogin currentUsername={auth.data?.username}/>
+  </Suspense>
 }
