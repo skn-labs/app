@@ -13,7 +13,7 @@ export function TopBar({ title, back = false, backTo, right }: { title: string; 
   const navigate = useNavigate()
   return <header className="safe-top sticky top-0 z-20 grid min-h-[68px] shrink-0 grid-cols-[1fr_auto_1fr] items-center border-b border-line/60 bg-paper/95 px-5 backdrop-blur-xl">
     <div className="flex min-w-0 justify-start">{back && <button type="button" aria-label="뒤로" onClick={() => backTo ? navigate(backTo) : navigate(-1)} className="-ml-2 grid size-11 place-items-center rounded-full transition hover:bg-soft active:scale-95"><ChevronLeft size={24}/></button>}</div>
-    <h1 className="px-2 text-[16px] font-medium tracking-[-.02em]">{title}</h1>
+    <h1 className="px-2 text-base font-medium tracking-[-.02em]">{title}</h1>
     <div className="flex min-w-0 justify-end">{right}</div>
   </header>
 }
@@ -48,13 +48,13 @@ function BottomNav() {
 
 export function PageHeading({ title, description, eyebrow, action, className = '' }: { title: ReactNode; description?: ReactNode; eyebrow?: ReactNode; action?: ReactNode; className?: string }) {
   return <header className={twMerge('flex items-start justify-between gap-5', className)}>
-    <div className="min-w-0">{eyebrow && <p className="mb-2 text-[12px] font-medium text-accent">{eyebrow}</p>}<h1 className="page-title">{title}</h1>{description && <p className="supporting-copy mt-2">{description}</p>}</div>
+    <div className="min-w-0">{eyebrow && <p className="mb-2 text-xs font-medium text-accent">{eyebrow}</p>}<h1 className="page-title">{title}</h1>{description && <p className="supporting-copy mt-2">{description}</p>}</div>
     {action && <div className="shrink-0">{action}</div>}
   </header>
 }
 
 export function SectionHeading({ title, description, eyebrow, action, id, className = '' }: { title: ReactNode; description?: ReactNode; eyebrow?: ReactNode; action?: ReactNode; id?: string; className?: string }) {
-  return <div className={twMerge('flex items-start justify-between gap-4', className)}><div className="min-w-0">{eyebrow && <p className="mb-1 text-[11px] font-medium tracking-[.08em] text-muted">{eyebrow}</p>}<h2 id={id} className="section-title">{title}</h2>{description && <p className="mt-1 text-[12px] leading-5 text-muted">{description}</p>}</div>{action && <div className="shrink-0">{action}</div>}</div>
+  return <div className={twMerge('flex items-start justify-between gap-4', className)}><div className="min-w-0">{eyebrow && <p className="mb-1 text-xs font-medium tracking-[.08em] text-muted">{eyebrow}</p>}<h2 id={id} className="section-title">{title}</h2>{description && <p className="mt-1 text-xs leading-5 text-muted">{description}</p>}</div>{action && <div className="shrink-0">{action}</div>}</div>
 }
 
 export function StickyActionBar({ children, className = '' }: PropsWithChildren<{ className?: string }>) {
@@ -76,7 +76,7 @@ export function Button({ className, variant = 'primary', type = 'button', ...pro
     ghost: 'bg-transparent text-ink hover:bg-soft',
     danger: 'bg-[#fff0f0] text-danger hover:bg-[#ffe8e8]',
   }
-  return <button type={type} className={twMerge('flex min-h-12 items-center justify-center gap-2 rounded-full px-5 text-[15px] font-medium transition active:scale-[.985] disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100', variants[variant], className)} {...props}/>
+  return <button type={type} className={twMerge('flex min-h-12 items-center justify-center gap-2 rounded-full px-5 text-base font-medium transition active:scale-[.985] disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100', variants[variant], className)} {...props}/>
 }
 
 export function Card({ children, className = '' }: PropsWithChildren<{ className?: string }>) {
@@ -84,7 +84,7 @@ export function Card({ children, className = '' }: PropsWithChildren<{ className
 }
 
 export function Eyebrow({ children, className = '' }: PropsWithChildren<{ className?: string }>) {
-  return <p className={twMerge('text-[12px] font-medium uppercase tracking-[.07em] text-muted', className)}>{children}</p>
+  return <p className={twMerge('text-xs font-medium uppercase tracking-[.07em] text-muted', className)}>{children}</p>
 }
 
 export function ProductGlyph({ category = '제품', size = 'md', src }: { category?: string; size?: 'sm' | 'md' | 'lg'; src?: string }) {
@@ -100,21 +100,21 @@ export function ProductGlyph({ category = '제품', size = 'md', src }: { catego
   return <div className={twMerge('relative grid shrink-0 place-items-end', dims)} aria-hidden="true">
     <div className={twMerge('relative w-3/5 border border-[#cdd2cb] bg-gradient-to-b from-white to-[#e8eee8] shadow-[0_10px_25px_rgba(31,42,31,.10)]', isDropper ? 'h-3/4 rounded-b-2xl rounded-t-lg' : isTube ? 'h-5/6 rounded-[45%_45%_16px_16px]' : 'h-2/3 rounded-2xl')}>
       {isDropper && <><div className="absolute -top-7 left-1/2 h-8 w-1/2 -translate-x-1/2 rounded-t-xl bg-[#22251f]"/><div className="absolute -top-1 left-1/2 h-2 w-2/3 -translate-x-1/2 bg-[#dfe4dd]"/></>}
-      <div className="absolute inset-x-1.5 top-1/3 rounded-sm border border-black/5 bg-white/75 py-1 text-center text-[6px] font-bold tracking-widest text-[#555a53]">SKN</div>
+      <div className="absolute inset-x-1.5 top-1/3 rounded-sm border border-black/5 bg-white/75 py-1 text-center text-[6px] font-semibold tracking-widest text-[#555a53]">SKN</div>
     </div>
   </div>
 }
 
 export function Loading({ label = '불러오는 중' }: { label?: string }) {
-  return <div className="grid min-h-[55svh] place-items-center" role="status" aria-live="polite"><div className="flex flex-col items-center gap-3 text-[13px] text-muted"><span aria-hidden="true" className="size-6 animate-spin rounded-full border-2 border-line border-t-accent"/><span>{label}</span></div></div>
+  return <div className="grid min-h-[55svh] place-items-center" role="status" aria-live="polite"><div className="flex flex-col items-center gap-3 text-sm text-muted"><span aria-hidden="true" className="size-6 animate-spin rounded-full border-2 border-line border-t-accent"/><span>{label}</span></div></div>
 }
 
 export function ErrorState({ message, onRetry }: { message: string; onRetry?: () => void }) {
-  return <div className="mx-5 mt-24 text-center" role="alert"><div className="mx-auto mb-4 grid size-12 place-items-center rounded-full bg-soft text-muted"><Bot size={22}/></div><h2 className="font-semibold">잠시 연결하지 못했어요</h2><p className="mx-auto mt-2 max-w-64 text-sm leading-6 text-muted">{message}</p>{onRetry && <Button className="mx-auto mt-5" variant="secondary" onClick={onRetry}>다시 시도</Button>}</div>
+  return <div className="mx-5 mt-24 text-center" role="alert"><div className="mx-auto mb-4 grid size-12 place-items-center rounded-full bg-soft text-muted"><Bot size={22}/></div><h2 className="font-medium">잠시 연결하지 못했어요</h2><p className="mx-auto mt-2 max-w-64 text-sm leading-6 text-muted">{message}</p>{onRetry && <Button className="mx-auto mt-5" variant="secondary" onClick={onRetry}>다시 시도</Button>}</div>
 }
 
 export function EmptyState({ icon, title, body, action }: { icon?: ReactNode; title: string; body: string; action?: ReactNode }) {
-  return <div className="px-7 py-16 text-center"><div className="mx-auto mb-5 grid size-14 place-items-center rounded-[18px] bg-soft text-muted">{icon || <CircleUserRound/>}</div><h2 className="text-[22px] font-medium tracking-[-.035em]">{title}</h2><p className="mx-auto mt-2 max-w-72 text-[13px] leading-6 text-muted">{body}</p>{action && <div className="mt-6">{action}</div>}</div>
+  return <div className="px-7 py-16 text-center"><div className="mx-auto mb-5 grid size-14 place-items-center rounded-[18px] bg-soft text-muted">{icon || <CircleUserRound/>}</div><h2 className="text-2xl font-medium tracking-[-.035em]">{title}</h2><p className="mx-auto mt-2 max-w-72 text-sm leading-6 text-muted">{body}</p>{action && <div className="mt-6">{action}</div>}</div>
 }
 
 export function BottomSheet({ open, onClose, title, children }: PropsWithChildren<{ open: boolean; onClose: () => void; title: string }>) {
@@ -138,13 +138,13 @@ export function BottomSheet({ open, onClose, title, children }: PropsWithChildre
   if (!open) return null
   return <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/35 backdrop-blur-[2px]" onPointerDown={onClose}>
     <section ref={sheet} role="dialog" aria-modal="true" aria-labelledby="bottom-sheet-title" tabIndex={-1} className="safe-bottom w-full max-w-[430px] animate-rise rounded-t-[28px] bg-white px-5 pb-4 pt-3 shadow-2xl outline-none" onPointerDown={event => event.stopPropagation()}>
-      <div aria-hidden="true" className="mx-auto mb-5 h-1 w-10 rounded-full bg-[#d9dcd6]"/><div className="mb-5 flex items-start justify-between gap-4"><h2 id="bottom-sheet-title" className="text-[22px] font-medium tracking-[-.035em]">{title}</h2><button type="button" onClick={onClose} aria-label="닫기" className="-mr-2 -mt-2 grid size-11 shrink-0 place-items-center rounded-full text-muted transition hover:bg-soft active:scale-95"><X size={19}/></button></div>{children}
+      <div aria-hidden="true" className="mx-auto mb-5 h-1 w-10 rounded-full bg-[#d9dcd6]"/><div className="mb-5 flex items-start justify-between gap-4"><h2 id="bottom-sheet-title" className="text-2xl font-medium tracking-[-.035em]">{title}</h2><button type="button" onClick={onClose} aria-label="닫기" className="-mr-2 -mt-2 grid size-11 shrink-0 place-items-center rounded-full text-muted transition hover:bg-soft active:scale-95"><X size={19}/></button></div>{children}
     </section>
   </div>
 }
 
 export function AiBadge() {
-  return <span className="inline-flex items-center gap-1 rounded-full bg-accent-soft px-2.5 py-1 text-[11px] font-medium text-accent"><Sparkles size={12}/> SKN AI</span>
+  return <span className="inline-flex items-center gap-1 rounded-full bg-accent-soft px-2.5 py-1 text-xs font-medium text-accent"><Sparkles size={12}/> SKN AI</span>
 }
 
 /**
