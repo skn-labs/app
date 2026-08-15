@@ -8,7 +8,7 @@ import remarkBreaks from 'remark-breaks'
 import remarkGfm from 'remark-gfm'
 import { api } from '../lib/api'
 import type { Conversation, ExperienceRecord, Pattern, Product, Routine, WebSource } from '../lib/types'
-import { AiBadge, Button, Card, ErrorState, ProductGlyph, Screen, SknMark } from '../components/ui'
+import { AiBadge, AssetMotion, Button, Card, ErrorState, ProductGlyph, Screen, SknMark } from '../components/ui'
 import { startChatPath } from '../lib/chat'
 
 const INITIAL_PROMPTS = [
@@ -157,9 +157,8 @@ function AiHistory({ conversations, loading, error, onRetry, onClose }: { conver
 }
 
 function AiMotion({ size }: { size: 'hero' | 'loading' | 'tiny' }) {
-  const [failed, setFailed] = useState(false)
   const dimensions = size === 'hero' ? 'size-[72px]' : size === 'loading' ? 'size-[64px]' : 'size-11'
-  return <div className={`${dimensions} relative shrink-0 overflow-hidden rounded-full bg-white`} aria-hidden="true">{!failed && <video autoPlay muted loop playsInline preload="metadata" poster="/skn-assets/ai-drop.png" onError={() => setFailed(true)} className="h-full w-full object-cover motion-reduce:hidden"><source src="/skn-assets/ai-drop-motion.mp4" type="video/mp4"/></video>}<img src="/skn-assets/ai-drop.png" alt="" className={`${failed ? 'block' : 'hidden motion-reduce:block'} h-full w-full object-contain`}/></div>
+  return <AssetMotion name="ai-drop-motion" poster="/skn-assets/ai-drop-motion-poster.png" loop className={dimensions}/>
 }
 
 function ThinkingPanel({ compact = false, product = false, recommend = false }: { compact?: boolean; product?: boolean; recommend?: boolean }) {

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { api } from './lib/api'
-import { BrandMotion } from './components/ui'
+import { AssetMotion } from './components/ui'
 import { AuthPage } from './pages/AuthPage'
 import { HomePage } from './pages/HomePage'
 import { ExplorePage, ProductPage, ShelfPage } from './pages/ExplorePages'
@@ -31,7 +31,7 @@ export default function App() {
   const introCompleted = introMinimumElapsed && (introMotionEnded || introFallbackElapsed)
   if (!introCompleted || auth.isPending) return <PrototypePhone>
     <div className="grid min-h-0 flex-1 place-items-center bg-white">
-      <BrandMotion name="skn-wordmark-motion" poster="/skn-assets/skn-wordmark.png" alt="SKN" onEnded={() => setIntroMotionEnded(true)} className="w-[62%] max-w-[280px] object-contain"/>
+      <AssetMotion name="skn-wordmark-motion" poster="/skn-assets/skn-wordmark-motion-poster.png" alt="SKN" onEnded={() => setIntroMotionEnded(true)} className="aspect-[3/2] w-[62%] max-w-[280px]"/>
     </div>
   </PrototypePhone>
 

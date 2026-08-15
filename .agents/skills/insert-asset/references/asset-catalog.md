@@ -18,6 +18,7 @@ SKN의 모든 애셋은 하나의 시각 언어를 공유한다: **맑은 물방
 | `SKN 로고.png` | 워드마크에서 뒤집힌 N 글리프만 떼어낸 **모노그램 심벌**. 검정. | 215×226, PNG | 투명 | 파비콘·앱 아이콘·좁은 공간의 단독 마크. 앱 온보딩 화면 상단의 심벌이 이것. |
 | `SKN 로고 최종(배경o 화이트).mp4` | `skn` 워드마크가 그려지는 애니메이션. | MP4(음성 없음) | **흰색 배경** | 흰 배경 위 인트로·스플래시 모션. |
 | `SKN 로고 최종(투명).mov` | 위와 같은 워드마크 애니메이션이되 **알파 채널 포함**. | MOV(ProRes, ~19MB) | 투명 | 색·영상 위에 로고 모션을 얹어야 할 때. 파일이 커서 웹 임베드보다 영상 편집·발표용에 적합. |
+| `logo-intro-poster.png` | 웹용 로고 인트로의 첫 프레임. 영상과 같은 여백·비율의 검정 워드마크. | 750×500, PNG | 흰색 | 인트로 영상이 준비되기 전과 재생 불가 환경의 대체 이미지. 배포본은 `frontend/public/skn-assets/skn-wordmark-motion-poster.png`. |
 
 정지 로고가 필요하면 `SKN.png`, 심벌만 필요하면 `SKN 로고.png`. 배경 위에 얹는 모션이면 투명 `.mov`, 흰 배경이면 `.mp4`.
 
@@ -36,20 +37,37 @@ SKN의 모든 애셋은 하나의 시각 언어를 공유한다: **맑은 물방
 | `로딩창 애니메이션.mp4` | 맑은 유리 버블/방울이 생성·유동하는 모습. 웹에서는 `AI 물방울(피그마).png`를 정지 대체 이미지로 함께 쓴다. | MP4(~9MB) | 흰색 | **AI 모션·로딩 인디케이터.** AI 첫 화면과 답변 준비 상태. 배포 복사본은 `frontend/public/skn-assets/ai-drop-motion.mp4`. |
 | `체크표시 애니메이션.mp4` | 버블 안에서 체크(✓)가 그려지는 모습. | MP4(~2.5MB) | 흰/투명 | 완료·성공 순간의 성공 애니메이션. |
 | `AI 물방울(피그마).png` | AI 제품 탐색 디자인에 쓰인 둥근 투명 젤·물방울. 가장자리에 옅은 블루·라벤더 광택이 있고 중심은 거의 흰색이다. | 402×402, PNG | 투명 | AI 대화 시작 화면의 심벌과 내 화장품 빈 상태. Figma image ref `2d129e…`의 보존 원본. |
+| `loading.mp4` / `loading.webm` | `로딩창 애니메이션.mp4`를 402×402로 유지하면서 회청색 배경을 순백으로 보정하고 오디오를 제거한 웹용 유리 버블 모션. | MP4(H.264, ~127KB) / WebM(VP9, ~288KB) | 흰색 | AI 모션·로그인 로딩의 실제 배포 원본. 배포본은 `frontend/public/skn-assets/ai-drop-motion.*`. |
+| `orb.png` | 웹용 로딩 영상과 프레임·흰 배경이 정확히 맞는 맑은 유리 버블 정지본. | 402×402, PNG | 흰색, 불투명 | 웹용 로딩 영상의 poster. 배포본은 `frontend/public/skn-assets/ai-drop-motion-poster.png`. |
 
 정지 아이콘이면 PNG, 상태 전환·피드백 모션이면 대응 MP4. 로딩은 `로딩창 애니메이션.mp4`가 전용.
 
+원본 `로딩창 애니메이션.mp4`는 보존용이다. 제품 UI에서는 오디오가 제거되고 배경색이 보정된
+`loading.webm` / `loading.mp4`와 짝이 맞는 `orb.png`를 함께 사용한다.
+
 ---
 
-## 온보딩 구체 — `assets/온보딩/`
+## 온보딩 — `assets/온보딩/`
 
-`sktn-prototype_2.html`에 내장되어 전달된 8단계 온보딩 전용 구체다. 모두 402×402 RGB PNG이며 흰 배경을 포함한다.
+| 파일 | 형태 | 크기·포맷 | 배경 | 용도 |
+| --- | --- | --- | --- | --- |
+| `orb.png` | 맑은 구형 세럼 버블. 라벤더·블루 계열의 은은한 이리데센트 광택. | 402×402, PNG | 흰색 | 로그인 전 시작 화면의 중심 오브젝트. 배포본은 `frontend/public/skn-assets/onboarding-orb.png`. |
+| `orb-male.png` / `orb-female.png` | 남성은 푸른빛, 여성은 분홍빛이 도는 유리 버블 정지 시안. | 각 402×402, PNG | 흰색 | 초기 정지 시안과 기존 경로 호환용. 배포본은 `onboarding-gender-{male|female}.png`, 실제 성별 선택 UI에는 아래 영상 세트를 쓴다. |
+| `gender-male.mp4` / `.webm` | 푸른빛 유리 버블이 유동하는 남성 선택 모션. 회색 사각형이 보이지 않도록 배경을 순백으로 보정하고 오디오를 제거했다. | 402×402, MP4(H.264, ~127KB) / WebM(VP9, ~235KB) | 흰색 | 온보딩 성별 선택의 남성 카드. 선택한 동안만 반복 재생한다. |
+| `gender-female.mp4` / `.webm` | 분홍빛 유리 버블이 유동하는 여성 선택 모션. 남성 세트와 같은 프레임·인코딩 규칙. | 402×402, MP4(H.264, ~125KB) / WebM(VP9, ~234KB) | 흰색 | 온보딩 성별 선택의 여성 카드. 선택한 동안만 반복 재생한다. |
+| `gender-male-poster.png` / `gender-female-poster.png` | 각 성별 영상의 첫 프레임과 정확히 맞는 푸른빛·분홍빛 유리 버블. | 각 402×402, PNG | 흰색, 불투명 | 선택 전 정지 상태, 영상 로딩 중, 재생 불가 환경의 대체 이미지. |
 
-| 파일 | 형태 | 용도 |
-| --- | --- | --- |
-| `orb.png` | 거의 투명한 유리·세럼 구체에 옅은 노랑·분홍·파랑 광택 | 온보딩 시작 화면. 배포 복사본은 `frontend/public/skn-assets/onboarding-orb.png`. |
-| `orb-male.png` | 같은 구체에 옅은 파란색을 입힌 변형 | 성별 선택의 남성 항목. 배포 복사본은 `frontend/public/skn-assets/onboarding-gender-male.png`. |
-| `orb-female.png` | 같은 구체에 옅은 분홍색을 입힌 변형 | 성별 선택의 여성 항목. 배포 복사본은 `frontend/public/skn-assets/onboarding-gender-female.png`. |
+성별 카드는 두 영상을 계속 마운트한 채 선택한 쪽만 처음부터 반복 재생하고, 선택하지 않은 쪽은
+첫 프레임에서 정지한다. 배포본 이름은 `frontend/public/skn-assets/onboarding-gender-{male|female}.{webm|mp4}`와
+`onboarding-gender-{male|female}-poster.png`이다.
+
+### 웹 모션 배포 규칙
+
+- 모든 모션은 무음 MP4(H.264)와 WebM(VP9), 영상 프레임과 정확히 맞는 poster PNG를 한 세트로 둔다.
+- 유리 오브젝트처럼 흰 여백까지 디자인에 포함된 영상은 `object-fit: contain`을 쓰고 원형 마스크나 강제 크롭을 적용하지 않는다.
+- poster를 먼저 표시하고 영상 데이터가 준비된 뒤 교체해 첫 프레임 번쩍임과 회색 테두리를 막는다.
+- 자동재생 영상은 `muted`, `playsinline`을 유지하고 `prefers-reduced-motion`에서는 poster만 보여준다.
+- 원본 고용량 파일은 `assets/`에 보존하되 제품 UI는 `frontend/public/skn-assets/`의 웹 최적화본만 참조한다.
 
 ---
 

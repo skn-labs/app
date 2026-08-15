@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Check, Eye, EyeOff } from 'lucide-react'
 import { api, ApiError } from '../lib/api'
-import { BrandMotion } from '../components/ui'
+import { AssetMotion } from '../components/ui'
 import { PrototypeHomeIndicator, PrototypePhone, PrototypeStatusBar, PrototypeTopMark } from '../components/PrototypeChrome'
 
 const REMEMBERED_USERNAME = 'skn:remembered-username'
@@ -84,6 +84,6 @@ export function AuthPage() {
       <p className="pb-2 pt-4 text-center"><button type="button" onClick={() => moveTo('welcome')} className="text-xs text-[#8e8e93] underline underline-offset-2">다른 방법으로 로그인</button></p>
     </form>
     <PrototypeHomeIndicator/>
-    {auth.isPending && <div className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-7 bg-white"><BrandMotion name="ai-drop-motion" poster="/skn-assets/ai-drop.png" alt="피부 데이터 불러오는 중" loop className="size-[200px] object-contain"/><p className="text-[13px] text-[#8e8e93]">피부 데이터를 불러오는 중이에요</p></div>}
+    {auth.isPending && <div className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-7 bg-white"><AssetMotion name="ai-drop-motion" poster="/skn-assets/ai-drop-motion-poster.png" alt="피부 데이터 불러오는 중" loop className="size-[200px]"/><p className="text-[13px] text-[#8e8e93]">피부 데이터를 불러오는 중이에요</p></div>}
   </PrototypePhone>
 }

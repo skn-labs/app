@@ -118,36 +118,67 @@ export function AiBadge() {
 }
 
 /**
- * 브랜드 모션 재생.
+ * 앱의 모든 브랜드 영상을 같은 품질과 재생 규칙으로 보여준다.
  *
- * webm → mp4 → poster 이미지 순으로 대체하므로 코덱이 없거나 자동재생이 막혀도
- * 화면이 비지 않는다. 재생이 불가능하면 onEnded 를 한 번 불러 흐름이 멈추지 않게 한다.
- * `prefers-reduced-motion` 을 켠 사용자에게는 정지 이미지만 보여준다.
+ * poster를 먼저 그리고 영상이 준비된 뒤에만 덮어 첫 프레임 번쩍임을 막는다.
+ * webm → mp4 → poster 순으로 대체하며, 동작 줄이기 설정이나 재생 실패 시에도
+ * 완료 콜백을 한 번 호출해 화면 전환이 멈추지 않게 한다.
  */
-export function BrandMotion({ name, poster, alt = '', loop = false, className = '', onEnded }: {
+export function AssetMotion({ name, poster, alt = '', loop = false, playing = true, className = '', mediaClassName = '', onEnded }: {
   name: string
   poster: string
   alt?: string
   loop?: boolean
+  playing?: boolean
   className?: string
+  mediaClassName?: string
   onEnded?: () => void
 }) {
   const video = useRef<HTMLVideoElement>(null)
-  const [failed, setFailed] = useState(() => typeof window !== 'undefined'
+  const [fallbackOnly, setFallbackOnly] = useState(() => typeof window !== 'undefined'
     && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches)
+  const [ready, setReady] = useState(false)
+  const previousPlaying = useRef(playing)
+  const endedOnce = useRef(false)
   const ended = useRef(onEnded)
   ended.current = onEnded
 
+  const finish = () => {
+    if (endedOnce.current) return
+    endedOnce.current = true
+    ended.current?.()
+  }
+
   useEffect(() => {
-    if (failed) { ended.current?.(); return }
-    video.current?.play().catch(() => { setFailed(true); ended.current?.() })
-  }, [failed, name])
+    endedOnce.current = false
+    setReady(false)
+  }, [name])
 
-  if (failed) return <img src={poster} alt={alt} aria-hidden={!alt} className={className}/>
+  useEffect(() => {
+    if (fallbackOnly) { finish(); return }
+    const element = video.current
+    if (!element) return
+    if (!playing) {
+      element.pause()
+      element.currentTime = 0
+    } else {
+      if (!previousPlaying.current) element.currentTime = 0
+      element.play().catch(() => setFallbackOnly(true))
+    }
+    previousPlaying.current = playing
+  }, [fallbackOnly, name, playing])
 
-  return <video ref={video} poster={poster} autoPlay muted playsInline loop={loop} preload="auto"
-    aria-label={alt || undefined} onEnded={() => ended.current?.()} className={className}>
-    <source src={`/skn-assets/${name}.webm`} type="video/webm"/>
-    <source src={`/skn-assets/${name}.mp4`} type="video/mp4"/>
-  </video>
+  const mediaClasses = twMerge('absolute inset-0 block h-full w-full object-contain', mediaClassName)
+
+  return <span role={alt ? 'img' : undefined} aria-label={alt || undefined} aria-hidden={!alt}
+    className={twMerge('relative block shrink-0 overflow-hidden bg-transparent', className)}>
+    <img src={poster} alt="" draggable={false} className={mediaClasses}/>
+    {!fallbackOnly && <video ref={video} poster={poster} autoPlay={playing} muted playsInline loop={loop}
+      preload={playing ? 'auto' : 'metadata'} disablePictureInPicture controlsList="nodownload noplaybackrate nofullscreen"
+      onLoadedData={() => setReady(true)} onError={() => setFallbackOnly(true)} onEnded={finish}
+      className={twMerge(mediaClasses, 'transition-opacity duration-150 motion-reduce:transition-none', ready ? 'opacity-100' : 'opacity-0')}>
+      <source src={`/skn-assets/${name}.webm`} type="video/webm"/>
+      <source src={`/skn-assets/${name}.mp4`} type="video/mp4"/>
+    </video>}
+  </span>
 }

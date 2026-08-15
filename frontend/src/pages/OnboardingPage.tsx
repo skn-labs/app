@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import type { Auth, SkinProfile } from '../lib/types'
 import { api } from '../lib/api'
-import { BrandMotion } from '../components/ui'
+import { AssetMotion } from '../components/ui'
 import { PrototypeHomeIndicator, PrototypePhone, PrototypeStatusBar, PrototypeTopMark } from '../components/PrototypeChrome'
 
 type DraftProfile = {
@@ -192,11 +192,11 @@ function AgeWheel({ value, onChange }: { value: DraftProfile['ageRange']; onChan
 
 function GenderPicker({ value, onChange }: { value: DraftProfile['gender']; onChange: (value: SkinProfile['gender']) => void }) {
   return <div role="radiogroup" aria-label="성별" className="flex gap-4 pt-6">
-    {GENDERS.map(([code, label]) => <button type="button" role="radio" aria-checked={value === code} key={code} onClick={() => onChange(code)} className={`relative flex flex-1 flex-col items-center gap-4 rounded-[24px] border px-2 pb-5 pt-3 transition active:scale-[.98] ${value === code ? 'border-[#0a0a0a] bg-[#fafafa]' : 'border-transparent bg-transparent'}`}>
-      <img src={`/skn-assets/onboarding-gender-${code === 'MALE' ? 'male' : 'female'}.png`} alt="" className={`size-[130px] object-contain transition-opacity ${value && value !== code ? 'opacity-35' : 'opacity-100'}`}/>
+    {GENDERS.map(([code, label]) => { const asset = `onboarding-gender-${code === 'MALE' ? 'male' : 'female'}`; return <button type="button" role="radio" aria-checked={value === code} key={code} onClick={() => onChange(code)} className={`relative flex flex-1 flex-col items-center gap-4 rounded-[24px] border px-2 pb-5 pt-3 transition active:scale-[.98] ${value === code ? 'border-[#0a0a0a] bg-[#fafafa]' : 'border-transparent bg-transparent'}`}>
+      <AssetMotion name={asset} poster={`/skn-assets/${asset}-poster.png`} loop playing={value === code} className={`size-[130px] transition duration-200 ${value && value !== code ? 'scale-95 opacity-35' : 'scale-100 opacity-100'}`}/>
       <span className={`text-[15px] ${value === code ? 'font-bold text-[#0a0a0a]' : 'text-[#c7c7cc]'}`}>{label}</span>
       {value === code && <span aria-hidden="true" className="absolute right-3 top-3 grid size-6 place-items-center rounded-full bg-black text-xs font-bold text-white">✓</span>}
-    </button>)}
+    </button>})}
   </div>
 }
 
@@ -254,7 +254,7 @@ function CompleteStep({ profile, onDone }: { profile: SkinProfile; onDone: () =>
   }, [exiting, onDone])
 
   const summary = [labelFor(AGE_RANGES, profile.ageRange), labelFor(GENDERS, profile.gender), labelFor(SKIN_TYPES, profile.skinType)].join(' · ')
-  return <PrototypePhone><button type="button" onClick={() => scheduleExit(true)} aria-label="완료 화면을 닫고 메인으로 이동" className={`flex min-h-0 flex-1 flex-col text-[#0a0a0a] transition-opacity duration-[600ms] ease-out ${exiting ? 'opacity-0' : 'opacity-100'}`}><PrototypeStatusBar/><PrototypeTopMark/><div className="flex min-h-0 flex-1 flex-col px-7"><div className="pt-14 text-center"><h1 className="text-[22px] font-bold leading-[1.4] tracking-[-.02em]">나만의 피부 프로필이<br/>완성됐어요.</h1><p className="mt-3 text-[13px] text-[#8e8e93]">{summary}</p></div><div className="flex flex-1 items-center justify-center"><BrandMotion name="check-motion" poster="/skn-assets/check-motion.png" alt="프로필 설정 완료" className="size-[240px] object-contain" onEnded={() => scheduleExit(false)}/></div><p className="pb-10 text-center text-xs text-[#c7c7cc]">화면을 누르면 바로 시작할 수 있어요</p></div><PrototypeHomeIndicator/></button></PrototypePhone>
+  return <PrototypePhone><button type="button" onClick={() => scheduleExit(true)} aria-label="완료 화면을 닫고 메인으로 이동" className={`flex min-h-0 flex-1 flex-col text-[#0a0a0a] transition-opacity duration-[600ms] ease-out ${exiting ? 'opacity-0' : 'opacity-100'}`}><PrototypeStatusBar/><PrototypeTopMark/><div className="flex min-h-0 flex-1 flex-col px-7"><div className="pt-14 text-center"><h1 className="text-[22px] font-bold leading-[1.4] tracking-[-.02em]">나만의 피부 프로필이<br/>완성됐어요.</h1><p className="mt-3 text-[13px] text-[#8e8e93]">{summary}</p></div><div className="flex flex-1 items-center justify-center"><AssetMotion name="check-motion" poster="/skn-assets/check-motion.png" alt="프로필 설정 완료" className="size-[240px]" onEnded={() => scheduleExit(false)}/></div><p className="pb-10 text-center text-xs text-[#c7c7cc]">화면을 누르면 바로 시작할 수 있어요</p></div><PrototypeHomeIndicator/></button></PrototypePhone>
 }
 
 function labelFor<T extends string>(options: readonly (readonly [T, string])[], value: T) {
