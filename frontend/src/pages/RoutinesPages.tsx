@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { ChevronRight, FlaskConical, MessageCircle, Plus, Sparkles } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
 import { api, ApiError } from '../lib/api'
+import { startChatPath } from '../lib/chat'
 import type { Routine } from '../lib/types'
 import { AppHeader, ErrorState, Loading, Screen } from '../components/ui'
 import routineCard1 from '../assets/figma/routine-card-1.webp'
@@ -12,7 +13,7 @@ import routineCard3 from '../assets/figma/routine-card-3.webp'
 const routineCards = [routineCard1, routineCard2, routineCard3]
 
 function dayPartLabel(dayPart: Routine['dayPart']) { return dayPart === 'MORNING' ? '아침' : dayPart === 'EVENING' ? '저녁' : '아무때나' }
-function formatDate(value: string) { const date = new Date(value.replace(' ', 'T') + 'Z'); return Number.isNaN(date.getTime()) ? value.slice(0, 10) : new Intl.DateTimeFormat('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' }).format(date) }
+function formatDate(value: string) { const normalized = /Z$|[+-]\d\d:\d\d$/.test(value) ? value : `${value.replace(' ', 'T')}Z`; const date = new Date(normalized); return Number.isNaN(date.getTime()) ? value.slice(0, 10) : new Intl.DateTimeFormat('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' }).format(date) }
 function isNotFound(error: unknown) { return error instanceof ApiError && error.status === 404 }
 function statusLabel(routine: Routine, current?: Routine) { return routine.id === current?.id ? '현재 사용 중' : '비교 기준 루틴' }
 
@@ -22,6 +23,7 @@ export function RoutineListPage() {
   const baseline = useQuery({ queryKey: ['baseline-routine'], queryFn: api.baselineRoutine, retry: false })
   const [expandedId, setExpandedId] = useState<number | null>(null)
   const [activeIndex, setActiveIndex] = useState(0)
+  const carousel = useRef<HTMLDivElement>(null)
 
   if (current.isPending || baseline.isPending || auth.isPending) return <Screen><AppHeader/><Loading/></Screen>
   const loadError = auth.error || (current.error && !isNotFound(current.error) ? current.error : null) || (baseline.error && !isNotFound(baseline.error) ? baseline.error : null)
@@ -36,23 +38,30 @@ export function RoutineListPage() {
     const closest = cards.reduce((best, card, index) => Math.abs(card.offsetLeft + card.offsetWidth / 2 - center) < best.distance ? { index, distance: Math.abs(card.offsetLeft + card.offsetWidth / 2 - center) } : best, { index: 0, distance: Number.POSITIVE_INFINITY })
     setActiveIndex(closest.index)
   }
+  const showCard = (index: number) => {
+    const element = carousel.current
+    const card = element?.querySelectorAll<HTMLElement>('[data-routine-card]')[index]
+    if (!element || !card) return
+    element.scrollTo({ left: card.offsetLeft - (element.clientWidth - card.offsetWidth) / 2, behavior: 'smooth' })
+    setActiveIndex(index)
+  }
 
   return <Screen className="bg-white">
     <AppHeader/>
     <div className="px-5 pt-4">
       <div className="flex items-start justify-between gap-4">
-        <div><h1 className="text-[36px] font-medium leading-[1.08] tracking-[-.045em]">{auth.data?.displayName} 님의 루틴</h1><p className="mt-3 text-[15px] text-[#8e8e93]">총 {routines.length}개의 루틴이 있어요</p></div>
+        <div className="min-w-0"><h1 className="break-words text-[clamp(30px,9vw,36px)] font-medium leading-[1.08] tracking-[-.045em]">{auth.data?.displayName} 님의 루틴</h1><p className="mt-3 text-[14px] text-[#8e8e93]">현재·비교 기준 루틴 {routines.length}개</p></div>
         <Link to="/routine/edit" aria-label="새 루틴 만들기" className="mt-1 grid size-12 shrink-0 place-items-center rounded-full bg-white shadow-[0_5px_18px_rgba(0,0,0,.12)] transition active:scale-95"><Plus size={23} strokeWidth={1.8}/></Link>
       </div>
     </div>
 
     {routines.length === 0 ? <EmptyRoutineList/>
       : <section className="mt-10" aria-label="나의 루틴 카드">
-        <div onScroll={event => handleScroll(event.currentTarget)} className="hide-scrollbar flex snap-x snap-mandatory gap-4 overflow-x-auto px-[calc((100%_-_260px)/2)] pb-5">
+        <div ref={carousel} onScroll={event => handleScroll(event.currentTarget)} className="hide-scrollbar flex snap-x snap-mandatory gap-4 overflow-x-auto px-[calc((100%_-_260px)/2)] pb-5">
           {routines.map((routine, index) => <RoutineCarouselCard key={routine.id} routine={routine} current={current.data} image={routineCards[index % routineCards.length]} expanded={expandedId === routine.id} onExpand={() => setExpandedId(routine.id)} onCollapse={() => setExpandedId(null)}/>) }
         </div>
-        <div className="mt-2 flex justify-center gap-2" aria-label={`${routines.length}개 카드 중 ${activeIndex + 1}번째`}>{routines.map((routine, index) => <span key={routine.id} className={`size-2 rounded-full transition-all ${index === activeIndex ? 'bg-[#0a0a0a]' : 'bg-[#d1d1d6]'}`}/>)}</div>
-        <p className="mt-4 text-center text-[11px] text-[#8e8e93]">{expandedId ? '세부 내용 보기에서 제품 구성과 기록 맥락을 확인할 수 있어요.' : '카드를 누르면 루틴 요약을 먼저 보여드려요.'}</p>
+        <div className="mt-2 flex justify-center gap-1" aria-label={`${routines.length}개 카드 중 ${activeIndex + 1}번째`}>{routines.map((routine, index) => <button type="button" key={routine.id} onClick={() => showCard(index)} aria-label={`${index + 1}번째 루틴 보기`} aria-current={index === activeIndex ? 'true' : undefined} className="grid size-7 place-items-center rounded-full"><span className={`block rounded-full transition-all ${index === activeIndex ? 'h-2 w-5 bg-[#0a0a0a]' : 'size-2 bg-[#d1d1d6]'}`}/></button>)}</div>
+        <p aria-live="polite" className="mt-3 px-5 text-center text-[11px] text-[#8e8e93]">{expandedId ? '제품 구성과 상태를 확인했어요. 세부 화면에서 전체 순서를 볼 수 있어요.' : '카드를 누르면 루틴 요약을 먼저 보여드려요.'}</p>
       </section>}
   </Screen>
 }
@@ -94,12 +103,12 @@ export function RoutineDetailPage() {
     : '불편함이 없었다고 남긴 마지막 비교 기준 루틴이에요. 이후 루틴의 변경점과 경험을 비교할 때만 참고해요.'
 
   return <Screen className="bg-white">
-    <AppHeader/>
+    <AppHeader back backTo="/routines"/>
     <div className="px-5 pb-12 pt-4">
       <div className="flex items-start justify-between gap-4"><div><h1 className="text-[38px] font-medium leading-tight tracking-[-.045em]">{routine.name}</h1><p className="mt-3 text-[15px] text-[#8e8e93]">{formatDate(routine.startedAt)}</p></div>{isCurrent && <Link to="/routine/edit" className="mt-2 shrink-0 border-b border-[#8e8e93] pb-0.5 text-[14px] text-[#636366]">편집</Link>}</div>
 
       <section className="mt-8 rounded-[24px] bg-[#f5fbed] px-5 py-6" aria-labelledby="routine-analysis-title">
-        <h2 id="routine-analysis-title" className="flex items-center gap-2 text-[20px] font-medium"><Sparkles size={22} strokeWidth={1.7}/>AI 분석</h2>
+        <h2 id="routine-analysis-title" className="flex items-center gap-2 text-[20px] font-medium"><Sparkles size={22} strokeWidth={1.7}/>경험 연결</h2>
         <p className="mt-7 text-[21px] font-medium leading-[1.4] tracking-[-.03em]">{isCurrent ? '현재 루틴의 경험을 연결하고 있어요' : '변화를 비교하는 기준 루틴이에요'}</p>
         <p className="mt-4 text-[13px] leading-6 text-[#4f534d]">{analysis}</p>
 
@@ -116,6 +125,6 @@ export function RoutineDetailPage() {
       <img src="/skn-assets/skn-wordmark.png" alt="SKN" className="mx-auto mt-12 h-12 w-auto object-contain"/>
     </div>
 
-    <div className="pointer-events-none fixed inset-x-0 bottom-28 z-20 mx-auto flex max-w-[430px] justify-end px-5"><Link to="/ai" aria-label="이 루틴에 대해 AI에게 질문하기" className="pointer-events-auto grid size-14 place-items-center rounded-full bg-[#0a0a0a] text-white shadow-[0_8px_24px_rgba(0,0,0,.22)] transition active:scale-95"><MessageCircle size={25}/></Link></div>
+    <div className="pointer-events-none fixed inset-x-0 bottom-28 z-20 mx-auto flex max-w-[430px] justify-end px-5"><Link to={startChatPath('GENERAL', `${routine.name} 루틴의 제품 순서와 지금까지 남긴 경험을 함께 살펴봐줘.`)} aria-label="이 루틴에 대해 AI에게 질문하기" className="pointer-events-auto grid size-14 place-items-center rounded-full bg-[#0a0a0a] text-white shadow-[0_8px_24px_rgba(0,0,0,.22)] transition hover:bg-black active:scale-95"><MessageCircle size={25}/></Link></div>
   </Screen>
 }

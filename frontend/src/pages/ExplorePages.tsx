@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from 'react'
+import { useDeferredValue, useEffect, useRef, useState } from 'react'
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowRight, BadgeCheck, ChevronLeft, ChevronRight, ExternalLink, Plus, Search, Sparkles, X } from 'lucide-react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { api } from '../lib/api'
+import { api, ApiError } from '../lib/api'
 import { startChatPath } from '../lib/chat'
 import type { Product, ProductFact, ProductGuide, UserProduct } from '../lib/types'
 import { Button, EmptyState, ErrorState, Loading, ProductGlyph, Screen, SknMark, TopBar } from '../components/ui'
@@ -10,17 +10,20 @@ import { Button, EmptyState, ErrorState, Loading, ProductGlyph, Screen, SknMark,
 export function ExplorePage() {
   const navigate = useNavigate()
   const [query, setQuery] = useState('')
+  const deferredQuery = useDeferredValue(query.trim())
   const loadMoreRef = useRef<HTMLDivElement>(null)
   const products = useInfiniteQuery({
-    queryKey: ['product-pages', query],
+    queryKey: ['product-pages', deferredQuery],
     initialPageParam: null as string | null,
-    queryFn: ({ pageParam }) => api.products(query, pageParam, 24),
+    queryFn: ({ pageParam }) => api.products(deferredQuery, pageParam, 24),
     getNextPageParam: lastPage => lastPage.hasMore ? lastPage.nextCursor : undefined,
   })
   const productItems = products.data?.pages.flatMap(page => page.items) || []
   const { fetchNextPage, hasNextPage, isFetchingNextPage } = products
   const openRecommendationChat = () => navigate(startChatPath('RECOMMEND', '내가 좋아했던 사용감과 아쉬웠던 경험을 바탕으로 다음에 탐색할 제품 후보를 찾아줘.'))
   const contextualProduct = productItems.find(product => product.personalRecordCount > 0) || productItems[0]
+  const hasPersonalContext = Boolean(contextualProduct?.personalRecordCount)
+  const searching = query.trim() !== deferredQuery
   useEffect(() => {
     const target = loadMoreRef.current
     if (!target || !hasNextPage) return
@@ -34,16 +37,17 @@ export function ExplorePage() {
     <TopBar title="탐색" right={<Link to="/my-products" className="whitespace-nowrap text-xs font-semibold text-muted">내 화장품</Link>}/>
     <div className="px-5 pt-6">
       <h1 className="text-[28px] font-bold tracking-[-.045em]">다음에 써볼 제품</h1><p className="mt-2 text-sm leading-6 text-muted">인기 순위보다, 이전에 남긴 내 경험과<br/>비교하며 탐색해요.</p>
-      <div className="sticky top-16 z-10 -mx-1 mt-5 bg-paper/95 px-1 py-3 backdrop-blur"><label className="flex h-12 items-center gap-3 rounded-2xl border border-line bg-white px-4 focus-within:border-accent"><Search size={19} className="text-muted"/><input value={query} onChange={e => setQuery(e.target.value)} placeholder="브랜드 또는 제품명" className="min-w-0 flex-1 bg-transparent text-sm outline-none"/>{query && <button aria-label="검색어 지우기" onClick={() => setQuery('')}><X size={17} className="text-muted"/></button>}</label></div>
-      {!query && contextualProduct && <section className="mb-7"><h2 className="text-sm font-bold">내 기록에서 다시 볼 제품</h2><div className="mt-3 grid grid-cols-2 gap-3"><Link to={`/products/${contextualProduct.id}`} className="rounded-[22px] border border-line bg-white p-4"><ProductGlyph category={contextualProduct.category} src={contextualProduct.imageUrl}/><p className="mt-3 text-[10px] font-semibold text-muted">{contextualProduct.brand}</p><h3 className="mt-1 line-clamp-2 text-sm font-bold leading-5">{contextualProduct.name}</h3><p className="mt-2 text-[10px] font-bold text-accent">{contextualProduct.personalRecordCount ? `내 기록 ${contextualProduct.personalRecordCount}건과 비교` : '제품 정보 살펴보기'}</p></Link><button onClick={openRecommendationChat} className="rounded-[22px] border border-[#d9ddff] bg-[#f8f8ff] p-4 text-left"><div className="grid size-12 place-items-center rounded-2xl bg-accent-soft text-accent"><Sparkles size={20}/></div><p className="mt-4 text-[10px] font-semibold text-accent">SKN AI</p><h3 className="mt-1 text-sm font-bold leading-5">내 패턴에서<br/>다음 제품 찾기</h3><p className="mt-2 text-[10px] text-muted">후보와 비교할 이유 확인</p></button></div><div className="mt-5 flex gap-2 overflow-x-auto pb-1"><span className="shrink-0 rounded-full bg-soft px-3 py-2 text-[11px] font-semibold text-muted">밀림 없는 조합</span><span className="shrink-0 rounded-full bg-soft px-3 py-2 text-[11px] font-semibold text-muted">가벼운 사용감</span><span className="shrink-0 rounded-full bg-soft px-3 py-2 text-[11px] font-semibold text-muted">저녁 레이어링</span></div></section>}
-      <h2 className="mb-3 text-sm font-bold">{query ? '검색 결과' : '전체 제품'}</h2>
-      {products.isPending ? <Loading/> : products.isError && !productItems.length ? <ErrorState message={products.error.message} onRetry={() => products.refetch()}/> : productItems.length ? <><div className="space-y-2">{productItems.map(product => <ProductRow key={product.id} product={product}/>)}</div><div ref={loadMoreRef} className="grid min-h-24 place-items-center pb-4" aria-live="polite">{isFetchingNextPage ? <div className="flex items-center gap-2 text-xs text-muted"><span className="size-4 animate-spin rounded-full border-2 border-line border-t-accent"/>제품 더 불러오는 중</div> : products.isFetchNextPageError ? <button onClick={() => fetchNextPage()} className="rounded-full border border-line bg-white px-4 py-2 text-xs font-semibold">다시 불러오기</button> : !hasNextPage ? <p className="text-[11px] text-muted">{query ? '검색된 제품을 모두 봤어요.' : '모든 제품을 봤어요.'}</p> : null}</div></> : <EmptyState icon={<Search/>} title="검색 결과가 없어요" body="브랜드나 제품명을 다시 확인해주세요." action={query ? <Button variant="secondary" onClick={() => setQuery('')}>전체 제품 보기</Button> : undefined}/>} 
+      <div className="sticky top-[calc(64px+env(safe-area-inset-top))] z-10 -mx-1 mt-5 bg-paper/95 px-1 py-3 backdrop-blur"><label className="flex h-12 items-center gap-3 rounded-2xl border border-line bg-white px-4 transition focus-within:border-accent focus-within:ring-4 focus-within:ring-accent-soft"><Search size={19} className="text-muted"/><input value={query} onChange={e => setQuery(e.target.value)} aria-label="제품 검색" enterKeyHint="search" autoComplete="off" placeholder="브랜드 또는 제품명" className="min-w-0 flex-1 bg-transparent text-sm outline-none"/>{searching && <span aria-label="검색 중" className="size-4 animate-spin rounded-full border-2 border-line border-t-accent"/>}{query && <button type="button" aria-label="검색어 지우기" onClick={() => setQuery('')} className="grid size-9 place-items-center rounded-full hover:bg-soft"><X size={17} className="text-muted"/></button>}</label></div>
+      {!deferredQuery && contextualProduct && <section className="mb-7"><h2 className="text-sm font-bold">{hasPersonalContext ? '내 기록에서 다시 볼 제품' : '제품 정보부터 둘러보기'}</h2><div className="mt-3 grid grid-cols-2 gap-3"><Link to={`/products/${contextualProduct.id}`} className="rounded-[22px] border border-line bg-white p-4 transition hover:border-[#cfd4cc] active:scale-[.99]"><ProductGlyph category={contextualProduct.category} src={contextualProduct.imageUrl}/><p className="mt-3 text-[10px] font-semibold text-muted">{contextualProduct.brand}</p><h3 className="mt-1 line-clamp-2 text-sm font-bold leading-5">{contextualProduct.name}</h3><p className="mt-2 text-[10px] font-bold text-accent">{hasPersonalContext ? `내 기록 ${contextualProduct.personalRecordCount}건과 비교` : '제품 정보 살펴보기'}</p></Link><button type="button" onClick={openRecommendationChat} className="rounded-[22px] border border-[#d9ddff] bg-[#f8f8ff] p-4 text-left transition hover:border-[#bfc6f5] active:scale-[.99]"><div className="grid size-12 place-items-center rounded-2xl bg-accent-soft text-accent"><Sparkles size={20}/></div><p className="mt-4 text-[10px] font-semibold text-accent">SKN AI</p><h3 className="mt-1 text-sm font-bold leading-5">내 경험에서<br/>다음 제품 찾기</h3><p className="mt-2 text-[10px] text-muted">근거가 부족하면 그대로 알려드려요</p></button></div></section>}
+      <h2 className="mb-3 text-sm font-bold">{deferredQuery ? '검색 결과' : '전체 제품'}</h2>
+      {products.isPending ? <Loading/> : products.isError && !productItems.length ? <ErrorState message={products.error.message} onRetry={() => products.refetch()}/> : productItems.length ? <><div className="space-y-2">{productItems.map(product => <ProductRow key={product.id} product={product}/>)}</div><div ref={loadMoreRef} className="grid min-h-24 place-items-center pb-4" aria-live="polite">{isFetchingNextPage ? <div className="flex items-center gap-2 text-xs text-muted"><span className="size-4 animate-spin rounded-full border-2 border-line border-t-accent"/>제품 더 불러오는 중</div> : products.isFetchNextPageError ? <button type="button" onClick={() => fetchNextPage()} className="rounded-full border border-line bg-white px-4 py-2 text-xs font-semibold">다시 불러오기</button> : !hasNextPage ? <p className="text-[11px] text-muted">{deferredQuery ? '검색된 제품을 모두 봤어요.' : '모든 제품을 봤어요.'}</p> : null}</div></> : <EmptyState icon={<Search/>} title="검색 결과가 없어요" body="브랜드나 제품명을 다시 확인해주세요." action={deferredQuery ? <Button variant="secondary" onClick={() => setQuery('')}>전체 제품 보기</Button> : undefined}/>}
     </div>
   </Screen>
 }
 
 function ProductRow({ product }: { product: Product }) {
-  return <Link to={`/products/${product.id}`} className="flex items-center rounded-[20px] border border-line bg-white p-3 transition active:scale-[.99]"><ProductGlyph category={product.category} src={product.imageUrl}/><div className="min-w-0 flex-1 pr-1"><div className="flex items-center gap-1.5 text-[11px] font-semibold text-muted"><span>{product.brand}</span>{product.verified && <BadgeCheck size={13} className="text-accent"/>}</div><h2 className="mt-1 truncate text-[15px] font-bold tracking-[-.02em]">{product.name}</h2><p className="mt-1 text-xs text-muted">{product.category} · {product.volume}</p>{product.personalRecordCount > 0 ? <p className="mt-2 inline-flex rounded-full bg-accent-soft px-2 py-1 text-[10px] font-bold text-accent">내 비교 기록 {product.personalRecordCount}건</p> : product.owned ? <p className="mt-2 text-[10px] font-bold text-muted">내 화장품에 있음</p> : null}</div><ChevronRight size={18} className="text-muted"/></Link>
+  const details = [product.category, product.volume].filter(Boolean).join(' · ')
+  return <Link to={`/products/${product.id}`} className="flex items-center rounded-[20px] border border-line bg-white p-3 transition hover:border-[#cfd4cc] active:scale-[.99]"><ProductGlyph category={product.category} src={product.imageUrl}/><div className="min-w-0 flex-1 pr-1"><div className="flex items-center gap-1.5 text-[11px] font-semibold text-muted"><span>{product.brand}</span>{product.verified && <BadgeCheck size={13} className="text-accent"/>}</div><h2 className="mt-1 truncate text-[15px] font-bold tracking-[-.02em]">{product.name}</h2>{details && <p className="mt-1 text-xs text-muted">{details}</p>}{product.personalRecordCount > 0 ? <p className="mt-2 inline-flex rounded-full bg-accent-soft px-2 py-1 text-[10px] font-bold text-accent">내 비교 기록 {product.personalRecordCount}건</p> : product.owned ? <p className="mt-2 text-[10px] font-bold text-muted">내 화장품에 있음</p> : null}</div><ChevronRight size={18} className="text-muted"/></Link>
 }
 
 export function ProductPage() {
@@ -63,6 +67,7 @@ export function ProductPage() {
       queryClient.invalidateQueries({ queryKey: ['home'] })
     },
   })
+  if (!Number.isSafeInteger(productId) || productId < 1) return <Screen nav={false}><TopBar title="제품" back/><ErrorState message="제품 주소를 확인해주세요."/></Screen>
   if (product.isPending) return <Screen nav={false}><TopBar title="제품" back/><Loading/></Screen>
   if (product.isError) return <Screen nav={false}><TopBar title="제품" back/><ErrorState message={product.error.message} onRetry={() => product.refetch()}/></Screen>
   const data = product.data
@@ -85,7 +90,6 @@ export function ProductPage() {
       : '이 제품을 확인된 정보와 현재 루틴을 바탕으로 같이 살펴봐줘.',
     { productId },
   ))
-
   return <Screen nav={false} className="bg-white pb-44">
     <CatalogHeader onBack={() => navigate(-1)} onAdd={() => navigate('/explore')}/>
     <div className="pb-8">
@@ -99,7 +103,7 @@ export function ProductPage() {
         <div className="py-8"><ProductAiAction product={data} onClick={openProductChat}/></div>
       </div>
     </div>
-    <div className="safe-bottom fixed inset-x-0 bottom-0 z-20 mx-auto max-w-[402px] bg-white/97 px-4 pb-4 pt-3 backdrop-blur-xl">
+    <div className="safe-bottom fixed inset-x-0 bottom-0 z-20 mx-auto max-w-[430px] border-t border-line/70 bg-white/97 px-4 pb-4 pt-3 backdrop-blur-xl">
       {added && <p className="mb-2 text-center text-[11px] font-semibold text-[#52722d]">내 화장품에 담았어요. 현재 루틴은 바뀌지 않아요.</p>}
       {add.error && <p className="mb-2 text-center text-[11px] font-semibold leading-5 text-danger">{add.error.message}</p>}
       {owned ? <div className="grid grid-cols-2 gap-2.5"><Button className="rounded-full border-0 bg-[#edf3ff]" variant="secondary" onClick={() => navigate('/my-products')}>내 화장품</Button><Button className="rounded-full bg-black" onClick={openProductChat}>{data.personalRecordCount > 0 ? '내 기록 비교' : 'AI에게 묻기'}</Button></div> : <div className="grid grid-cols-2 gap-2.5">
@@ -222,11 +226,14 @@ export function ShelfPage() {
   const routineIds = new Set(current.data?.items.map(item => item.userProductId) || [])
   const filtered = products.data?.filter(item => filter === 'ALL' || (filter === 'ROUTINE' ? routineIds.has(item.id) : !routineIds.has(item.id) && !(item.product?.personalRecordCount)))
   const unusedCount = products.data?.filter(item => !routineIds.has(item.id) && !item.product?.personalRecordCount).length || 0
+  const currentError = current.error instanceof ApiError && current.error.status === 404 ? null : current.error
+  if (products.isPending || current.isPending) return <Screen><CatalogHeader onBack={() => navigate(-1)} onAdd={() => navigate('/explore')}/><Loading label="내 화장품을 정리하는 중"/></Screen>
+  if (products.isError || currentError) return <Screen><CatalogHeader onBack={() => navigate(-1)} onAdd={() => navigate('/explore')}/><ErrorState message={(products.error || currentError)?.message || '내 화장품을 불러오지 못했어요.'} onRetry={() => { products.refetch(); current.refetch() }}/></Screen>
   return <Screen className="bg-white">
     <CatalogHeader onBack={() => navigate(-1)} onAdd={() => navigate('/explore')}/>
     <div className="px-5 pb-8"><h1 className="text-[31px] font-semibold tracking-[-.055em]">내가 가진 화장품</h1><p className="mt-2 text-[14px] text-[#8c8c8c]">루틴에 넣을 제품을 고를 수 있어요.</p>
-      {!!products.data?.length && <div className="mt-8 flex gap-2">{([['ALL',`전체 ${products.data.length}`],['ROUTINE',`현재 루틴 ${routineIds.size}`],['UNUSED',`아직 안 써봄 ${unusedCount}`]] as const).map(([value,label]) => <button key={value} onClick={() => setFilter(value)} className={`whitespace-nowrap rounded-full border px-4 py-2 text-[13px] font-medium ${filter === value ? 'border-black bg-black text-white' : 'border-[#cfe0ff] bg-white text-[#9ab8e8]'}`}>{label}</button>)}</div>}
-      {products.isPending ? <Loading/> : products.data?.length ? filtered?.length ? <div className="mt-4 grid grid-cols-2 gap-3">{filtered.map(item => <ShelfCard key={item.id} item={item} inRoutine={routineIds.has(item.id)} onStart={() => {
+      {!!products.data?.length && <div className="hide-scrollbar mt-8 flex gap-2 overflow-x-auto pb-1">{([['ALL',`전체 ${products.data.length}`],['ROUTINE',`현재 루틴 ${routineIds.size}`],['UNUSED',`아직 안 써봄 ${unusedCount}`]] as const).map(([value,label]) => <button type="button" aria-pressed={filter === value} key={value} onClick={() => setFilter(value)} className={`whitespace-nowrap rounded-full border px-4 py-2 text-[13px] font-medium ${filter === value ? 'border-black bg-black text-white' : 'border-[#cfe0ff] bg-white text-[#5f7396]'}`}>{label}</button>)}</div>}
+      {products.data?.length ? filtered?.length ? <div className="mt-4 grid grid-cols-2 gap-3">{filtered.map(item => <ShelfCard key={item.id} item={item} inRoutine={routineIds.has(item.id)} onStart={() => {
         if (item.product) navigate(`/products/${item.product.id}`)
         else navigate('/routine/edit')
       }}/>)}</div> : <ShelfEmpty filter={filter} onAdd={() => navigate('/explore')}/> : <ShelfEmpty filter="ALL" onAdd={() => navigate('/explore')}/>}
@@ -236,15 +243,16 @@ export function ShelfPage() {
 
 function ShelfCard({ item, inRoutine, onStart }: { item: UserProduct; inRoutine: boolean; onStart: () => void }) {
   const product = item.product
-  return <button onClick={onStart} className="min-h-[198px] rounded-[20px] border border-[#cfe0ff] bg-[#fcfdff] px-3 pb-3 pt-3 text-left"><p className="truncate text-[10px] text-[#8c8c8c]">{product?.brand || item.customBrand || '브랜드 미입력'} {product?.category || item.customCategory}</p><h2 className="mt-1 truncate text-[13px] font-semibold leading-5">・ {product?.name || item.customName}</h2><div className="mt-2 grid h-[96px] place-items-center rounded-[15px] border border-dashed border-[#d8e6ff] bg-white">{product?.imageUrl ? <img src={product.imageUrl} alt="" className="h-[88px] w-auto object-contain"/> : <ProductGlyph category={product?.category || item.customCategory} size="sm"/>}</div><p className="mt-2 text-[10px] font-medium text-[#9ec1ff]">{inRoutine ? '현재 루틴' : product?.personalRecordCount ? `연결된 경험 ${product.personalRecordCount}건` : '아직 안 써봄'} <ArrowRight className="inline" size={11}/></p></button>
+  const name = product?.name || item.customName || '이름 없는 제품'
+  return <button type="button" onClick={onStart} aria-label={`${name} 상세 보기`} className="min-h-[198px] rounded-[20px] border border-[#cfe0ff] bg-[#fcfdff] px-3 pb-3 pt-3 text-left transition hover:border-[#a9c6f3] active:scale-[.99]"><p className="truncate text-[10px] text-[#737880]">{product?.brand || item.customBrand || '브랜드 미입력'} {product?.category || item.customCategory}</p><h2 className="mt-1 truncate text-[13px] font-semibold leading-5">・ {name}</h2><div className="mt-2 grid h-[96px] place-items-center rounded-[15px] border border-dashed border-[#d8e6ff] bg-white">{product?.imageUrl ? <img src={product.imageUrl} alt="" className="h-[88px] w-auto object-contain"/> : <ProductGlyph category={product?.category || item.customCategory} size="sm"/>}</div><p className="mt-2 text-[10px] font-medium text-[#5f7396]">{inRoutine ? '현재 루틴' : product?.personalRecordCount ? `연결된 경험 ${product.personalRecordCount}건` : '아직 안 써봄'} <ArrowRight className="inline" size={11}/></p></button>
 }
 
 function ShelfEmpty({ filter, onAdd }: { filter: 'ALL' | 'ROUTINE' | 'UNUSED'; onAdd: () => void }) {
   const title = filter === 'ROUTINE' ? '현재 루틴에 제품이 없어요' : filter === 'UNUSED' ? '아직 사용 전인 제품이 없어요' : '아직 추가한 화장품이 없어요'
   const body = filter === 'ROUTINE' ? '루틴에서 실제 사용하는 제품을 추가해보세요.' : filter === 'UNUSED' ? '새로 추가한 제품은 현재 루틴에\n넣기 전까지 여기에 보여요.' : '탐색에서 제품을 찾아 내 화장품에 추가해주세요.'
-  return <div className="pt-24 text-center"><button onClick={onAdd} className="relative mx-auto block"><img src="/skn-assets/ai-drop.png" alt="" className="size-[190px] object-contain"/><span className="absolute left-1/2 top-1/2 grid size-11 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-white text-2xl shadow-md">+</span></button><h2 className="mt-5 text-[22px] font-medium tracking-[-.035em]">{title}</h2><p className="mt-3 whitespace-pre-line text-[14px] leading-5 text-[#8c8c8c]">{body}</p></div>
+  return <div className="pt-24 text-center"><button type="button" onClick={onAdd} aria-label="탐색에서 화장품 추가하기" className="relative mx-auto block rounded-full"><img src="/skn-assets/ai-drop.png" alt="" className="size-[190px] object-contain"/><span aria-hidden="true" className="absolute left-1/2 top-1/2 grid size-11 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-white text-2xl shadow-md">+</span></button><h2 className="mt-5 text-[22px] font-medium tracking-[-.035em]">{title}</h2><p className="mt-3 whitespace-pre-line text-[14px] leading-5 text-[#8c8c8c]">{body}</p></div>
 }
 
 function CatalogHeader({ onBack, onAdd }: { onBack: () => void; onAdd: () => void }) {
-  return <header className="sticky top-0 z-30 grid h-[82px] grid-cols-3 items-center bg-white px-5"><button onClick={onBack} aria-label="뒤로" className="-ml-2 grid size-11 place-items-center justify-self-start rounded-full active:bg-[#f5f8fc]"><ChevronLeft size={27}/></button><SknMark className="h-9 w-9 justify-self-center"/><button onClick={onAdd} aria-label="화장품 추가" className="grid size-11 place-items-center justify-self-end rounded-full bg-white shadow-[0_3px_12px_rgba(0,0,0,.09)]"><Plus size={22}/></button></header>
+  return <header className="safe-top sticky top-0 z-30 grid min-h-[72px] shrink-0 grid-cols-3 items-center bg-white/95 px-5 backdrop-blur-xl"><button type="button" onClick={onBack} aria-label="뒤로" className="-ml-2 grid size-11 place-items-center justify-self-start rounded-full hover:bg-[#f5f8fc] active:scale-95"><ChevronLeft size={27}/></button><SknMark className="h-9 w-9 justify-self-center"/><button type="button" onClick={onAdd} aria-label="화장품 추가" className="grid size-11 place-items-center justify-self-end rounded-full bg-white shadow-[0_3px_12px_rgba(0,0,0,.09)] transition active:scale-95"><Plus size={22}/></button></header>
 }

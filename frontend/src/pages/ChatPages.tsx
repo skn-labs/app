@@ -16,6 +16,7 @@ const INITIAL_PROMPTS = [
   { label: '제품 검색', text: '제품 검색', mode: 'PRODUCT' },
   { label: '피부가 불편해졌어요', text: '피부가 불편해졌어요.', mode: 'RESCUE' },
 ]
+const CHAT_MODES = new Set(['GENERAL', 'PRODUCT', 'RECOMMEND', 'PATTERN', 'RESCUE'])
 
 export function AiLandingPage() {
   const navigate = useNavigate()
@@ -59,7 +60,8 @@ export function ChatStartPage() {
   const queryClient = useQueryClient()
   const started = useRef(false)
   const requestId = useRef(crypto.randomUUID())
-  const mode = params.get('mode') || 'GENERAL'
+  const requestedMode = params.get('mode') || 'GENERAL'
+  const mode = CHAT_MODES.has(requestedMode) ? requestedMode : 'GENERAL'
   const prompt = params.get('prompt')?.trim() || '내 화장품 경험을 같이 봐줘.'
   const productId = Number(params.get('productId')) || undefined
   const experienceId = Number(params.get('experienceId')) || undefined
@@ -94,16 +96,18 @@ export function ChatStartPage() {
 
 export function ChatPage() {
   const { id } = useParams(); const conversationId = Number(id)
+  const validConversationId = Number.isSafeInteger(conversationId) && conversationId > 0
   const navigate = useNavigate(); const queryClient = useQueryClient(); const bottomRef = useRef<HTMLDivElement>(null)
   const [text, setText] = useState('')
   const [pendingMessage, setPendingMessage] = useState<{ text: string; requestId: string } | null>(null)
   const [openEvidence, setOpenEvidence] = useState<{ refs: string[]; webSources: WebSource[] } | null>(null)
-  const conversation = useQuery({ queryKey: ['conversation', conversationId], queryFn: () => api.conversation(conversationId) })
+  const conversation = useQuery({ queryKey: ['conversation', conversationId], queryFn: () => api.conversation(conversationId), enabled: validConversationId })
   const productId = conversation.data?.productId
   const product = useQuery({ queryKey: ['product', productId], queryFn: () => api.product(productId!), enabled: Boolean(productId) })
   const send = useMutation({ mutationFn: (message: { text: string; requestId: string }) => api.sendMessage(conversationId, message.text, message.requestId), onSuccess: value => { queryClient.setQueryData(['conversation', conversationId], value); queryClient.invalidateQueries({ queryKey: ['conversations'] }); setPendingMessage(null) } })
   const apply = useMutation({ mutationFn: () => api.applyRescue(conversationId), onSuccess: value => { queryClient.invalidateQueries(); navigate(`/experiences/${value.id}`) } })
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' }) }, [conversation.data?.messages.length, send.isPending])
+  if (!validConversationId) return <Screen nav={false}><AiHeader onBack={() => navigate('/ai')}/><ErrorState message="대화 주소를 확인해주세요."/></Screen>
   if (conversation.isPending) return <Screen nav={false} className="flex h-full min-h-0 flex-col overflow-hidden bg-white"><AiHeader onBack={() => navigate('/ai')}/><div className="grid flex-1 place-items-center"><AiMotion size="loading"/><span className="mt-3 text-xs text-[#7f858c]">대화를 불러오는 중…</span></div></Screen>
   if (conversation.isError) return <Screen nav={false}><AiHeader onBack={() => navigate('/ai')}/><ErrorState message={conversation.error.message} onRetry={() => conversation.refetch()}/></Screen>
   const data = conversation.data
@@ -115,6 +119,7 @@ export function ChatPage() {
       <div className="space-y-5">{data.messages.map(message => message.role === 'USER' ? <UserMessage key={message.id} text={message.content} createdAt={message.createdAt}/> : <AssistantMessage key={message.id} message={message} recommend={data.mode === 'RECOMMEND'} onEvidence={() => setOpenEvidence({ refs: message.evidenceRefs, webSources: message.webSources || [] })}/>)}{pendingMessage && <UserMessage text={pendingMessage.text} pending/>}{send.isPending && <ThinkingPanel compact product={Boolean(productId)} recommend={data.mode === 'RECOMMEND'}/>}</div>
 
       {data.rescuePlan && <RescuePlanCard conversation={data} onApply={() => apply.mutate()} pending={apply.isPending}/>} 
+      {apply.isError && <p role="alert" className="mt-3 rounded-xl bg-[#fff5f5] p-3 text-xs leading-5 text-danger">{apply.error.message}</p>}
       {send.error && pendingMessage && <RetryCard message="메시지를 보내지 못했어요. 입력한 내용은 이 화면에 남아 있어요." onRetry={() => send.mutate(pendingMessage)}/>}
       <div ref={bottomRef}/>
     </div>
@@ -130,7 +135,7 @@ function Composer({ value, onChange, onSubmit, pending, suggestions, placeholder
   return <div className="safe-bottom z-30 shrink-0 bg-white/95 px-5 pb-3 pt-3 backdrop-blur-xl">
     {!!suggestions.length && <div className="hide-scrollbar -mx-4 mb-3 flex gap-2 overflow-x-auto px-4 pb-0.5">{suggestions.slice(0, 3).map(suggestion => {
       const caution = isCautionSuggestion(suggestion)
-      return <button key={suggestion} disabled={pending} onClick={() => (onSuggestion || onSubmit)(suggestion)} className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-4 py-2.5 text-[14px] font-medium transition active:scale-[.98] disabled:opacity-50 ${caution ? 'border-[#efcaca] bg-white text-[#b44d4d]' : 'border-[#cfe0ff] bg-white text-black'}`}>{caution && <AlertCircle size={13}/>}<span>{suggestion}</span></button>
+      return <button type="button" key={suggestion} disabled={pending} onClick={() => (onSuggestion || onSubmit)(suggestion)} className={`inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full border px-4 py-2.5 text-[14px] font-medium transition active:scale-[.98] disabled:opacity-50 ${caution ? 'border-[#efcaca] bg-white text-[#b44d4d]' : 'border-[#cfe0ff] bg-white text-black'}`}>{caution && <AlertCircle size={13}/>}<span>{suggestion}</span></button>
     })}</div>}
     <form onSubmit={submit} className="flex items-end gap-2 rounded-[21px] bg-[#f5f8fc] p-1.5 pl-5 focus-within:ring-1 focus-within:ring-[#cfe0ff]"><textarea ref={inputRef} disabled={pending} rows={1} value={value} onChange={e => onChange(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); onSubmit(value) } }} placeholder={placeholder} aria-label="AI에게 메시지 보내기" className="max-h-28 min-h-12 flex-1 resize-none overflow-y-auto bg-transparent py-3 text-[14px] leading-5 outline-none placeholder:text-[#b4b7bb] disabled:cursor-wait"/><button type="submit" disabled={pending || !value.trim()} aria-label="보내기" className="grid size-11 shrink-0 place-items-center rounded-full text-black transition active:scale-95 disabled:opacity-35"><Send size={22} strokeWidth={1.8}/></button></form>
   </div>
@@ -140,10 +145,10 @@ function AiHeader({ onBack }: { onBack?: () => void }) {
   const [historyOpen, setHistoryOpen] = useState(false)
   const conversations = useQuery({ queryKey: ['conversations'], queryFn: api.conversations, enabled: historyOpen })
   return <>
-    <header className="z-30 grid h-[82px] shrink-0 grid-cols-3 items-center bg-white/95 px-5 backdrop-blur-xl">
-      {onBack ? <button onClick={onBack} aria-label="뒤로" className="-ml-2 grid size-11 place-items-center justify-self-start rounded-full active:bg-[#f5f8fc]"><ChevronLeft size={27}/></button> : <span/>}
+    <header className="safe-top z-30 grid min-h-[72px] shrink-0 grid-cols-3 items-center bg-white/95 px-5 backdrop-blur-xl">
+      {onBack ? <button type="button" onClick={onBack} aria-label="뒤로" className="-ml-2 grid size-11 place-items-center justify-self-start rounded-full hover:bg-[#f5f8fc] active:scale-95"><ChevronLeft size={27}/></button> : <span/>}
       <SknMark className="h-9 w-9 justify-self-center"/>
-      <button onClick={() => setHistoryOpen(true)} aria-label="최근 AI 대화" className="-mr-2 grid size-11 place-items-center justify-self-end rounded-full active:bg-[#f5f8fc]"><History size={22}/></button>
+      <button type="button" onClick={() => setHistoryOpen(true)} aria-label="최근 AI 대화" className="-mr-2 grid size-11 place-items-center justify-self-end rounded-full hover:bg-[#f5f8fc] active:scale-95"><History size={22}/></button>
     </header>
     {historyOpen && <AiHistory conversations={conversations.data || []} loading={conversations.isPending} error={conversations.error?.message} onRetry={() => conversations.refetch()} onClose={() => setHistoryOpen(false)}/>}
   </>
@@ -151,9 +156,18 @@ function AiHeader({ onBack }: { onBack?: () => void }) {
 
 function AiHistory({ conversations, loading, error, onRetry, onClose }: { conversations: Conversation[]; loading: boolean; error?: string; onRetry: () => void; onClose: () => void }) {
   const navigate = useNavigate()
-  useEffect(() => { const close = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose() }; window.addEventListener('keydown', close); return () => window.removeEventListener('keydown', close) }, [onClose])
+  const dialog = useRef<HTMLElement>(null)
+  const close = useRef(onClose)
+  close.current = onClose
+  useEffect(() => {
+    const previousFocus = document.activeElement as HTMLElement | null
+    dialog.current?.focus({ preventScroll: true })
+    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === 'Escape') close.current() }
+    window.addEventListener('keydown', closeOnEscape)
+    return () => { window.removeEventListener('keydown', closeOnEscape); previousFocus?.focus({ preventScroll: true }) }
+  }, [])
   const startNew = () => { onClose(); navigate('/ai') }
-  return <div className="fixed inset-0 z-50 flex justify-center bg-black/25 backdrop-blur-[2px]" onMouseDown={onClose}><div className="flex h-full w-full max-w-[430px] justify-end"><aside role="dialog" aria-modal="true" aria-labelledby="history-title" className="safe-bottom flex h-full w-[88%] max-w-[360px] animate-slide-in flex-col bg-white shadow-[-18px_0_55px_rgba(22,30,45,.16)]" onMouseDown={event => event.stopPropagation()}><div className="flex items-center justify-between border-b border-[#eef0f3] px-5 py-4"><div><p className="text-[11px] font-semibold text-[#778096]">SKN AI</p><h2 id="history-title" className="mt-0.5 text-[21px] font-semibold tracking-[-.04em]">최근 대화</h2></div><button onClick={onClose} aria-label="최근 대화 닫기" className="grid size-10 place-items-center rounded-full bg-[#f5f7fa]"><X size={18}/></button></div><div className="px-4 pt-4"><button type="button" onClick={startNew} className="flex h-12 w-full items-center justify-center gap-2 rounded-[16px] bg-black text-sm font-semibold text-white"><Plus size={17}/>새 대화 시작</button></div><div className="hide-scrollbar flex-1 overflow-y-auto px-4 pb-6 pt-3">{loading ? <div className="grid min-h-56 place-items-center"><AiMotion size="tiny"/></div> : error ? <div className="mt-6 rounded-[18px] bg-[#fff5f5] p-4 text-center"><p className="text-xs leading-5 text-danger">{error}</p><button type="button" onClick={onRetry} className="mt-3 inline-flex items-center gap-1 text-xs font-semibold"><RefreshCw size={13}/>다시 불러오기</button></div> : conversations.length ? <div className="space-y-1">{conversations.map(item => <Link key={item.id} to={`/ai/${item.id}`} className="flex items-center gap-3 rounded-[18px] p-3.5 transition active:bg-[#f4f6f9]" onClick={onClose}><div className="grid size-9 shrink-0 place-items-center rounded-[13px] bg-[#f0f4fc] text-[#62709a]"><MessageCircle size={17}/></div><div className="min-w-0 flex-1"><div className="flex items-center justify-between gap-2"><p className="truncate text-[13px] font-semibold">{titleFor(item)}</p><span className="shrink-0 text-[9px] text-[#a1a6ad]">{historyTime(item)}</span></div><p className="mt-1 truncate text-[11px] text-[#848a92]">{item.messages.at(-1)?.content}</p><p className="mt-1.5 text-[9px] font-semibold text-[#7985a4]">{modeLabel(item.mode)}</p></div></Link>)}</div> : <div className="px-4 py-16 text-center"><MessageCircle className="mx-auto text-[#b7bdc6]"/><p className="mt-4 text-sm font-semibold">아직 대화가 없어요</p><p className="mt-1 text-xs leading-5 text-[#8b9199]">제품이나 루틴에 대해 물어보면<br/>여기에서 다시 이어볼 수 있어요.</p></div>}</div></aside></div></div>
+  return <div className="fixed inset-0 z-50 flex justify-center bg-black/25 backdrop-blur-[2px]" onPointerDown={onClose}><div className="flex h-full w-full max-w-[430px] justify-end"><aside ref={dialog} role="dialog" aria-modal="true" aria-labelledby="history-title" tabIndex={-1} className="safe-bottom flex h-full w-[88%] max-w-[360px] animate-slide-in flex-col bg-white shadow-[-18px_0_55px_rgba(22,30,45,.16)] outline-none" onPointerDown={event => event.stopPropagation()}><div className="safe-top flex items-center justify-between border-b border-[#eef0f3] px-5 pb-4"><div><p className="text-[11px] font-semibold text-[#778096]">SKN AI</p><h2 id="history-title" className="mt-0.5 text-[21px] font-semibold tracking-[-.04em]">최근 대화</h2></div><button type="button" onClick={onClose} aria-label="최근 대화 닫기" className="grid size-11 place-items-center rounded-full bg-[#f5f7fa]"><X size={18}/></button></div><div className="px-4 pt-4"><button type="button" onClick={startNew} className="flex h-12 w-full items-center justify-center gap-2 rounded-[16px] bg-black text-sm font-semibold text-white"><Plus size={17}/>새 대화 시작</button></div><div className="hide-scrollbar flex-1 overflow-y-auto px-4 pb-6 pt-3">{loading ? <div className="grid min-h-56 place-items-center"><AiMotion size="tiny"/></div> : error ? <div className="mt-6 rounded-[18px] bg-[#fff5f5] p-4 text-center"><p className="text-xs leading-5 text-danger">{error}</p><button type="button" onClick={onRetry} className="mt-3 inline-flex items-center gap-1 text-xs font-semibold"><RefreshCw size={13}/>다시 불러오기</button></div> : conversations.length ? <div className="space-y-1">{conversations.map(item => <Link key={item.id} to={`/ai/${item.id}`} className="flex items-center gap-3 rounded-[18px] p-3.5 transition hover:bg-[#f4f6f9] active:scale-[.99]" onClick={onClose}><div className="grid size-9 shrink-0 place-items-center rounded-[13px] bg-[#f0f4fc] text-[#62709a]"><MessageCircle size={17}/></div><div className="min-w-0 flex-1"><div className="flex items-center justify-between gap-2"><p className="truncate text-[13px] font-semibold">{titleFor(item)}</p><span className="shrink-0 text-[9px] text-[#a1a6ad]">{historyTime(item)}</span></div><p className="mt-1 truncate text-[11px] text-[#848a92]">{item.messages.at(-1)?.content}</p><p className="mt-1.5 text-[9px] font-semibold text-[#7985a4]">{modeLabel(item.mode)}</p></div></Link>)}</div> : <div className="px-4 py-16 text-center"><MessageCircle className="mx-auto text-[#b7bdc6]"/><p className="mt-4 text-sm font-semibold">아직 대화가 없어요</p><p className="mt-1 text-xs leading-5 text-[#8b9199]">제품이나 루틴에 대해 물어보면<br/>여기에서 다시 이어볼 수 있어요.</p></div>}</div></aside></div></div>
 }
 
 function AiMotion({ size }: { size: 'hero' | 'loading' | 'tiny' }) {
@@ -184,7 +198,7 @@ function RetryCard({ message, onRetry }: { message: string; onRetry: () => void 
 }
 
 function ProductSearchResult({ product, onSelect }: { product: Product; onSelect: () => void }) {
-  return <button type="button" onClick={onSelect} className="flex w-full items-center gap-3 rounded-[20px] border border-[#cfe0ff] bg-white p-3 text-left transition active:scale-[.99]"><ProductGlyph category={product.category} src={product.imageUrl} size="sm"/><span className="min-w-0 flex-1"><span className="flex items-center gap-1.5"><span className="truncate text-[10px] font-medium text-[#9ec1ff]">{product.brand} · {product.category}</span>{product.owned && <span className="shrink-0 rounded-full border border-[#cfe0ff] px-1.5 py-0.5 text-[8px] font-semibold text-[#7892bb]">내 화장품</span>}</span><span className="mt-1 block truncate text-[14px] font-semibold tracking-[-.02em]">{product.name}</span><span className="mt-1 block text-[10px] text-[#9298a1]">{product.volume}{product.versionLabel ? ` · ${product.versionLabel} 버전` : ''}{product.personalRecordCount ? ` · 내 경험 ${product.personalRecordCount}건` : ''}</span></span><ChevronRight size={17} className="shrink-0 text-[#8f959e]"/></button>
+  return <button type="button" onClick={onSelect} className="flex w-full items-center gap-3 rounded-[20px] border border-[#cfe0ff] bg-white p-3 text-left transition hover:border-[#a9c6f3] active:scale-[.99]"><ProductGlyph category={product.category} src={product.imageUrl} size="sm"/><span className="min-w-0 flex-1"><span className="flex items-center gap-1.5"><span className="truncate text-[10px] font-medium text-[#6f88b2]">{product.brand} · {product.category}</span>{product.owned && <span className="shrink-0 rounded-full border border-[#cfe0ff] px-1.5 py-0.5 text-[8px] font-semibold text-[#667da3]">내 화장품</span>}</span><span className="mt-1 block truncate text-[14px] font-semibold tracking-[-.02em]">{product.name}</span><span className="mt-1 block text-[10px] text-[#737880]">{product.volume}{product.versionLabel ? ` · ${product.versionLabel} 버전` : ''}{product.personalRecordCount ? ` · 내 경험 ${product.personalRecordCount}건` : ''}</span></span><ChevronRight size={17} className="shrink-0 text-[#737880]"/></button>
 }
 
 function ProductResultsSkeleton() {
@@ -304,12 +318,15 @@ function RecommendedProductLinks({ refs }: { refs: string[] }) {
   return <section className="-mx-5 mt-4" aria-label="AI 추천 제품">
     <div className="hide-scrollbar flex gap-2 overflow-x-auto px-5 pb-2">{loaded.map(product => <Link key={product.id} to={`/products/${product.id}`} className="w-[160px] shrink-0 rounded-[19px] border border-[#cfe0ff] bg-white p-2.5 transition active:scale-[.99]">
       <div className="grid h-[140px] place-items-center rounded-[15px] border border-[#deebff] bg-white"><ProductGlyph category={product.category} src={product.imageUrl} size="md"/></div>
-      <span className="mt-2.5 block truncate text-[10px] text-[#9ec1ff]">{product.brand}</span><span className="mt-1 block truncate text-[14px] font-medium text-black">{product.name}</span>
+      <span className="mt-2.5 block truncate text-[10px] text-[#6f88b2]">{product.brand}</span><span className="mt-1 block truncate text-[14px] font-medium text-black">{product.name}</span>
     </Link>)}</div>
   </section>
 }
 
 function EvidenceSheet({ refs, webSources, onClose }: { refs: string[]; webSources: WebSource[]; onClose: () => void }) {
+  const dialog = useRef<HTMLElement>(null)
+  const close = useRef(onClose)
+  close.current = onClose
   const uniqueRefs = [...new Set(refs)]
   const needsProducts = uniqueRefs.some(ref => ref.startsWith('P-') && !ref.startsWith('PT-'))
   const needsRoutines = uniqueRefs.some(ref => ref.startsWith('R-'))
@@ -326,13 +343,15 @@ function EvidenceSheet({ refs, webSources, onClose }: { refs: string[]; webSourc
   const evidence = uniqueRefs.map(ref => resolveEvidence(ref, loadedProducts, [current.data, baseline.data].filter(Boolean) as Routine[], records.data || [], patterns.data || []))
 
   useEffect(() => {
-    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose() }
+    const previousFocus = document.activeElement as HTMLElement | null
+    dialog.current?.focus({ preventScroll: true })
+    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === 'Escape') close.current() }
     window.addEventListener('keydown', closeOnEscape)
-    return () => window.removeEventListener('keydown', closeOnEscape)
-  }, [onClose])
+    return () => { window.removeEventListener('keydown', closeOnEscape); previousFocus?.focus({ preventScroll: true }) }
+  }, [])
 
-  return <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/35 px-0 backdrop-blur-[2px]" onMouseDown={onClose}>
-    <section role="dialog" aria-modal="true" aria-labelledby="evidence-title" className="safe-bottom flex max-h-[82dvh] w-full max-w-[430px] animate-rise flex-col overflow-hidden rounded-t-[30px] bg-paper shadow-[0_-18px_60px_rgba(23,24,22,.18)]" onMouseDown={event => event.stopPropagation()}>
+  return <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/35 px-0 backdrop-blur-[2px]" onPointerDown={onClose}>
+    <section ref={dialog} role="dialog" aria-modal="true" aria-labelledby="evidence-title" tabIndex={-1} className="safe-bottom flex max-h-[82dvh] w-full max-w-[430px] animate-rise flex-col overflow-hidden rounded-t-[30px] bg-paper shadow-[0_-18px_60px_rgba(23,24,22,.18)] outline-none" onPointerDown={event => event.stopPropagation()}>
       <div className="shrink-0 px-5 pb-4 pt-3"><div className="mx-auto mb-4 h-1 w-10 rounded-full bg-[#d9dcd6]"/><div className="flex items-start justify-between gap-4"><div><p className="text-xs font-bold text-accent">ANSWER SOURCES</p><h2 id="evidence-title" className="mt-1 text-[22px] font-bold tracking-[-.035em]">이 답변에 쓴 근거</h2><p className="mt-2 text-xs leading-5 text-muted">웹에서 확인한 자료와 내 기록을 분리해서 보여줘요.</p></div><button type="button" onClick={onClose} aria-label="근거 닫기" className="grid size-10 shrink-0 place-items-center rounded-full bg-white text-muted shadow-sm"><X size={19}/></button></div></div>
       <div className="overflow-y-auto border-t border-line px-5 py-5">
         {webSources.length > 0 && <section><p className="mb-3 text-[11px] font-bold text-muted">웹에서 확인한 자료</p><div className="space-y-3">{webSources.map(source => <WebSourceCard key={source.ref} source={source}/>)}</div></section>}

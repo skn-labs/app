@@ -26,7 +26,14 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #fff; }
 body { margin: 0; min-width: 320px; }
 button, input, textarea { font: inherit; }
 input, textarea, select { min-width: 0; }
-button { -webkit-tap-highlight-color: transparent; }
+button, a { -webkit-tap-highlight-color: transparent; }
+button { touch-action: manipulation; }
+button:enabled, a[href] { cursor: pointer; }
+:focus-visible {
+  outline: 2px solid #171816;
+  outline-offset: 3px;
+}
+::selection { background: #dce8ff; color: #171816; }
 video {
   display: block;
   border: 0;
@@ -53,6 +60,10 @@ video:not([controls])::-webkit-media-controls { display: none !important; }
     border-inline: 1px solid #dfe2dc;
     box-shadow: 0 0 70px rgba(25, 31, 22, .10);
   }
+}
+
+@media (max-width: 430px) {
+  input, textarea, select { font-size: 16px; }
 }
 
 .mobile-shell {
@@ -104,7 +115,13 @@ video:not([controls])::-webkit-media-controls { display: none !important; }
 .onboard-delay-1 { animation-delay: .18s; }
 .onboard-delay-2 { animation-delay: .36s; }
 .hide-scrollbar::-webkit-scrollbar { display: none; }
+.hide-scrollbar { scrollbar-width: none; }
+.safe-top { padding-top: max(8px, env(safe-area-inset-top)); }
 .safe-bottom { padding-bottom: max(16px, env(safe-area-inset-bottom)); }
+
+@supports not (height: 100dvh) {
+  #root { height: 100vh; }
+}
 
 @media (prefers-reduced-motion: reduce) {
   .animate-rise, .animate-slide-in, .animate-onboard-forward, .animate-onboard-back, .onboard-float, .onboard-draw, .onboard-pop, .onboard-pulse, .onboard-scan { animation: none !important; }

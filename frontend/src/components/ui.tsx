@@ -1,6 +1,6 @@
 import type { ButtonHTMLAttributes, PropsWithChildren, ReactNode } from 'react'
 import { useEffect, useRef, useState } from 'react'
-import { Bell, Bot, ChevronLeft, CircleUserRound, FlaskConical, Home, MessageCircle, NotebookText, Sparkles } from 'lucide-react'
+import { Bot, ChevronLeft, CircleUserRound, FlaskConical, Home, MessageCircle, NotebookText, Sparkles, X } from 'lucide-react'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { twMerge } from 'tailwind-merge'
 
@@ -10,24 +10,21 @@ export function Screen({ children, className = '', nav = true }: PropsWithChildr
 
 export function TopBar({ title, back = false, backTo, right }: { title: string; back?: boolean; backTo?: string; right?: ReactNode }) {
   const navigate = useNavigate()
-  return <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-line/70 bg-paper/95 px-5 backdrop-blur">
-    <div className="w-10">{back && <button aria-label="뒤로" onClick={() => backTo ? navigate(backTo) : navigate(-1)} className="-ml-2 grid size-10 place-items-center rounded-full hover:bg-soft"><ChevronLeft size={24}/></button>}</div>
-    <h1 className="text-[16px] font-semibold tracking-[-.02em]">{title}</h1>
-    <div className="flex w-10 justify-end">{right}</div>
+  return <header className="safe-top sticky top-0 z-20 grid min-h-16 shrink-0 grid-cols-[1fr_auto_1fr] items-center border-b border-line/70 bg-paper/95 px-5 backdrop-blur-xl">
+    <div className="flex min-w-0 justify-start">{back && <button type="button" aria-label="뒤로" onClick={() => backTo ? navigate(backTo) : navigate(-1)} className="-ml-2 grid size-10 place-items-center rounded-full hover:bg-soft"><ChevronLeft size={24}/></button>}</div>
+    <h1 className="px-2 text-[16px] font-semibold tracking-[-.02em]">{title}</h1>
+    <div className="flex min-w-0 justify-end">{right}</div>
   </header>
 }
 
-/** Figma "홈+루틴" 헤더: 탭 루트 화면은 로고+알림+마이페이지, 하위 화면은 뒤로가기+로고. */
+/** Figma "홈+루틴" 헤더: 탭 루트 화면은 로고+마이페이지, 하위 화면은 뒤로가기+로고. */
 export function AppHeader({ back = false, backTo }: { back?: boolean; backTo?: string }) {
   const navigate = useNavigate()
-  return <header className="relative z-20 flex h-[72px] shrink-0 items-center justify-between px-5">
-    <div className="flex w-20 items-center">{back && <button aria-label="뒤로" onClick={() => backTo ? navigate(backTo) : navigate(-1)} className="-ml-2 grid size-10 place-items-center rounded-full hover:bg-soft"><ChevronLeft size={24}/></button>}</div>
+  return <header className="safe-top relative z-20 flex min-h-[72px] shrink-0 items-center justify-between px-5">
+    <div className="flex w-20 items-center">{back && <button type="button" aria-label="뒤로" onClick={() => backTo ? navigate(backTo) : navigate(-1)} className="-ml-2 grid size-10 place-items-center rounded-full hover:bg-soft"><ChevronLeft size={24}/></button>}</div>
     <SknMark className="h-10 w-10"/>
-    <div className="flex w-20 items-center justify-end gap-2">
-      {!back && <>
-        <Link to="/records" aria-label="마이페이지" className="grid size-10 place-items-center rounded-full text-ink transition active:bg-soft"><CircleUserRound size={22} strokeWidth={1.8}/></Link>
-        <button aria-label="알림" className="grid size-10 place-items-center rounded-full text-ink transition active:bg-soft"><Bell size={22} strokeWidth={1.8}/></button>
-      </>}
+    <div className="flex w-20 items-center justify-end">
+      {!back && <Link to="/records" aria-label="마이페이지" className="grid size-11 place-items-center rounded-full text-ink transition hover:bg-soft active:scale-95"><CircleUserRound size={22} strokeWidth={1.8}/></Link>}
     </div>
   </header>
 }
@@ -56,14 +53,14 @@ export function SknMark({ className = '' }: { className?: string }) {
   return <img src="/skn-assets/skn-mark.png" alt="SKN" className={twMerge('h-8 w-[30px] object-contain', className)}/>
 }
 
-export function Button({ className, variant = 'primary', ...props }: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'secondary' | 'ghost' | 'danger' }) {
+export function Button({ className, variant = 'primary', type = 'button', ...props }: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'secondary' | 'ghost' | 'danger' }) {
   const variants = {
     primary: 'bg-ink text-white shadow-sm hover:bg-black disabled:bg-[#a9aba6]',
     secondary: 'border border-line bg-white text-ink hover:bg-soft',
     ghost: 'bg-transparent text-ink hover:bg-soft',
     danger: 'bg-[#fff0f0] text-danger hover:bg-[#ffe8e8]',
   }
-  return <button className={twMerge('flex min-h-12 items-center justify-center gap-2 rounded-2xl px-4 text-[15px] font-semibold transition active:scale-[.99] disabled:cursor-not-allowed disabled:opacity-60', variants[variant], className)} {...props}/>
+  return <button type={type} className={twMerge('flex min-h-12 items-center justify-center gap-2 rounded-2xl px-4 text-[15px] font-semibold transition active:scale-[.99] disabled:cursor-not-allowed disabled:opacity-60', variants[variant], className)} {...props}/>
 }
 
 export function Card({ children, className = '' }: PropsWithChildren<{ className?: string }>) {
@@ -93,11 +90,11 @@ export function ProductGlyph({ category = '제품', size = 'md', src }: { catego
 }
 
 export function Loading({ label = '불러오는 중' }: { label?: string }) {
-  return <div className="grid min-h-[55svh] place-items-center"><div className="flex flex-col items-center gap-3 text-sm text-muted"><span className="size-6 animate-spin rounded-full border-2 border-line border-t-accent"/><span>{label}</span></div></div>
+  return <div className="grid min-h-[55svh] place-items-center" role="status" aria-live="polite"><div className="flex flex-col items-center gap-3 text-sm text-muted"><span aria-hidden="true" className="size-6 animate-spin rounded-full border-2 border-line border-t-accent"/><span>{label}</span></div></div>
 }
 
 export function ErrorState({ message, onRetry }: { message: string; onRetry?: () => void }) {
-  return <div className="mx-5 mt-24 text-center"><div className="mx-auto mb-4 grid size-12 place-items-center rounded-full bg-soft text-muted"><Bot size={22}/></div><h2 className="font-semibold">잠시 연결하지 못했어요</h2><p className="mx-auto mt-2 max-w-64 text-sm leading-6 text-muted">{message}</p>{onRetry && <Button className="mx-auto mt-5" variant="secondary" onClick={onRetry}>다시 시도</Button>}</div>
+  return <div className="mx-5 mt-24 text-center" role="alert"><div className="mx-auto mb-4 grid size-12 place-items-center rounded-full bg-soft text-muted"><Bot size={22}/></div><h2 className="font-semibold">잠시 연결하지 못했어요</h2><p className="mx-auto mt-2 max-w-64 text-sm leading-6 text-muted">{message}</p>{onRetry && <Button className="mx-auto mt-5" variant="secondary" onClick={onRetry}>다시 시도</Button>}</div>
 }
 
 export function EmptyState({ icon, title, body, action }: { icon?: ReactNode; title: string; body: string; action?: ReactNode }) {
@@ -105,10 +102,27 @@ export function EmptyState({ icon, title, body, action }: { icon?: ReactNode; ti
 }
 
 export function BottomSheet({ open, onClose, title, children }: PropsWithChildren<{ open: boolean; onClose: () => void; title: string }>) {
+  const sheet = useRef<HTMLElement>(null)
+  const close = useRef(onClose)
+  close.current = onClose
+  useEffect(() => {
+    if (!open) return
+    const previousFocus = document.activeElement as HTMLElement | null
+    sheet.current?.focus({ preventScroll: true })
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') close.current()
+    }
+    window.addEventListener('keydown', closeOnEscape)
+    return () => {
+      window.removeEventListener('keydown', closeOnEscape)
+      previousFocus?.focus({ preventScroll: true })
+    }
+  }, [open])
+
   if (!open) return null
-  return <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/30" onMouseDown={onClose}>
-    <section className="safe-bottom w-full max-w-[430px] animate-rise rounded-t-[28px] bg-white px-5 pb-4 pt-3 shadow-2xl" onMouseDown={event => event.stopPropagation()}>
-      <div className="mx-auto mb-5 h-1 w-10 rounded-full bg-[#d9dcd6]"/><div className="mb-5 flex items-start justify-between"><h2 className="text-xl font-bold tracking-[-.03em]">{title}</h2><button onClick={onClose} className="text-sm text-muted">닫기</button></div>{children}
+  return <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/35 backdrop-blur-[2px]" onPointerDown={onClose}>
+    <section ref={sheet} role="dialog" aria-modal="true" aria-labelledby="bottom-sheet-title" tabIndex={-1} className="safe-bottom w-full max-w-[430px] animate-rise rounded-t-[28px] bg-white px-5 pb-4 pt-3 shadow-2xl outline-none" onPointerDown={event => event.stopPropagation()}>
+      <div aria-hidden="true" className="mx-auto mb-5 h-1 w-10 rounded-full bg-[#d9dcd6]"/><div className="mb-5 flex items-start justify-between gap-4"><h2 id="bottom-sheet-title" className="text-xl font-bold tracking-[-.03em]">{title}</h2><button type="button" onClick={onClose} aria-label="닫기" className="-mr-2 -mt-2 grid size-11 shrink-0 place-items-center rounded-full text-muted transition hover:bg-soft active:scale-95"><X size={19}/></button></div>{children}
     </section>
   </div>
 }
