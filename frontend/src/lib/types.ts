@@ -1,5 +1,7 @@
 export type Auth = { userId: number; username: string; displayName: string; demo: boolean; onboardingCompleted: boolean }
 export type QuickAccount = { username: string; displayName: string }
+/** ONB-01. 온보딩에서 선택적으로 받는 사용감 선호. 비어 있는 상태가 정상이다. */
+export type Preference = { likes: string[]; avoids: string[]; note: string }
 
 export type ProductGuide = {
   summary: string;

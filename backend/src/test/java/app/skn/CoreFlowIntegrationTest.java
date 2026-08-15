@@ -207,6 +207,73 @@ class CoreFlowIntegrationTest {
     }
 
     @Test
+    void onboardingSkipsPreferenceWhenNothingIsChosen() throws Exception {
+        // ONB-01. 사용감 선호는 선택 항목이라 안 보내도 온보딩은 끝나야 한다.
+        MockHttpSession session = signUpSession("pref_skip_user");
+        mvc.perform(post("/api/v1/auth/onboarding").session(session)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"productIds":[],"entryChoice":"EXPLORE","clientRequestId":"pref-skip"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.user.onboardingCompleted").value(true));
+
+        mvc.perform(get("/api/v1/me/preferences").session(session))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.likes.length()").value(0))
+                .andExpect(jsonPath("$.avoids.length()").value(0))
+                .andExpect(jsonPath("$.note").value(""));
+    }
+
+    @Test
+    void onboardingStoresOptionalPreferenceAndKeepsItEditable() throws Exception {
+        MockHttpSession session = signUpSession("pref_user");
+        mvc.perform(post("/api/v1/auth/onboarding").session(session)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"productIds":[],"entryChoice":"EXPLORE",
+                                 "preferences":{"likes":["가벼운","가벼운"],"avoids":["끈적임"],"note":" 향이 강한 건 피하고 싶어요 "},
+                                 "clientRequestId":"pref-save"}
+                                """))
+                .andExpect(status().isOk());
+
+        mvc.perform(get("/api/v1/me/preferences").session(session))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.likes.length()").value(1))
+                .andExpect(jsonPath("$.likes[0]").value("가벼운"))
+                .andExpect(jsonPath("$.avoids[0]").value("끈적임"))
+                .andExpect(jsonPath("$.note").value("향이 강한 건 피하고 싶어요"));
+
+        mvc.perform(put("/api/v1/me/preferences").session(session)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"likes":["산뜻한"],"avoids":[],"note":""}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.likes[0]").value("산뜻한"))
+                .andExpect(jsonPath("$.avoids.length()").value(0));
+    }
+
+    @Test
+    void preferencesArePrivateToTheirOwner() throws Exception {
+        MockHttpSession owner = signUpSession("pref_owner");
+        mvc.perform(put("/api/v1/me/preferences").session(owner)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"likes":["촉촉한"],"avoids":[],"note":""}
+                                """))
+                .andExpect(status().isOk());
+
+        MockHttpSession other = signUpSession("pref_other");
+        mvc.perform(get("/api/v1/me/preferences").session(other))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.likes.length()").value(0));
+
+        mvc.perform(get("/api/v1/me/preferences"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
     void conversationsArePrivateToTheirOwner() throws Exception {
         MockHttpSession demo = demoSession();
         String body = mvc.perform(post("/api/v1/ai/conversations").session(demo)

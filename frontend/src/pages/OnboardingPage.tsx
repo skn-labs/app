@@ -1,13 +1,18 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, ArrowRight, BookOpen, Check, ChevronRight, PackageOpen, Search, Sparkles, X } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { api, uid } from '../lib/api'
-import type { Auth, Product } from '../lib/types'
-import { BrandMark, Button, ErrorState, Loading, ProductGlyph, Screen } from '../components/ui'
+import type { Auth, Preference, Product } from '../lib/types'
+import { BrandMark, BrandMotion, Button, ErrorState, Loading, ProductGlyph, Screen } from '../components/ui'
 
 type EntryChoice = 'PRODUCT' | 'ROUTINE' | 'EXPLORE'
-type Draft = { version: number; step: number; selected: number[]; entryChoice: EntryChoice | null; focusProductId: number | null }
+type Draft = { version: number; step: number; selected: number[]; entryChoice: EntryChoice | null; focusProductId: number | null; preference: Preference }
+
+/** ONB-01. 선택지는 제품 라벨이 아니라 사용감 표현이며, 고르지 않아도 통과한다. */
+const TEXTURE_LIKES = ['가벼운', '촉촉한', '산뜻한', '쫀쫀한', '윤기 있는', '보송한'] as const
+const TEXTURE_AVOIDS = ['끈적임', '답답함', '따가움', '강한 향', '무거운 잔여감'] as const
+const EMPTY_PREFERENCE: Preference = { likes: [], avoids: [], note: '' }
 
 export function OnboardingPage({ auth }: { auth: Auth }) {
   const navigate = useNavigate()
@@ -19,29 +24,33 @@ export function OnboardingPage({ auth }: { auth: Auth }) {
   const [selected, setSelected] = useState<number[]>(draft.selected)
   const [entryChoice, setEntryChoice] = useState<EntryChoice | null>(draft.entryChoice)
   const [focusProductId, setFocusProductId] = useState<number | null>(draft.focusProductId)
+  const [preference, setPreference] = useState<Preference>(draft.preference)
   const [selectionError, setSelectionError] = useState('')
+  const [finishTo, setFinishTo] = useState<string | null>(null)
   const products = useQuery({ queryKey: ['onboarding-products', query], queryFn: () => api.products(query, null, 40) })
   const selectedProductQueries = useQueries({ queries: selected.map(id => ({ queryKey: ['product', id], queryFn: () => api.product(id) })) })
   const selectedProducts = selectedProductQueries.flatMap(result => result.data ? [result.data] : [])
 
   useEffect(() => {
-    localStorage.setItem(draftKey, JSON.stringify({ version: 2, step, selected, entryChoice, focusProductId }))
-  }, [draftKey, step, selected, entryChoice, focusProductId])
+    localStorage.setItem(draftKey, JSON.stringify({ version: 3, step, selected, entryChoice, focusProductId, preference }))
+  }, [draftKey, step, selected, entryChoice, focusProductId, preference])
 
   const complete = useMutation({
     mutationFn: (choice: EntryChoice) => api.completeOnboarding({
       productIds: selected,
       entryChoice: choice,
       focusProductId: choice === 'PRODUCT' ? (focusProductId || selected[0]) : undefined,
+      // ONB-01. 하나도 고르지 않았으면 아예 보내지 않는다(건너뛴 것과 비운 것을 구분).
+      preferences: hasPreference(preference) ? preference : undefined,
       clientRequestId: uid(),
     }),
     onSuccess: (result, choice) => {
       localStorage.removeItem(draftKey)
       queryClient.setQueryData(['auth'], result.user)
       queryClient.invalidateQueries()
-      if (result.experience) navigate(`/experiences/${result.experience.id}`, { replace: true })
-      else if (choice === 'ROUTINE') navigate('/routine/edit', { replace: true })
-      else navigate('/explore', { replace: true })
+      // 바로 옮기지 않고 완료 모션을 한 번 보여준 뒤 이동한다.
+      setFinishTo(result.experience ? `/experiences/${result.experience.id}`
+        : choice === 'ROUTINE' ? '/routine/edit' : '/explore')
     },
   })
 
@@ -74,18 +83,23 @@ export function OnboardingPage({ auth }: { auth: Auth }) {
 
   const skipInput = () => {
     setEntryChoice('EXPLORE')
-    setStep(3)
+    setStep(4)
   }
 
+  if (finishTo) return <Screen nav={false} className="relative flex flex-col overflow-hidden bg-white">
+    <CompleteStep onDone={() => navigate(finishTo, { replace: true })}/>
+  </Screen>
+
   return <Screen nav={false} className="relative flex flex-col overflow-hidden bg-white">
-    {step === 0 ? <WelcomeStep displayName={auth.displayName} onStart={() => setStep(1)} onPreview={skipInput}/> : step < 3 ? <>
+    {step === 0 ? <WelcomeStep displayName={auth.displayName} onStart={() => setStep(1)} onPreview={skipInput}/> : step < 4 ? <>
       <InputHeader step={step - 1} onBack={() => setStep(value => value - 1)} onSkip={skipInput}/>
       {step === 1 && <ProductStep query={query} onQuery={setQuery} products={products.data?.items || []} loading={products.isPending} error={products.isError ? products.error.message : ''} selected={selected} onToggle={toggleProduct} selectionError={selectionError} onNext={goToChoice}/>} 
       {step === 2 && <StartStep products={selectedProducts} choice={entryChoice} focusProductId={focusProductId} onChoice={setEntryChoice} onFocus={setFocusProductId} onContinue={beginIntroduction}/>} 
+      {step === 3 && <PreferenceStep preference={preference} onChange={setPreference} onNext={() => setStep(4)}/>} 
     </> : <StoryOnboarding
-      index={step - 3}
+      index={step - 4}
       onBack={() => setStep(value => value - 1)}
-      onNext={() => step < 5 ? setStep(value => value + 1) : complete.mutate(entryChoice || 'EXPLORE')}
+      onNext={() => step < 6 ? setStep(value => value + 1) : complete.mutate(entryChoice || 'EXPLORE')}
       onSkip={() => complete.mutate(entryChoice || 'EXPLORE')}
       pending={complete.isPending}
       error={complete.error?.message}
@@ -93,19 +107,36 @@ export function OnboardingPage({ auth }: { auth: Auth }) {
   </Screen>
 }
 
+const EMPTY_DRAFT: Draft = { version: 3, step: 0, selected: [], entryChoice: null, focusProductId: null, preference: EMPTY_PREFERENCE }
+
+const hasPreference = (value: Preference) => value.likes.length > 0 || value.avoids.length > 0 || value.note.trim().length > 0
+
 function readDraft(key: string): Draft {
   try {
     const value = JSON.parse(localStorage.getItem(key) || '{}') as Partial<Draft>
-    if (value.version !== 2) return { version: 2, step: 0, selected: [], entryChoice: null, focusProductId: null }
+    if (value.version !== 3) return EMPTY_DRAFT
     return {
-      version: 2,
-      step: typeof value.step === 'number' && value.step >= 0 && value.step <= 5 ? value.step : 0,
+      version: 3,
+      step: typeof value.step === 'number' && value.step >= 0 && value.step <= 6 ? value.step : 0,
       selected: Array.isArray(value.selected) ? value.selected.filter(item => Number.isInteger(item)).slice(0, 8) : [],
       entryChoice: value.entryChoice === 'PRODUCT' || value.entryChoice === 'ROUTINE' || value.entryChoice === 'EXPLORE' ? value.entryChoice : null,
       focusProductId: typeof value.focusProductId === 'number' ? value.focusProductId : null,
+      preference: readPreference(value.preference),
     }
   } catch {
-    return { version: 2, step: 0, selected: [], entryChoice: null, focusProductId: null }
+    return EMPTY_DRAFT
+  }
+}
+
+function readPreference(value: Preference | undefined): Preference {
+  if (!value) return EMPTY_PREFERENCE
+  const list = (items: unknown, allowed: readonly string[]) => Array.isArray(items)
+    ? items.filter((item): item is string => typeof item === 'string' && allowed.includes(item))
+    : []
+  return {
+    likes: list(value.likes, TEXTURE_LIKES),
+    avoids: list(value.avoids, TEXTURE_AVOIDS),
+    note: typeof value.note === 'string' ? value.note.slice(0, 300) : '',
   }
 }
 
@@ -145,13 +176,13 @@ function InputHeader({ step, onBack, onSkip }: { step: number; onBack?: () => vo
       <span className="text-[11px] font-bold tracking-[.08em] text-muted">맞춤 설정</span>
       <button onClick={onSkip} className="-mr-2 rounded-full px-3 py-2 text-xs font-semibold text-muted hover:bg-soft">나중에</button>
     </div>
-    <div className="mt-5 grid grid-cols-2 gap-2">{[0, 1].map(index => <span key={index} className={`h-1 rounded-full transition-colors ${index <= step ? 'bg-ink' : 'bg-line'}`}/>)}</div>
+    <div className="mt-5 grid grid-cols-3 gap-2">{[0, 1, 2].map(index => <span key={index} className={`h-1 rounded-full transition-colors ${index <= step ? 'bg-ink' : 'bg-line'}`}/>)}</div>
   </header>
 }
 
 function ProductStep({ query, onQuery, products, loading, error, selected, onToggle, selectionError, onNext }: { query: string; onQuery: (value: string) => void; products: Product[]; loading: boolean; error: string; selected: number[]; onToggle: (id: number) => void; selectionError: string; onNext: () => void }) {
   return <div className="flex min-h-0 flex-1 flex-col animate-rise">
-    <div className="shrink-0 px-5 pt-4"><p className="text-xs font-bold text-accent">설정 1 / 2</p><h1 className="mt-2 text-[27px] font-bold leading-9 tracking-[-.045em]">지금 쓰는 화장품을<br/>골라주세요</h1><p className="mt-2 text-sm leading-6 text-muted">모두 등록할 필요 없어요. 기억나는 것부터 최대 8개만 골라요.</p>
+    <div className="shrink-0 px-5 pt-4"><p className="text-xs font-bold text-accent">설정 1 / 3</p><h1 className="mt-2 text-[27px] font-bold leading-9 tracking-[-.045em]">지금 쓰는 화장품을<br/>골라주세요</h1><p className="mt-2 text-sm leading-6 text-muted">모두 등록할 필요 없어요. 기억나는 것부터 최대 8개만 골라요.</p>
       <label className="mt-5 flex h-12 items-center gap-3 rounded-2xl border border-line bg-soft px-4 focus-within:border-ink"><Search size={18} className="text-muted"/><input autoFocus value={query} onChange={event => onQuery(event.target.value)} placeholder="브랜드 또는 제품명" className="min-w-0 flex-1 bg-transparent text-sm outline-none"/>{query && <button onClick={() => onQuery('')} aria-label="검색어 지우기"><X size={17} className="text-muted"/></button>}</label>
       <div className="mt-3 flex items-center justify-between"><span className="text-xs font-semibold text-muted">{selected.length ? `${selected.length}개 선택됨` : '아직 선택하지 않았어요'}</span>{selected.length > 0 && <span className="rounded-full bg-accent-soft px-2.5 py-1 text-[10px] font-bold text-accent">내 화장품에 추가</span>}</div>
     </div>
@@ -174,11 +205,88 @@ function StartStep({ products, choice, focusProductId, onChoice, onFocus, onCont
   ]
   return <div className="flex min-h-0 flex-1 flex-col animate-rise">
     <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-5 pt-4">
-      <p className="text-xs font-bold text-accent">설정 2 / 2</p><h1 className="mt-2 text-[27px] font-bold leading-9 tracking-[-.045em]">어디서부터<br/>시작할까요?</h1><p className="mt-2 text-sm leading-6 text-muted">지금 필요한 것 하나만 고르면 나머지는 나중에 바꿔도 돼요.</p>
+      <p className="text-xs font-bold text-accent">설정 2 / 3</p><h1 className="mt-2 text-[27px] font-bold leading-9 tracking-[-.045em]">어디서부터<br/>시작할까요?</h1><p className="mt-2 text-sm leading-6 text-muted">지금 필요한 것 하나만 고르면 나머지는 나중에 바꿔도 돼요.</p>
       <div className="mt-7 space-y-3">{options.map(({ value, icon: Icon, title, body }) => <button key={value} onClick={() => onChoice(value)} className={`flex w-full items-start gap-3 rounded-[20px] border p-4 text-left transition ${choice === value ? 'border-ink bg-soft shadow-sm' : 'border-line bg-white'}`}><div className={`grid size-10 shrink-0 place-items-center rounded-2xl ${choice === value ? 'bg-ink text-white' : 'bg-soft text-muted'}`}><Icon size={18}/></div><div className="min-w-0 flex-1"><p className="text-sm font-bold">{title}</p><p className="mt-1 text-xs leading-5 text-muted">{body}</p></div><span className={`mt-2 grid size-5 place-items-center rounded-full border ${choice === value ? 'border-ink bg-ink text-white' : 'border-[#cfd2cc]'}`}>{choice === value && <Check size={12}/>}</span></button>)}</div>
       {choice === 'PRODUCT' && products.length > 1 && <section className="mt-6"><p className="text-sm font-bold">먼저 써볼 제품</p><div className="mt-3 flex gap-2 overflow-x-auto pb-1">{products.map(product => <button key={product.id} onClick={() => onFocus(product.id)} className={`min-w-[150px] rounded-2xl border p-3 text-left ${focusProductId === product.id ? 'border-accent bg-accent-soft' : 'border-line bg-white'}`}><p className="truncate text-[10px] text-muted">{product.brand}</p><p className="mt-1 line-clamp-2 text-xs font-bold leading-5">{product.name}</p></button>)}</div></section>}
     </div>
-    <div className="safe-bottom shrink-0 border-t border-line bg-white p-4"><Button disabled={!choice} onClick={onContinue} className="w-full">설정 마치고 SKN 알아보기<ChevronRight size={17}/></Button></div>
+    <div className="safe-bottom shrink-0 border-t border-line bg-white p-4"><Button disabled={!choice} onClick={onContinue} className="w-full">다음<ChevronRight size={17}/></Button></div>
+  </div>
+}
+
+/**
+ * ONB-01. 사용감 선호는 **선택**이다.
+ * 아무것도 고르지 않아도 다음으로 넘어가며, 그때는 서버로 보내지 않는다.
+ * 피부 타입·연령·성별처럼 사람을 고정 분류하는 항목은 여기에 두지 않는다(ACC-03).
+ */
+function PreferenceStep({ preference, onChange, onNext }: { preference: Preference; onChange: (value: Preference) => void; onNext: () => void }) {
+  const toggle = (key: 'likes' | 'avoids', value: string) => onChange({
+    ...preference,
+    [key]: preference[key].includes(value) ? preference[key].filter(item => item !== value) : [...preference[key], value],
+  })
+  const chosen = hasPreference(preference)
+
+  return <div className="flex min-h-0 flex-1 flex-col animate-rise">
+    <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-5 pt-4">
+      <p className="text-xs font-bold text-accent">설정 3 / 3 · 선택</p>
+      <h1 className="mt-2 text-[27px] font-bold leading-9 tracking-[-.045em]">선호하는 사용감이<br/>있으신가요?</h1>
+      <p className="mt-2 text-sm leading-6 text-muted">몰라도 괜찮아요. 실제 기록이 쌓이기 전까지 참고만 하는 값이라 나중에 바꿀 수 있어요.</p>
+
+      <section className="mt-7">
+        <p className="text-sm font-bold">좋아하는 사용감</p>
+        <div className="mt-3 flex flex-wrap gap-2">{TEXTURE_LIKES.map(value => <Chip key={value} label={value} selected={preference.likes.includes(value)} onClick={() => toggle('likes', value)}/>)}</div>
+      </section>
+
+      <section className="mt-6">
+        <p className="text-sm font-bold">피하고 싶은 것</p>
+        <div className="mt-3 flex flex-wrap gap-2">{TEXTURE_AVOIDS.map(value => <Chip key={value} label={value} selected={preference.avoids.includes(value)} onClick={() => toggle('avoids', value)}/>)}</div>
+      </section>
+
+      <section className="mt-6">
+        <label className="block"><span className="text-sm font-bold">직접 적어두기</span>
+          <textarea value={preference.note} maxLength={300} rows={3} onChange={event => onChange({ ...preference, note: event.target.value })}
+            placeholder="예: 향이 강한 건 피하고 싶어요" className="mt-3 w-full resize-none rounded-2xl border border-line bg-soft p-4 text-sm leading-6 outline-none focus:border-ink"/>
+        </label>
+      </section>
+    </div>
+    <div className="safe-bottom shrink-0 border-t border-line bg-white p-4">
+      <Button onClick={onNext} className="w-full">{chosen ? '저장하고 계속' : '잘 모르겠어요'}<ArrowRight size={17}/></Button>
+    </div>
+  </div>
+}
+
+function Chip({ label, selected, onClick }: { label: string; selected: boolean; onClick: () => void }) {
+  return <button onClick={onClick} aria-pressed={selected} className={`rounded-full border px-4 py-2 text-sm transition ${selected ? 'border-ink bg-ink font-semibold text-white' : 'border-line bg-white text-ink'}`}>{label}</button>
+}
+
+/** 온보딩 저장이 끝난 순간. 완료 모션을 한 번 보여주고 다음 화면으로 넘긴다. */
+function CompleteStep({ onDone }: { onDone: () => void }) {
+  const done = useRef(false)
+  const latest = useRef(onDone)
+  latest.current = onDone
+
+  const finish = () => {
+    if (done.current) return
+    done.current = true
+    latest.current()
+  }
+
+  useEffect(() => {
+    // 모션이 끝나지 않는 환경에서도 멈추지 않도록 받쳐준다.
+    const timer = setTimeout(() => {
+      if (done.current) return
+      done.current = true
+      latest.current()
+    }, 3600)
+    return () => clearTimeout(timer)
+  }, [])
+
+  return <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-6 px-6 text-center animate-rise">
+    <BrandMotion name="check-motion" poster="/skn-assets/check-motion.png" alt="설정 완료" className="size-[220px] object-contain" onEnded={finish}/>
+    <div>
+      <h1 className="text-[24px] font-bold leading-8 tracking-[-.045em]">이제 시작할 준비가<br/>끝났어요.</h1>
+      <p className="mt-3 text-sm text-muted">잠시 후 다음 화면으로 이동해요</p>
+    </div>
+    <button onClick={finish} className="text-xs font-semibold text-muted underline decoration-line underline-offset-4">바로 이동하기</button>
   </div>
 }
 

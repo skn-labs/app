@@ -18,6 +18,17 @@ CREATE TABLE IF NOT EXISTS user_onboarding (
     FOREIGN KEY (user_id) REFERENCES app_user(id) ON DELETE CASCADE
 );
 
+-- ONB-01: 온보딩에서 선택적으로 받는 사용감 선호. 구조화된 실제 경험이 쌓이기 전의 약한 맥락으로만 쓴다.
+-- 피부 타입·연령·성별 같은 고정 속성은 담지 않는다(ACC-03, product-rules 10).
+CREATE TABLE IF NOT EXISTS user_preference (
+    user_id INTEGER PRIMARY KEY,
+    texture_likes_json TEXT NOT NULL DEFAULT '[]',
+    texture_avoids_json TEXT NOT NULL DEFAULT '[]',
+    note TEXT NOT NULL DEFAULT '',
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES app_user(id) ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS product (
     id INTEGER PRIMARY KEY,
     brand TEXT NOT NULL,

@@ -14,6 +14,15 @@ Table user_onboarding {
   completed_at text [not null]
 }
 
+Table user_preference {
+  user_id integer [pk, ref: > app_user.id]
+  texture_likes_json text [not null, default: '[]']
+  texture_avoids_json text [not null, default: '[]']
+  note text [not null, default: '']
+  updated_at text [not null]
+  note: 'ONB-01. 선택적으로 받는 사용감 선호. 피부 타입·연령·성별은 담지 않는다.'
+}
+
 Table product {
   id integer [pk]
   brand text [not null]
