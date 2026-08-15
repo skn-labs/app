@@ -20,13 +20,13 @@ export function TopBar({ title, back = false, backTo, right }: { title: string; 
 /** Figma "홈+루틴" 헤더: 탭 루트 화면은 로고+알림+마이페이지, 하위 화면은 뒤로가기+로고. */
 export function AppHeader({ back = false, backTo }: { back?: boolean; backTo?: string }) {
   const navigate = useNavigate()
-  return <header className="relative z-20 flex h-[60px] shrink-0 items-center justify-between px-5">
+  return <header className="relative z-20 flex h-[72px] shrink-0 items-center justify-between px-5">
     <div className="flex w-20 items-center">{back && <button aria-label="뒤로" onClick={() => backTo ? navigate(backTo) : navigate(-1)} className="-ml-2 grid size-10 place-items-center rounded-full hover:bg-soft"><ChevronLeft size={24}/></button>}</div>
-    <BrandMark compact/>
+    <SknMark className="h-10 w-10"/>
     <div className="flex w-20 items-center justify-end gap-2">
       {!back && <>
-        <button aria-label="알림" className="grid size-10 place-items-center rounded-full bg-soft text-ink"><Bell size={19}/></button>
-        <Link to="/records" aria-label="마이페이지" className="grid size-10 place-items-center rounded-full bg-soft text-ink"><CircleUserRound size={19}/></Link>
+        <Link to="/records" aria-label="마이페이지" className="grid size-10 place-items-center rounded-full text-ink transition active:bg-soft"><CircleUserRound size={22} strokeWidth={1.8}/></Link>
+        <button aria-label="알림" className="grid size-10 place-items-center rounded-full text-ink transition active:bg-soft"><Bell size={22} strokeWidth={1.8}/></button>
       </>}
     </div>
   </header>
@@ -39,10 +39,10 @@ function BottomNav() {
     { to: '/routines', label: '루틴', icon: NotebookText },
     { to: '/ai', label: 'AI', icon: MessageCircle },
   ]
-  return <div className="safe-bottom fixed inset-x-0 bottom-0 z-30 mx-auto flex max-w-[430px] justify-center px-8">
-    <nav className="flex h-[66px] w-full max-w-[334px] items-center justify-around rounded-[40px] bg-white shadow-[0_2px_8px_rgba(0,0,0,.1)]">
-      {items.map(({ to, label, icon: Icon, end }) => <NavLink key={to} to={to} end={end} aria-label={label} className={({ isActive }) => twMerge('grid place-items-center rounded-full p-2 text-ink/70 transition', isActive && 'text-ink')}>
-        <Icon size={22} strokeWidth={1.9}/>
+  return <div className="safe-bottom pointer-events-none fixed inset-x-0 bottom-0 z-30 mx-auto flex max-w-[430px] justify-center px-8">
+    <nav className="pointer-events-auto flex h-[66px] w-full max-w-[334px] items-center justify-around rounded-[40px] border border-black/[.03] bg-white/95 shadow-[0_12px_36px_rgba(0,0,0,.14)] backdrop-blur-xl">
+      {items.map(({ to, label, icon: Icon, end }) => <NavLink key={to} to={to} end={end} aria-label={label} className={({ isActive }) => twMerge('grid size-11 place-items-center rounded-full text-[#c7c7cc] transition active:scale-95', isActive && 'text-[#0a0a0a]')}>
+        <Icon size={23} strokeWidth={1.9}/>
       </NavLink>)}
     </nav>
   </div>
