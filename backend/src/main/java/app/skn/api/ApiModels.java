@@ -1,5 +1,6 @@
 package app.skn.api;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -273,7 +274,7 @@ public final class ApiModels {
             @Size(max = 8) List<@NotNull Long> productIds,
             @NotBlank String entryChoice,
             Long focusProductId,
-            PreferenceRequest preferences,
+            @Valid PreferenceRequest preferences,
             @NotBlank String clientRequestId
     ) {}
 

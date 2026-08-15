@@ -226,6 +226,23 @@ class CoreFlowIntegrationTest {
     }
 
     @Test
+    void onboardingRejectsPreferencesOutsideContractLimits() throws Exception {
+        MockHttpSession session = signUpSession("pref_limits_user");
+        String request = """
+                {"productIds":[],"entryChoice":"EXPLORE",
+                 "preferences":{"likes":["%s"],"avoids":[],"note":"%s"},
+                 "clientRequestId":"pref-limits"}
+                """.formatted("x".repeat(41), "n".repeat(301));
+
+        mvc.perform(post("/api/v1/auth/onboarding").session(session)
+                        .contentType(MediaType.APPLICATION_JSON).content(request))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
+                .andExpect(jsonPath("$.fieldErrors['preferences.likes[0]']").exists())
+                .andExpect(jsonPath("$.fieldErrors['preferences.note']").exists());
+    }
+
+    @Test
     void onboardingStoresOptionalPreferenceAndKeepsItEditable() throws Exception {
         MockHttpSession session = signUpSession("pref_user");
         mvc.perform(post("/api/v1/auth/onboarding").session(session)
