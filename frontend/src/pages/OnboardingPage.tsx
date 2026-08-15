@@ -4,7 +4,7 @@ import { ArrowLeft, ArrowRight, BookOpen, Check, ChevronRight, PackageOpen, Sear
 import { useNavigate } from 'react-router-dom'
 import { api, uid } from '../lib/api'
 import type { Auth, Preference, Product } from '../lib/types'
-import { BrandMark, BrandMotion, Button, ErrorState, Loading, ProductGlyph, Screen } from '../components/ui'
+import { BrandMotion, Button, ErrorState, Loading, ProductGlyph, Screen, SknMark } from '../components/ui'
 
 type EntryChoice = 'PRODUCT' | 'ROUTINE' | 'EXPLORE'
 type Draft = { version: number; step: number; selected: number[]; entryChoice: EntryChoice | null; focusProductId: number | null; preference: Preference }
@@ -141,61 +141,52 @@ function readPreference(value: Preference | undefined): Preference {
 }
 
 function WelcomeStep({ displayName, onStart, onPreview }: { displayName: string; onStart: () => void; onPreview: () => void }) {
-  return <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-[radial-gradient(circle_at_50%_37%,#f3f4ff_0%,#fbfcf8_42%,#fff_78%)]">
-    <header className="z-10 shrink-0 px-6 pt-7"><BrandMark compact/></header>
-    <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-7">
-      <div className="animate-rise pt-9 text-center">
-        <p className="text-sm font-bold text-accent">반가워요, {displayName}</p>
-        <h1 className="mt-3 text-[32px] font-bold leading-[1.2] tracking-[-.055em]">오늘부터 화장품을<br/>써본 만큼 나를 알아가요.</h1>
-        <p className="mx-auto mt-4 max-w-[330px] text-[15px] leading-7 text-muted">기억 속에 흩어지던 사용 경험을<br/>SKN이 대신 이어둘게요.</p>
+  return <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-white">
+    <header className="flex shrink-0 justify-center px-7 pb-1 pt-[max(24px,env(safe-area-inset-top))]"><SknMark className="h-[26px] w-auto"/></header>
+    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-7 pb-5 animate-rise">
+      <div className="pt-9">
+        <p className="text-[12px] font-medium text-muted">반가워요, {displayName}</p>
+        <h1 className="mt-3 text-[24px] font-bold leading-[1.4] tracking-[-.04em]">당신의 피부를 연구할<br/>준비가 되었어요.</h1>
+        <p className="mt-3 text-[13px] leading-[1.65] text-muted">지금 쓰는 제품과 시작점을 정리하고,<br/>경험을 다음 탐색에 이어둘게요.</p>
       </div>
 
-      <WelcomeArtwork/>
+      <div className="flex min-h-[250px] flex-1 items-center justify-center py-5">
+        <BrandMotion name="petri-motion" poster="/skn-assets/petri-motion.png" alt="맑은 세럼 방울이 담긴 페트리 접시" loop className="w-[88%] max-w-[330px] object-contain"/>
+      </div>
 
-      <div className="mx-auto mt-4 flex w-fit items-center gap-2 rounded-full border border-line bg-white/85 px-4 py-2.5 text-[11px] font-semibold text-muted shadow-sm backdrop-blur"><Check size={14} className="text-accent"/>과거 기록 없이 지금 쓰는 제품부터</div>
+      <div className="mx-auto flex w-fit items-center gap-2 text-[11px] text-muted"><Check size={13}/>과거 기록 없이, 모르는 항목은 건너뛰어도 돼요</div>
     </div>
-    <div className="safe-bottom z-10 shrink-0 border-t border-line/80 bg-white/92 p-4 backdrop-blur-xl"><Button onClick={onStart} className="w-full">내 SKN 시작하기<ArrowRight size={18}/></Button><button onClick={onPreview} className="mx-auto mt-3 block py-1 text-xs font-semibold text-muted">먼저 서비스 흐름 둘러보기</button></div>
+    <div className="safe-bottom shrink-0 px-7 pb-2 pt-3"><Button onClick={onStart} className="h-[52px] w-full rounded-full">시작하기<ArrowRight size={17}/></Button><button onClick={onPreview} className="mx-auto mt-3 block py-1 text-xs font-medium text-muted">먼저 SKN 사용 흐름 보기</button></div>
   </div>
 }
 
-function WelcomeArtwork() {
-  return <div className="relative mx-auto mt-8 w-full max-w-[350px]" aria-hidden="true"><svg viewBox="0 0 360 245" className="block h-auto w-full">
-    <defs><linearGradient id="welcome-orb-a" x1="0" y1="0" x2="1" y2="1"><stop stopColor="#dfe4ff" stopOpacity=".95"/><stop offset="1" stopColor="#f0f5de" stopOpacity=".78"/></linearGradient><linearGradient id="welcome-orb-b" x1="0" y1="0" x2="1" y2="1"><stop stopColor="#fff"/><stop offset="1" stopColor="#e8ecff"/></linearGradient><filter id="welcome-shadow"><feDropShadow dx="0" dy="16" stdDeviation="18" floodColor="#283023" floodOpacity=".12"/></filter></defs>
-    <circle cx="180" cy="120" r="102" fill="url(#welcome-orb-a)" className="onboard-pulse"/>
-    <circle cx="67" cy="61" r="17" fill="#dff5a7" fillOpacity=".88" className="onboard-float onboard-delay-1"/><circle cx="302" cy="78" r="11" fill="#bfc7ff" fillOpacity=".8" className="onboard-float onboard-delay-2"/><circle cx="304" cy="188" r="22" fill="#fff" stroke="#e1e4de" className="onboard-float"/>
-    <g filter="url(#welcome-shadow)" className="onboard-float"><rect x="86" y="38" width="188" height="162" rx="36" fill="url(#welcome-orb-b)" stroke="#fff" strokeWidth="2"/><circle cx="180" cy="100" r="35" fill="#171816"/><path d="M163 112V86l17 19 17-19v26" fill="none" stroke="#dff5a7" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round"/><text x="180" y="157" textAnchor="middle" fontSize="13" fontWeight="800" fill="#171816">나의 스킨케어 경험</text><text x="180" y="176" textAnchor="middle" fontSize="9" fontWeight="600" fill="#73766f">USE · REMEMBER · CONNECT</text></g>
-    <path d="M64 159 C94 216 142 228 183 218 C231 207 265 221 300 176" fill="none" stroke="#5365f5" strokeWidth="1.8" strokeLinecap="round" strokeDasharray="4 7" className="onboard-draw"/>
-    <circle cx="64" cy="159" r="5" fill="#5365f5"/><circle cx="181" cy="218" r="5" fill="#5365f5"/><circle cx="300" cy="176" r="5" fill="#5365f5"/>
-  </svg></div>
-}
-
 function InputHeader({ step, onBack, onSkip }: { step: number; onBack?: () => void; onSkip: () => void }) {
-  return <header className="z-10 shrink-0 bg-white px-5 pb-4 pt-5">
-    <div className="flex h-10 items-center justify-between">
-      {onBack ? <button onClick={onBack} aria-label="이전 단계" className="-ml-2 grid size-10 place-items-center rounded-full hover:bg-soft"><ArrowLeft size={21}/></button> : <BrandMark compact/>}
-      <span className="text-[11px] font-bold tracking-[.08em] text-muted">맞춤 설정</span>
-      <button onClick={onSkip} className="-mr-2 rounded-full px-3 py-2 text-xs font-semibold text-muted hover:bg-soft">나중에</button>
+  return <header className="z-10 shrink-0 bg-white px-7 pb-3 pt-[max(18px,env(safe-area-inset-top))]">
+    <div className="grid h-10 grid-cols-[1fr_auto_1fr] items-center">
+      {onBack ? <button onClick={onBack} aria-label="이전 단계" className="-ml-3 grid size-10 place-items-center rounded-full hover:bg-soft"><ArrowLeft size={21}/></button> : <span/>}
+      <SknMark className="h-[26px] w-auto"/>
+      <button onClick={onSkip} className="-mr-3 justify-self-end rounded-full px-3 py-2 text-xs font-medium text-muted hover:bg-soft">나중에</button>
     </div>
-    <div className="mt-5 grid grid-cols-3 gap-2">{[0, 1, 2].map(index => <span key={index} className={`h-1 rounded-full transition-colors ${index <= step ? 'bg-ink' : 'bg-line'}`}/>)}</div>
+    <div role="progressbar" aria-valuemin={1} aria-valuemax={3} aria-valuenow={step + 1} aria-label={`맞춤 설정 3단계 중 ${step + 1}단계`} className="mt-5 flex items-center gap-1.5">{[0, 1, 2].map(index => <span key={index} className={`h-[3px] w-6 rounded-full transition-colors ${index <= step ? 'bg-ink' : 'bg-line'}`}/>)}</div>
   </header>
 }
 
 function ProductStep({ query, onQuery, products, loading, error, selected, onToggle, selectionError, onNext }: { query: string; onQuery: (value: string) => void; products: Product[]; loading: boolean; error: string; selected: number[]; onToggle: (id: number) => void; selectionError: string; onNext: () => void }) {
   return <div className="flex min-h-0 flex-1 flex-col animate-rise">
-    <div className="shrink-0 px-5 pt-4"><p className="text-xs font-bold text-accent">설정 1 / 3</p><h1 className="mt-2 text-[27px] font-bold leading-9 tracking-[-.045em]">지금 쓰는 화장품을<br/>골라주세요</h1><p className="mt-2 text-sm leading-6 text-muted">모두 등록할 필요 없어요. 기억나는 것부터 최대 8개만 골라요.</p>
-      <label className="mt-5 flex h-12 items-center gap-3 rounded-2xl border border-line bg-soft px-4 focus-within:border-ink"><Search size={18} className="text-muted"/><input autoFocus value={query} onChange={event => onQuery(event.target.value)} placeholder="브랜드 또는 제품명" className="min-w-0 flex-1 bg-transparent text-sm outline-none"/>{query && <button onClick={() => onQuery('')} aria-label="검색어 지우기"><X size={17} className="text-muted"/></button>}</label>
-      <div className="mt-3 flex items-center justify-between"><span className="text-xs font-semibold text-muted">{selected.length ? `${selected.length}개 선택됨` : '아직 선택하지 않았어요'}</span>{selected.length > 0 && <span className="rounded-full bg-accent-soft px-2.5 py-1 text-[10px] font-bold text-accent">내 화장품에 추가</span>}</div>
+    <div className="shrink-0 px-7 pt-4"><p className="text-[11px] font-semibold text-muted">설정 1 / 3 · 선택</p><h1 className="mt-2 text-[22px] font-bold leading-[1.4] tracking-[-.04em]">지금 쓰는 화장품을<br/>골라주세요.</h1><p className="mt-2 text-[13px] leading-[1.65] text-muted">모두 등록할 필요 없어요. 기억나는 것부터 최대 8개만 골라요.</p>
+      <label className="mt-5 flex h-[50px] items-center gap-3 rounded-xl border border-transparent bg-[#f2f2f7] px-4 focus-within:border-ink"><Search size={18} className="text-muted"/><input autoFocus value={query} onChange={event => onQuery(event.target.value)} placeholder="브랜드 또는 제품명" className="min-w-0 flex-1 bg-transparent text-sm outline-none"/>{query && <button type="button" onClick={() => onQuery('')} aria-label="검색어 지우기"><X size={17} className="text-muted"/></button>}</label>
+      <div className="mt-3 flex items-center justify-between"><span className="text-xs text-muted">{selected.length ? `${selected.length}개 선택됨` : '선택하지 않아도 괜찮아요'}</span>{selected.length > 0 && <span className="rounded-full bg-ink px-2.5 py-1 text-[10px] font-semibold text-white">내 화장품에 추가</span>}</div>
     </div>
-    <div className="mt-3 min-h-0 flex-1 overflow-y-auto px-5 pb-4">
+    <div className="mt-3 min-h-0 flex-1 overflow-y-auto px-7 pb-4">
       {loading ? <Loading label="화장품 불러오는 중"/> : error ? <ErrorState message={error}/> : <div className="space-y-2">{products.map(product => <ProductChoice key={product.id} product={product} selected={selected.includes(product.id)} onClick={() => onToggle(product.id)}/>)}</div>}
       {selectionError && <p role="alert" className="mt-3 text-xs font-semibold text-danger">{selectionError}</p>}
     </div>
-    <div className="safe-bottom shrink-0 border-t border-line bg-white p-4"><Button onClick={onNext} className="w-full">{selected.length ? `${selected.length}개 선택하고 계속` : '제품은 나중에 등록'}<ArrowRight size={17}/></Button></div>
+    <div className="safe-bottom shrink-0 px-7 pb-2 pt-3"><Button onClick={onNext} className="h-[52px] w-full rounded-full">{selected.length ? `${selected.length}개 선택하고 계속` : '건너뛰기'}<ArrowRight size={17}/></Button></div>
   </div>
 }
 
 function ProductChoice({ product, selected, onClick }: { product: Product; selected: boolean; onClick: () => void }) {
-  return <button onClick={onClick} className={`flex w-full items-center gap-3 rounded-[18px] border p-3 text-left transition ${selected ? 'border-accent bg-accent-soft' : 'border-line bg-white'}`}><ProductGlyph category={product.category} size="sm" src={product.imageUrl}/><div className="min-w-0 flex-1"><p className="truncate text-[11px] font-semibold text-muted">{product.brand} · {product.category}</p><p className="mt-1 truncate text-sm font-bold">{product.name}</p></div><span className={`grid size-6 shrink-0 place-items-center rounded-full border ${selected ? 'border-accent bg-accent text-white' : 'border-[#cfd2cc] bg-white'}`}>{selected && <Check size={14}/>}</span></button>
+  return <button type="button" aria-pressed={selected} onClick={onClick} className={`flex w-full items-center gap-3 rounded-[14px] border p-3 text-left transition ${selected ? 'border-ink bg-[#f2f2f7]' : 'border-transparent bg-[#f7f7f9] hover:border-line'}`}><ProductGlyph category={product.category} size="sm" src={product.imageUrl}/><div className="min-w-0 flex-1"><p className="truncate text-[11px] font-medium text-muted">{product.brand} · {product.category}</p><p className="mt-1 truncate text-sm font-semibold">{product.name}</p></div><span className={`grid size-6 shrink-0 place-items-center rounded-full border ${selected ? 'border-ink bg-ink text-white' : 'border-[#c7c7cc] bg-white'}`}>{selected && <Check size={14}/>}</span></button>
 }
 
 function StartStep({ products, choice, focusProductId, onChoice, onFocus, onContinue }: { products: Product[]; choice: EntryChoice | null; focusProductId: number | null; onChoice: (choice: EntryChoice) => void; onFocus: (id: number) => void; onContinue: () => void }) {
@@ -204,12 +195,12 @@ function StartStep({ products, choice, focusProductId, onChoice, onFocus, onCont
     { value: 'EXPLORE' as const, icon: Search, title: '먼저 제품을 둘러보기', body: '제품 정보를 보고 궁금한 것부터 시작해요.' },
   ]
   return <div className="flex min-h-0 flex-1 flex-col animate-rise">
-    <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-5 pt-4">
-      <p className="text-xs font-bold text-accent">설정 2 / 3</p><h1 className="mt-2 text-[27px] font-bold leading-9 tracking-[-.045em]">어디서부터<br/>시작할까요?</h1><p className="mt-2 text-sm leading-6 text-muted">지금 필요한 것 하나만 고르면 나머지는 나중에 바꿔도 돼요.</p>
-      <div className="mt-7 space-y-3">{options.map(({ value, icon: Icon, title, body }) => <button key={value} onClick={() => onChoice(value)} className={`flex w-full items-start gap-3 rounded-[20px] border p-4 text-left transition ${choice === value ? 'border-ink bg-soft shadow-sm' : 'border-line bg-white'}`}><div className={`grid size-10 shrink-0 place-items-center rounded-2xl ${choice === value ? 'bg-ink text-white' : 'bg-soft text-muted'}`}><Icon size={18}/></div><div className="min-w-0 flex-1"><p className="text-sm font-bold">{title}</p><p className="mt-1 text-xs leading-5 text-muted">{body}</p></div><span className={`mt-2 grid size-5 place-items-center rounded-full border ${choice === value ? 'border-ink bg-ink text-white' : 'border-[#cfd2cc]'}`}>{choice === value && <Check size={12}/>}</span></button>)}</div>
-      {choice === 'PRODUCT' && products.length > 1 && <section className="mt-6"><p className="text-sm font-bold">먼저 써볼 제품</p><div className="mt-3 flex gap-2 overflow-x-auto pb-1">{products.map(product => <button key={product.id} onClick={() => onFocus(product.id)} className={`min-w-[150px] rounded-2xl border p-3 text-left ${focusProductId === product.id ? 'border-accent bg-accent-soft' : 'border-line bg-white'}`}><p className="truncate text-[10px] text-muted">{product.brand}</p><p className="mt-1 line-clamp-2 text-xs font-bold leading-5">{product.name}</p></button>)}</div></section>}
+    <div className="min-h-0 flex-1 overflow-y-auto px-7 pb-5 pt-4">
+      <p className="text-[11px] font-semibold text-muted">설정 2 / 3</p><h1 className="mt-2 text-[22px] font-bold leading-[1.4] tracking-[-.04em]">어디서부터<br/>시작할까요?</h1><p className="mt-2 text-[13px] leading-[1.65] text-muted">지금 필요한 것 하나만 고르면 나머지는 나중에 바꿔도 돼요.</p>
+      <div className="mt-7 space-y-2.5" role="radiogroup" aria-label="시작 방식">{options.map(({ value, icon: Icon, title, body }) => <button type="button" role="radio" aria-checked={choice === value} key={value} onClick={() => onChoice(value)} className={`flex w-full items-start gap-3 rounded-[14px] border p-4 text-left transition ${choice === value ? 'border-ink bg-ink text-white' : 'border-transparent bg-[#f2f2f7] text-ink hover:border-line'}`}><div className={`grid size-10 shrink-0 place-items-center rounded-xl ${choice === value ? 'bg-white/12 text-white' : 'bg-white text-muted'}`}><Icon size={18}/></div><div className="min-w-0 flex-1"><p className="text-sm font-semibold">{title}</p><p className={`mt-1 text-xs leading-5 ${choice === value ? 'text-white/65' : 'text-muted'}`}>{body}</p></div><span className={`mt-2 grid size-5 place-items-center rounded-full border ${choice === value ? 'border-white bg-white text-ink' : 'border-[#c7c7cc]'}`}>{choice === value && <Check size={12}/>}</span></button>)}</div>
+      {choice === 'PRODUCT' && products.length > 1 && <section className="mt-6"><p className="text-sm font-semibold">먼저 써볼 제품</p><div className="mt-3 flex gap-2 overflow-x-auto pb-1">{products.map(product => <button type="button" aria-pressed={focusProductId === product.id} key={product.id} onClick={() => onFocus(product.id)} className={`min-w-[150px] rounded-[14px] border p-3 text-left ${focusProductId === product.id ? 'border-ink bg-[#f2f2f7]' : 'border-line bg-white'}`}><p className="truncate text-[10px] text-muted">{product.brand}</p><p className="mt-1 line-clamp-2 text-xs font-semibold leading-5">{product.name}</p></button>)}</div></section>}
     </div>
-    <div className="safe-bottom shrink-0 border-t border-line bg-white p-4"><Button disabled={!choice} onClick={onContinue} className="w-full">다음<ChevronRight size={17}/></Button></div>
+    <div className="safe-bottom shrink-0 px-7 pb-2 pt-3"><Button disabled={!choice} onClick={onContinue} className="h-[52px] w-full rounded-full">다음<ChevronRight size={17}/></Button></div>
   </div>
 }
 
@@ -226,36 +217,36 @@ function PreferenceStep({ preference, onChange, onNext }: { preference: Preferen
   const chosen = hasPreference(preference)
 
   return <div className="flex min-h-0 flex-1 flex-col animate-rise">
-    <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-5 pt-4">
-      <p className="text-xs font-bold text-accent">설정 3 / 3 · 선택</p>
-      <h1 className="mt-2 text-[27px] font-bold leading-9 tracking-[-.045em]">선호하는 사용감이<br/>있으신가요?</h1>
-      <p className="mt-2 text-sm leading-6 text-muted">몰라도 괜찮아요. 실제 기록이 쌓이기 전까지 참고만 하는 값이라 나중에 바꿀 수 있어요.</p>
+    <div className="min-h-0 flex-1 overflow-y-auto px-7 pb-5 pt-4">
+      <p className="text-[11px] font-semibold text-muted">설정 3 / 3 · 선택</p>
+      <h1 className="mt-2 text-[22px] font-bold leading-[1.4] tracking-[-.04em]">선호하는 사용감이<br/>있으신가요?</h1>
+      <p className="mt-2 text-[13px] leading-[1.65] text-muted">몰라도 괜찮아요. 실제 기록이 쌓이기 전까지만 참고하고, 나중에 바꿀 수 있어요.</p>
 
       <section className="mt-7">
-        <p className="text-sm font-bold">좋아하는 사용감</p>
+        <p className="text-[13px] font-semibold text-muted">좋아하는 사용감</p>
         <div className="mt-3 flex flex-wrap gap-2">{TEXTURE_LIKES.map(value => <Chip key={value} label={value} selected={preference.likes.includes(value)} onClick={() => toggle('likes', value)}/>)}</div>
       </section>
 
       <section className="mt-6">
-        <p className="text-sm font-bold">피하고 싶은 것</p>
+        <p className="text-[13px] font-semibold text-muted">피하고 싶은 것</p>
         <div className="mt-3 flex flex-wrap gap-2">{TEXTURE_AVOIDS.map(value => <Chip key={value} label={value} selected={preference.avoids.includes(value)} onClick={() => toggle('avoids', value)}/>)}</div>
       </section>
 
       <section className="mt-6">
-        <label className="block"><span className="text-sm font-bold">직접 적어두기</span>
+        <label className="block"><span className="text-[13px] font-semibold text-muted">직접 적어두기</span>
           <textarea value={preference.note} maxLength={300} rows={3} onChange={event => onChange({ ...preference, note: event.target.value })}
-            placeholder="예: 향이 강한 건 피하고 싶어요" className="mt-3 w-full resize-none rounded-2xl border border-line bg-soft p-4 text-sm leading-6 outline-none focus:border-ink"/>
+            placeholder="예: 향이 강한 건 피하고 싶어요" className="mt-3 w-full resize-none rounded-[14px] border border-transparent bg-[#f2f2f7] p-4 text-sm leading-6 outline-none transition focus:border-ink"/>
         </label>
       </section>
     </div>
-    <div className="safe-bottom shrink-0 border-t border-line bg-white p-4">
-      <Button onClick={onNext} className="w-full">{chosen ? '저장하고 계속' : '잘 모르겠어요'}<ArrowRight size={17}/></Button>
+    <div className="safe-bottom shrink-0 px-7 pb-2 pt-3">
+      <Button onClick={onNext} className="h-[52px] w-full rounded-full">{chosen ? '저장하고 계속' : '잘 모르겠어요'}<ArrowRight size={17}/></Button>
     </div>
   </div>
 }
 
 function Chip({ label, selected, onClick }: { label: string; selected: boolean; onClick: () => void }) {
-  return <button onClick={onClick} aria-pressed={selected} className={`rounded-full border px-4 py-2 text-sm transition ${selected ? 'border-ink bg-ink font-semibold text-white' : 'border-line bg-white text-ink'}`}>{label}</button>
+  return <button type="button" onClick={onClick} aria-pressed={selected} className={`h-[38px] rounded-full border px-4 text-sm transition ${selected ? 'border-ink bg-ink font-semibold text-white' : 'border-line bg-white text-ink hover:border-[#b5b7b2]'}`}>{label}</button>
 }
 
 /** 온보딩 저장이 끝난 순간. 완료 모션을 한 번 보여주고 다음 화면으로 넘긴다. */
@@ -280,13 +271,13 @@ function CompleteStep({ onDone }: { onDone: () => void }) {
     return () => clearTimeout(timer)
   }, [])
 
-  return <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-6 px-6 text-center animate-rise">
-    <BrandMotion name="check-motion" poster="/skn-assets/check-motion.png" alt="설정 완료" className="size-[220px] object-contain" onEnded={finish}/>
-    <div>
-      <h1 className="text-[24px] font-bold leading-8 tracking-[-.045em]">이제 시작할 준비가<br/>끝났어요.</h1>
-      <p className="mt-3 text-sm text-muted">잠시 후 다음 화면으로 이동해요</p>
-    </div>
-    <button onClick={finish} className="text-xs font-semibold text-muted underline decoration-line underline-offset-4">바로 이동하기</button>
+  return <div className="flex min-h-0 flex-1 flex-col bg-white animate-rise">
+    <header className="flex shrink-0 justify-center px-7 pb-1 pt-[max(24px,env(safe-area-inset-top))]"><SknMark className="h-[26px] w-auto"/></header>
+    <button type="button" onClick={finish} className="flex min-h-0 flex-1 flex-col items-center px-7 text-center" aria-label="완료 화면을 닫고 이동하기">
+      <div className="pt-12"><h1 className="text-[22px] font-bold leading-[1.4] tracking-[-.04em]">이제 시작할 준비가<br/>끝났어요.</h1><p className="mt-3 text-[13px] text-muted">선택한 시작점으로 이동할게요.</p></div>
+      <div className="flex flex-1 items-center justify-center"><BrandMotion name="check-motion" poster="/skn-assets/check-motion.png" alt="설정 완료" className="size-[240px] object-contain" onEnded={finish}/></div>
+      <p className="safe-bottom pb-8 text-xs text-[#a0a39c]">화면을 누르면 바로 이동해요</p>
+    </button>
   </div>
 }
 
@@ -300,21 +291,21 @@ function StoryOnboarding({ index, onBack, onNext, onSkip, pending, error }: { in
     { eyebrow: 'MY PATTERN → EXPLORE AGAIN', title: '다음 화장품에서\n다시 꺼내 써요', body: 'AI는 정답을 단정하지 않고, 제품 정보와 과거의 내 경험을 연결해 비교할 이유를 보여줘요.' },
   ]
   const slide = slides[index]
-  return <div className="flex min-h-0 flex-1 flex-col bg-[linear-gradient(180deg,#fbfcf8_0%,#fff_65%)]">
-    <header className="z-10 shrink-0 px-5 pb-2 pt-5"><div className="flex h-10 items-center justify-between"><button onClick={onBack} aria-label="이전 소개" className="-ml-2 grid size-10 place-items-center rounded-full hover:bg-soft"><ArrowLeft size={21}/></button><span className="text-[11px] font-bold tracking-[.08em] text-muted">SKN 사용 흐름</span><button disabled={pending} onClick={onSkip} className="-mr-2 rounded-full px-3 py-2 text-xs font-semibold text-muted hover:bg-soft">건너뛰기</button></div><div className="mt-4 flex justify-center gap-2">{slides.map((_, dot) => <span key={dot} className={`h-1.5 rounded-full transition-all duration-300 ${dot === index ? 'w-7 bg-ink' : 'w-1.5 bg-line'}`}/>)}</div></header>
-    <div key={index} className="min-h-0 flex-1 overflow-y-auto px-5 pb-5 animate-rise">
-      <div className="pt-6 text-center"><p className="text-[10px] font-black tracking-[.14em] text-accent">{slide.eyebrow}</p><h1 className="mt-3 whitespace-pre-line text-[27px] font-bold leading-[1.25] tracking-[-.05em]">{slide.title}</h1><p className="mx-auto mt-3 max-w-[340px] text-sm leading-6 text-muted">{slide.body}</p></div>
-      <div className="mx-auto mt-5 max-w-[360px] overflow-hidden rounded-[30px] border border-line bg-[#f7f8f5] shadow-[0_20px_60px_rgba(25,31,22,.08)]">
+  return <div className="flex min-h-0 flex-1 flex-col bg-white">
+    <header className="z-10 shrink-0 px-7 pb-2 pt-[max(18px,env(safe-area-inset-top))]"><div className="grid h-10 grid-cols-[1fr_auto_1fr] items-center"><button onClick={onBack} aria-label="이전 소개" className="-ml-3 grid size-10 place-items-center rounded-full hover:bg-soft"><ArrowLeft size={21}/></button><SknMark className="h-[26px] w-auto"/><button disabled={pending} onClick={onSkip} className="-mr-3 justify-self-end rounded-full px-3 py-2 text-xs font-medium text-muted hover:bg-soft">건너뛰기</button></div><div role="progressbar" aria-valuemin={1} aria-valuemax={3} aria-valuenow={index + 1} aria-label={`SKN 사용 흐름 3단계 중 ${index + 1}단계`} className="mt-5 flex items-center gap-1.5">{slides.map((_, dot) => <span key={dot} className={`h-[3px] w-6 rounded-full transition-colors ${dot <= index ? 'bg-ink' : 'bg-line'}`}/>)}</div></header>
+    <div key={index} className="min-h-0 flex-1 overflow-y-auto px-7 pb-5 animate-rise">
+      <div className="pt-5"><p className="text-[10px] font-semibold tracking-[.12em] text-muted">{slide.eyebrow}</p><h1 className="mt-3 whitespace-pre-line text-[22px] font-bold leading-[1.4] tracking-[-.04em]">{slide.title}</h1><p className="mt-3 max-w-[340px] text-[13px] leading-[1.65] text-muted">{slide.body}</p></div>
+      <div className="mx-auto mt-5 max-w-[360px] overflow-hidden rounded-[22px] border border-line bg-[#f7f7f9]">
         {index === 0 && <ExperienceGraphic sentiment={sentiment}/>} 
         {index === 1 && <ConnectGraphic connected={connected}/>} 
         {index === 2 && <ExploreAgainGraphic compared={compared}/>} 
       </div>
-      {index === 0 && <div className="mt-4 grid grid-cols-3 gap-2">{([['LIKED','마음에 들어요'],['UNSURE','아직 모르겠어요'],['DISAPPOINTED','아쉬워요']] as const).map(([value, label]) => <button key={value} onClick={() => setSentiment(value)} className={`rounded-xl border px-2 py-2.5 text-[10px] font-bold transition ${sentiment === value ? 'border-ink bg-ink text-white' : 'border-line bg-white text-muted'}`}>{label}</button>)}</div>}
-      {index === 1 && <button onClick={() => setConnected(value => !value)} className={`mx-auto mt-4 flex items-center gap-2 rounded-full border px-4 py-2.5 text-xs font-bold transition ${connected ? 'border-accent bg-accent-soft text-accent' : 'border-line bg-white text-ink'}`}><Sparkles size={15}/>{connected ? '내 패턴으로 연결됐어요' : '세 경험 연결해보기'}</button>}
-      {index === 2 && <button onClick={() => setCompared(value => !value)} className={`mx-auto mt-4 flex items-center gap-2 rounded-full border px-4 py-2.5 text-xs font-bold transition ${compared ? 'border-accent bg-accent-soft text-accent' : 'border-line bg-white text-ink'}`}><Sparkles size={15}/>{compared ? '내 기록과 비교했어요' : '내 기록으로 비교해보기'}</button>}
+      {index === 0 && <div className="mt-4 grid grid-cols-3 gap-2">{([['LIKED','마음에 들어요'],['UNSURE','아직 모르겠어요'],['DISAPPOINTED','아쉬워요']] as const).map(([value, label]) => <button type="button" aria-pressed={sentiment === value} key={value} onClick={() => setSentiment(value)} className={`rounded-full border px-2 py-2.5 text-[10px] font-semibold transition ${sentiment === value ? 'border-ink bg-ink text-white' : 'border-line bg-white text-muted'}`}>{label}</button>)}</div>}
+      {index === 1 && <button type="button" aria-pressed={connected} onClick={() => setConnected(value => !value)} className={`mx-auto mt-4 flex items-center gap-2 rounded-full border px-4 py-2.5 text-xs font-semibold transition ${connected ? 'border-ink bg-ink text-white' : 'border-line bg-white text-ink'}`}><Sparkles size={15}/>{connected ? '내 패턴으로 연결됐어요' : '세 경험 연결해보기'}</button>}
+      {index === 2 && <button type="button" aria-pressed={compared} onClick={() => setCompared(value => !value)} className={`mx-auto mt-4 flex items-center gap-2 rounded-full border px-4 py-2.5 text-xs font-semibold transition ${compared ? 'border-ink bg-ink text-white' : 'border-line bg-white text-ink'}`}><Sparkles size={15}/>{compared ? '내 기록과 비교했어요' : '내 기록으로 비교해보기'}</button>}
       {error && <p role="alert" className="mt-4 rounded-xl bg-[#fff0f0] p-3 text-xs leading-5 text-danger">{error}</p>}
     </div>
-    <div className="safe-bottom shrink-0 border-t border-line bg-white/95 p-4 backdrop-blur"><Button disabled={pending} onClick={onNext} className="w-full">{pending ? '준비하는 중…' : index < 2 ? '다음' : 'SKN 시작하기'}<ArrowRight size={17}/></Button></div>
+    <div className="safe-bottom shrink-0 px-7 pb-2 pt-3"><Button disabled={pending} onClick={onNext} className="h-[52px] w-full rounded-full">{pending ? '준비하는 중…' : index < 2 ? '다음' : 'SKN 시작하기'}<ArrowRight size={17}/></Button></div>
   </div>
 }
 
