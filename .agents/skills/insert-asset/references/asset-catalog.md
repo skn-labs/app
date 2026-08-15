@@ -67,6 +67,8 @@ SKN의 모든 애셋은 하나의 시각 언어를 공유한다: **맑은 물방
 - 유리 오브젝트처럼 흰 여백까지 디자인에 포함된 영상은 `object-fit: contain`을 쓰고 원형 마스크나 강제 크롭을 적용하지 않는다.
 - poster를 먼저 표시하고 영상 데이터가 준비된 뒤 교체해 첫 프레임 번쩍임과 회색 테두리를 막는다.
 - 자동재생 영상은 `muted`, `playsinline`을 유지하고 `prefers-reduced-motion`에서는 poster만 보여준다.
+- 조작 UI가 없는 브랜드 모션은 영상 요소의 포인터 이벤트와 탭 포커스를 끄고, hover/focus의 네이티브 border·outline·shadow를 제거한다.
+- 현재 웹 모션은 흰 매트로 제작됐으므로 기본 화면과 모션 컨테이너 배경을 모두 `#fff`로 맞춘다.
 - 원본 고용량 파일은 `assets/`에 보존하되 제품 UI는 `frontend/public/skn-assets/`의 웹 최적화본만 참조한다.
 
 ---

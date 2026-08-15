@@ -3,7 +3,7 @@ import { SknMark } from './ui'
 
 /** sktn-prototype_2의 390×844 프레임. 모바일에서는 실제 화면을 가득 채운다. */
 export function PrototypePhone({ children }: PropsWithChildren) {
-  return <div className="fixed inset-0 z-0 flex items-center justify-center bg-[#1c1c1e] sm:p-6">
+  return <div className="fixed inset-0 z-0 flex items-center justify-center bg-[#fff] sm:p-6">
     <main className="relative flex h-dvh w-full flex-col overflow-hidden bg-white text-[#0a0a0a] sm:h-[min(844px,calc(100dvh-48px))] sm:w-[390px] sm:rounded-[44px] sm:shadow-[0_30px_70px_rgba(0,0,0,.5)]">
       {children}
     </main>

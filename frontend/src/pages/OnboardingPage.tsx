@@ -192,7 +192,7 @@ function AgeWheel({ value, onChange }: { value: DraftProfile['ageRange']; onChan
 
 function GenderPicker({ value, onChange }: { value: DraftProfile['gender']; onChange: (value: SkinProfile['gender']) => void }) {
   return <div role="radiogroup" aria-label="성별" className="flex gap-4 pt-6">
-    {GENDERS.map(([code, label]) => { const asset = `onboarding-gender-${code === 'MALE' ? 'male' : 'female'}`; return <button type="button" role="radio" aria-checked={value === code} key={code} onClick={() => onChange(code)} className={`relative flex flex-1 flex-col items-center gap-4 rounded-[24px] border px-2 pb-5 pt-3 transition active:scale-[.98] ${value === code ? 'border-[#0a0a0a] bg-[#fafafa]' : 'border-transparent bg-transparent'}`}>
+    {GENDERS.map(([code, label]) => { const asset = `onboarding-gender-${code === 'MALE' ? 'male' : 'female'}`; return <button type="button" role="radio" aria-checked={value === code} key={code} onClick={() => onChange(code)} className={`relative flex flex-1 flex-col items-center gap-4 rounded-[24px] border bg-[#fff] px-2 pb-5 pt-3 transition active:scale-[.98] ${value === code ? 'border-[#0a0a0a]' : 'border-transparent'}`}>
       <AssetMotion name={asset} poster={`/skn-assets/${asset}-poster.png`} loop playing={value === code} className={`size-[130px] transition duration-200 ${value && value !== code ? 'scale-95 opacity-35' : 'scale-100 opacity-100'}`}/>
       <span className={`text-[15px] ${value === code ? 'font-bold text-[#0a0a0a]' : 'text-[#c7c7cc]'}`}>{label}</span>
       {value === code && <span aria-hidden="true" className="absolute right-3 top-3 grid size-6 place-items-center rounded-full bg-black text-xs font-bold text-white">✓</span>}

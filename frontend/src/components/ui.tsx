@@ -168,12 +168,12 @@ export function AssetMotion({ name, poster, alt = '', loop = false, playing = tr
     previousPlaying.current = playing
   }, [fallbackOnly, name, playing])
 
-  const mediaClasses = twMerge('absolute inset-0 block h-full w-full object-contain', mediaClassName)
+  const mediaClasses = twMerge('pointer-events-none absolute inset-0 block h-full w-full select-none border-0 bg-[#fff] object-contain outline-none shadow-none', mediaClassName)
 
   return <span role={alt ? 'img' : undefined} aria-label={alt || undefined} aria-hidden={!alt}
-    className={twMerge('relative block shrink-0 overflow-hidden bg-transparent', className)}>
+    className={twMerge('relative block shrink-0 overflow-hidden bg-[#fff]', className)}>
     <img src={poster} alt="" draggable={false} className={mediaClasses}/>
-    {!fallbackOnly && <video ref={video} poster={poster} autoPlay={playing} muted playsInline loop={loop}
+    {!fallbackOnly && <video ref={video} tabIndex={-1} aria-hidden="true" poster={poster} autoPlay={playing} muted playsInline loop={loop}
       preload={playing ? 'auto' : 'metadata'} disablePictureInPicture controlsList="nodownload noplaybackrate nofullscreen"
       onLoadedData={() => setReady(true)} onError={() => setFallbackOnly(true)} onEnded={finish}
       className={twMerge(mediaClasses, 'transition-opacity duration-150 motion-reduce:transition-none', ready ? 'opacity-100' : 'opacity-0')}>
