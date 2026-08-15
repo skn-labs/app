@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { api } from './lib/api'
@@ -16,11 +17,25 @@ import { OnboardingPage } from './pages/OnboardingPage'
 
 export default function App() {
   const auth = useQuery({ queryKey: ['auth'], queryFn: api.me, retry: false })
-  // 세션을 확인하는 동안 로고 모션을 보여준다. 스피너 자리를 대신할 뿐 흐름은 그대로다.
-  const content = auth.isPending ? <PrototypePhone><div className="grid min-h-0 flex-1 place-items-center bg-white">
-      <BrandMotion name="skn-wordmark-motion" poster="/skn-assets/skn-wordmark.png" alt="SKN" className="w-[62%] max-w-[280px] object-contain"/>
-    </div></PrototypePhone>
-    : auth.isError ? <AuthPage />
+  const [introMinimumElapsed, setIntroMinimumElapsed] = useState(false)
+  const [introMotionEnded, setIntroMotionEnded] = useState(false)
+  const [introFallbackElapsed, setIntroFallbackElapsed] = useState(false)
+
+  useEffect(() => {
+    const minimum = window.setTimeout(() => setIntroMinimumElapsed(true), 900)
+    const fallback = window.setTimeout(() => setIntroFallbackElapsed(true), 2400)
+    return () => { window.clearTimeout(minimum); window.clearTimeout(fallback) }
+  }, [])
+
+  // 세션 응답이 빨라도 브랜드 모션이 끝나기 전에는 첫 화면을 교체하지 않는다.
+  const introCompleted = introMinimumElapsed && (introMotionEnded || introFallbackElapsed)
+  if (!introCompleted || auth.isPending) return <PrototypePhone>
+    <div className="grid min-h-0 flex-1 place-items-center bg-white">
+      <BrandMotion name="skn-wordmark-motion" poster="/skn-assets/skn-wordmark.png" alt="SKN" onEnded={() => setIntroMotionEnded(true)} className="w-[62%] max-w-[280px] object-contain"/>
+    </div>
+  </PrototypePhone>
+
+  const content = auth.isError ? <AuthPage />
     : !auth.data.onboardingCompleted ? <OnboardingPage auth={auth.data}/>
     : <Routes>
     <Route path="/" element={<HomePage/>}/>
