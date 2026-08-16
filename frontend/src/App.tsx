@@ -22,6 +22,7 @@ const ChatStartPage = lazy(() => import('./pages/ChatPages').then(module => ({ d
 const ProductSearchPage = lazy(() => import('./pages/ChatPages').then(module => ({ default: module.ProductSearchPage })))
 const PatternPage = lazy(() => import('./pages/RecordsPages').then(module => ({ default: module.PatternPage })))
 const RecordsPage = lazy(() => import('./pages/RecordsPages').then(module => ({ default: module.RecordsPage })))
+const ProfileEditPage = lazy(() => import('./pages/RecordsPages').then(module => ({ default: module.ProfileEditPage })))
 const RoutineDetailPage = lazy(() => import('./pages/RoutinesPages').then(module => ({ default: module.RoutineDetailPage })))
 const RoutineListPage = lazy(() => import('./pages/RoutinesPages').then(module => ({ default: module.RoutineListPage })))
 const ExperienceHubPage = lazy(() => import('./pages/ExperienceHubPage').then(module => ({ default: module.ExperienceHubPage })))
@@ -56,6 +57,7 @@ export default function App() {
     <Route path="/products/:id" element={<ProductPage/>}/>
     <Route path="/my-products" element={<ShelfPage/>}/>
     <Route path="/my-products/:id" element={<CustomProductPage/>}/>
+    <Route path="/routine/new" element={<RoutineEditPage/>}/>
     <Route path="/routine/edit" element={<RoutineEditPage/>}/>
     <Route path="/routines" element={<RoutineListPage/>}/>
     <Route path="/routines/:id" element={<RoutineDetailPage/>}/>
@@ -66,6 +68,7 @@ export default function App() {
     <Route path="/ai/new" element={<ChatStartPage/>}/>
     <Route path="/ai/:id" element={<ChatPage/>}/>
     <Route path="/records" element={<RecordsPage/>}/>
+    <Route path="/profile/edit" element={<ProfileEditPage/>}/>
     <Route path="/patterns/:id" element={<PatternPage/>}/>
     <Route path="/notifications" element={<NotificationsPage/>}/>
     <Route path="*" element={<Navigate to="/" replace/>}/>

@@ -1,6 +1,8 @@
+import { useEffect, useState } from 'react'
 import { BottomSheet, Button } from './ui'
+import { ExperienceSentimentPicker, type ExperienceSentiment } from './ExperienceStatusBadge'
 
-type Choice = 'LIKED' | 'UNSURE' | 'DISAPPOINTED'
+type Choice = ExperienceSentiment
 
 export function BeforeChangeSheet({ open, title, pending, error, onClose, onChoose, onSkip }: {
   open: boolean
@@ -11,16 +13,15 @@ export function BeforeChangeSheet({ open, title, pending, error, onClose, onChoo
   onChoose: (choice: Choice) => void
   onSkip: () => void
 }) {
-  const choices: { value: Choice; label: string; symbol: string }[] = [
-    { value: 'LIKED', label: '마음에 들었어요', symbol: '☺' },
-    { value: 'UNSURE', label: '아직 모르겠어요', symbol: '◌' },
-    { value: 'DISAPPOINTED', label: '아쉬웠어요', symbol: '↘' },
-  ]
-  return <BottomSheet open={open} onClose={pending ? () => undefined : onClose} title="바꾸기 전에 잠깐만요">
-    <p className="-mt-2 text-sm font-medium leading-6">{title}</p>
-    <p className="mt-1 text-xs leading-5 text-muted">지금까지의 느낌 하나만 남기면 이전 경험이 사라지지 않아요.</p>
-    <div className="mt-5 grid grid-cols-3 gap-2">{choices.map(choice => <button type="button" key={choice.value} disabled={pending} onClick={() => onChoose(choice.value)} className="interactive-card rounded-[18px] border border-line bg-white px-2 py-3 text-center disabled:opacity-50"><span className="block text-xl">{choice.symbol}</span><span className="mt-2 block text-xs font-medium leading-4">{choice.label}</span></button>)}</div>
+  const [choice, setChoice] = useState<Choice | ''>('')
+  useEffect(() => { if (!open) setChoice('') }, [open])
+  return <BottomSheet open={open} onClose={pending ? () => undefined : onClose} title="새 루틴으로 바꾸기 전에">
+    <p className="-mt-2 text-[10px] font-semibold tracking-[.06em] text-[#7084a3]">지금 사용 중인 루틴</p>
+    <p className="mt-1.5 text-sm font-semibold leading-6 tracking-[-.02em]">{title}</p>
+    <p className="mt-3 text-xs leading-5 text-muted">새 루틴을 시작하면 지금 루틴의 사용 기록은 여기서 마쳐요.<br/>마지막 느낌을 남기거나, 기록 없이 바로 바꿀 수 있어요.</p>
+    <ExperienceSentimentPicker value={choice} disabled={pending} compact className="mt-5" onChange={setChoice}/>
     {error && <p className="mt-3 text-xs leading-5 text-danger">{error}</p>}
-    <Button disabled={pending} variant="ghost" onClick={onSkip} className="mt-2 w-full text-xs text-muted">기록 없이 새로 시작</Button>
+    <Button disabled={!choice || pending} onClick={() => { if (choice) onChoose(choice) }} className="mt-4 w-full">{pending ? '저장하는 중…' : '느낌 남기고 새 루틴 시작'}</Button>
+    <Button disabled={pending} variant="ghost" onClick={onSkip} className="mt-1 w-full text-xs text-muted">기록 없이 새 루틴 시작</Button>
   </BottomSheet>
 }

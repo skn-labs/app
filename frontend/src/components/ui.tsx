@@ -1,8 +1,9 @@
 import type { ButtonHTMLAttributes, PropsWithChildren, ReactNode } from 'react'
 import { useEffect, useRef, useState } from 'react'
-import { Bot, ChevronLeft, CircleUserRound, FlaskConical, Home, MessageCircle, NotebookText, Plus, Sparkles, X } from 'lucide-react'
+import { Bot, ChevronLeft, CircleUserRound, FlaskConical, Home, MessageCircle, NotebookText, Sparkles, X } from 'lucide-react'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { twMerge } from 'tailwind-merge'
+import { ActionIcon } from './ActionIcon'
 import { NotificationBell } from './NotificationBell'
 
 export function Screen({ children, className = '', nav = true }: PropsWithChildren<{ className?: string; nav?: boolean }>) {
@@ -23,7 +24,7 @@ export function AppHeader({ back = false, backTo, onBack, left, right, profile =
   const navigate = useNavigate()
   return <header className={twMerge('safe-top z-20 flex min-h-[72px] shrink-0 items-center justify-between bg-white/95 px-5 backdrop-blur-xl', sticky ? 'sticky top-0' : 'relative')}>
     <div className="flex w-24 items-center">{left || (back && <button type="button" aria-label="뒤로" onClick={() => onBack ? onBack() : backTo ? navigate(backTo) : navigate(-1)} className="-ml-2 grid size-11 place-items-center rounded-full transition hover:bg-soft active:scale-95"><ChevronLeft size={24}/></button>)}</div>
-    <SknMark className="h-8 w-[30px]"/>
+    <SknMark className="h-[29px] w-[27px]"/>
     <div className="flex w-24 items-center justify-end">
       {right || (!back && <>{notifications && <NotificationBell/>}{profile && <Link to="/records" aria-label="마이페이지" className="grid size-11 place-items-center rounded-full text-ink transition hover:bg-soft active:scale-95"><CircleUserRound size={22} strokeWidth={1.8}/></Link>}</>)}
     </div>
@@ -48,17 +49,23 @@ function BottomNav() {
 
 type FloatingAddButtonProps = {
   label: string
+  kind: 'product' | 'routine'
   to?: string
   onClick?: () => void
 }
 
-export function FloatingAddButton({ label, to, onClick }: FloatingAddButtonProps) {
-  const className = 'pointer-events-auto grid size-14 place-items-center rounded-full bg-[#0a0a0a] text-white shadow-[0_12px_30px_rgba(0,0,0,.28)] transition duration-200 hover:-translate-y-0.5 hover:bg-black hover:shadow-[0_16px_34px_rgba(0,0,0,.32)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-4 active:translate-y-0 active:scale-95'
-  const icon = <Plus size={25} strokeWidth={1.9}/>
+export function FloatingAddButton({ label, kind, to, onClick }: FloatingAddButtonProps) {
+  const common = 'pointer-events-auto bg-[#0a0a0a] text-white shadow-[0_12px_30px_rgba(0,0,0,.28)] transition duration-200 hover:-translate-y-0.5 hover:bg-black hover:shadow-[0_16px_34px_rgba(0,0,0,.32)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-4 active:translate-y-0 active:scale-95'
+  const className = kind === 'product'
+    ? `${common} grid size-14 place-items-center rounded-[20px]`
+    : `${common} flex h-14 items-center gap-2 rounded-full px-5 text-[13px] font-[600] tracking-[-.02em]`
+  const content = kind === 'product'
+    ? <ActionIcon name="product-add" className="size-7"/>
+    : <><ActionIcon name="routine-add" className="size-[22px]"/><span>새 루틴</span></>
   return <div className="pointer-events-none fixed inset-x-0 bottom-28 z-20 mx-auto flex max-w-[430px] justify-end px-5">
     {to
-      ? <Link to={to} aria-label={label} className={className}>{icon}</Link>
-      : <button type="button" onClick={onClick} aria-label={label} className={className}>{icon}</button>}
+      ? <Link to={to} aria-label={label} className={className}>{content}</Link>
+      : <button type="button" onClick={onClick} aria-label={label} className={className}>{content}</button>}
   </div>
 }
 
@@ -103,11 +110,11 @@ export function Eyebrow({ children, className = '' }: PropsWithChildren<{ classN
   return <p className={twMerge('text-xs font-medium uppercase tracking-[.07em] text-muted', className)}>{children}</p>
 }
 
-export function ProductGlyph({ category = '제품', size = 'md', src }: { category?: string; size?: 'sm' | 'md' | 'lg'; src?: string }) {
+export function ProductGlyph({ category = '제품', size = 'md', src }: { category?: string; size?: 'xs' | 'sm' | 'md' | 'lg'; src?: string }) {
   const [failed, setFailed] = useState(false)
   const isDropper = /세럼|앰플/.test(category)
   const isTube = /선|클렌/.test(category)
-  const dims = size === 'lg' ? 'h-48 w-36' : size === 'sm' ? 'h-14 w-12' : 'h-24 w-18'
+  const dims = size === 'lg' ? 'h-48 w-36' : size === 'sm' ? 'h-14 w-12' : size === 'xs' ? 'h-12 w-11' : 'h-24 w-18'
   if (src && !failed) {
     return <div className={twMerge('shrink-0 overflow-hidden rounded-2xl border border-line bg-white', dims)}>
       <img src={src} alt={category} loading="lazy" referrerPolicy="no-referrer" onError={() => setFailed(true)} className="h-full w-full object-contain p-1.5"/>

@@ -60,6 +60,8 @@ export type Routine = {
   status: string; startedAt: string; items: RoutineItem[];
 }
 
+export type RoutineNameSuggestion = { name: string; aiGenerated: boolean }
+
 export type ExperienceRecord = {
   id: number; sessionId?: number; userProductId?: number; productName: string;
   sentiment: 'LIKED' | 'DISAPPOINTED' | 'UNSURE'; note: string;

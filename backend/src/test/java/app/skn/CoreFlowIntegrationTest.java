@@ -823,7 +823,7 @@ class CoreFlowIntegrationTest {
         long first = addProduct(session, 1);
         long second = addProduct(session, 6);
 
-        mvc.perform(put("/api/v1/me/routines/current").session(session)
+        String createdBody = mvc.perform(put("/api/v1/me/routines/current").session(session)
                         .header("Idempotency-Key", "test-routine-settings")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -839,7 +839,47 @@ class CoreFlowIntegrationTest {
                 .andExpect(jsonPath("$.routine.items[0].timeSlot").value("BOTH"))
                 .andExpect(jsonPath("$.routine.items[0].frequency").value("매일"))
                 .andExpect(jsonPath("$.routine.items[1].timeSlot").value("EVENING"))
-                .andExpect(jsonPath("$.routine.items[1].frequency").value("주 2~3회"));
+                .andExpect(jsonPath("$.routine.items[1].frequency").value("주 2~3회"))
+                .andExpect(jsonPath("$.latestRecord").doesNotExist())
+                .andReturn().getResponse().getContentAsString();
+        JsonNode created = json.readTree(createdBody);
+        long routineId = created.path("routineId").asLong();
+        long experienceId = created.path("id").asLong();
+
+        mvc.perform(get("/api/v1/me/routines/{id}", routineId).session(session))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(routineId))
+                .andExpect(jsonPath("$.items.length()").value(2));
+
+        mvc.perform(post("/api/v1/me/routines/{id}/name-suggestion", routineId).session(session)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("아침과 저녁에 쓰는 루틴"))
+                .andExpect(jsonPath("$.aiGenerated").value(false));
+
+        mvc.perform(put("/api/v1/me/routines/{id}/name", routineId).session(session)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name":"아침 저녁 균형 루틴"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("아침 저녁 균형 루틴"));
+        mvc.perform(get("/api/v1/me/experiences/{id}", experienceId).session(session))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("아침 저녁 균형 루틴"));
+
+        MockHttpSession other = signUpSession("routine_other");
+        mvc.perform(get("/api/v1/me/routines/{id}", routineId).session(other))
+                .andExpect(status().isNotFound());
+        mvc.perform(post("/api/v1/me/routines/{id}/name-suggestion", routineId).session(other)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isNotFound());
+
+        mvc.perform(get("/api/v1/me/experience-records").session(session))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(0));
     }
 
     @Test

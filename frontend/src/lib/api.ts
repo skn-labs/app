@@ -1,4 +1,4 @@
-import type { AppNotification, Auth, Conversation, Experience, ExperienceRecord, Home, NotificationInbox, OnboardingResult, Pattern, Preference, Product, ProductPage, QuickAccount, Routine, RoutineItemInput, SavedRecord, SkinProfile, UserProduct } from './types'
+import type { AppNotification, Auth, Conversation, Experience, ExperienceRecord, Home, NotificationInbox, OnboardingResult, Pattern, Preference, Product, ProductPage, QuickAccount, Routine, RoutineItemInput, RoutineNameSuggestion, SavedRecord, SkinProfile, UserProduct } from './types'
 
 export class ApiError extends Error {
   status: number
@@ -49,7 +49,10 @@ export const api = {
   addCustomProduct: (customBrand: string, customName: string, customCategory: string) => request<UserProduct>('/api/v1/me/products', { method: 'POST', body: JSON.stringify({ customBrand, customName, customCategory }) }),
   currentRoutine: () => request<Routine>('/api/v1/me/routines/current'),
   baselineRoutine: () => request<Routine>('/api/v1/me/routines/baseline'),
+  routine: (id: number) => request<Routine>(`/api/v1/me/routines/${id}`),
   replaceRoutine: (name: string, items: RoutineItemInput[], idempotencyKey: string = uid()) => request<Experience>('/api/v1/me/routines/current', { method: 'PUT', headers: { 'Idempotency-Key': idempotencyKey }, body: JSON.stringify({ name, items }) }),
+  suggestRoutineName: (id: number) => request<RoutineNameSuggestion>(`/api/v1/me/routines/${id}/name-suggestion`, { method: 'POST', body: '{}' }),
+  renameRoutine: (id: number, name: string) => request<Routine>(`/api/v1/me/routines/${id}/name`, { method: 'PUT', body: JSON.stringify({ name }) }),
   startExperience: (userProductId: number, mode: 'PRODUCT' | 'ROUTINE', dayPart = 'EVENING') => request<Experience>('/api/v1/me/experiences', { method: 'POST', body: JSON.stringify({ userProductId, mode, dayPart, clientRequestId: uid() }) }),
   experience: (id: number) => request<Experience>(`/api/v1/me/experiences/${id}`),
   recordExperience: (id: number, value: { sentiment: string; note: string; tags: string[]; discomfort: string; adherence?: string }, clientRequestId: string = uid()) => request<SavedRecord>(`/api/v1/me/experiences/${id}/records`, { method: 'POST', body: JSON.stringify({ ...value, clientRequestId }) }),

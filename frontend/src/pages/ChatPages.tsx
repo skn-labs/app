@@ -1,7 +1,7 @@
 import { useDeferredValue, useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
-import { AlertCircle, ArrowRight, BadgeCheck, BookOpen, Check, ChevronRight, Clock3, ExternalLink, Globe2, History, Layers3, MessageCircle, PackageSearch, Plus, RefreshCw, Search, Send, ShieldCheck, Sparkles, X } from 'lucide-react'
+import { ArrowRight, BadgeCheck, Check, ChevronRight, Clock3, ExternalLink, Globe2, History, Layers3, MessageCircle, PackageSearch, Plus, RefreshCw, Search, Send, ShieldCheck, Sparkles, X } from 'lucide-react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
 import remarkBreaks from 'remark-breaks'
@@ -9,6 +9,7 @@ import remarkGfm from 'remark-gfm'
 import { api } from '../lib/api'
 import type { Conversation, ExperienceRecord, Pattern, Product, Routine, WebSource } from '../lib/types'
 import { BrandIdentity } from '../components/BrandIdentity'
+import { ExperienceStatusGroup } from '../components/ExperienceStatusBadge'
 import { AiBadge, AppHeader, AssetMotion, Button, Card, ErrorState, ProductGlyph, Screen } from '../components/ui'
 import { startChatPath } from '../lib/chat'
 
@@ -23,14 +24,18 @@ export function AiLandingPage() {
   const navigate = useNavigate()
   const [text, setText] = useState('')
   const submit = (value: string, mode = 'GENERAL') => { const prompt = value.trim(); if (prompt) navigate(startChatPath(mode, prompt)) }
-  return <Screen nav={false} className="flex h-full min-h-0 flex-col overflow-hidden bg-white">
+  const selectStarter = (label: string) => { if (label === '제품 검색') { navigate('/ai/search'); return } const item = INITIAL_PROMPTS.find(prompt => prompt.label === label); if (item) submit(item.text, item.mode) }
+  return <Screen nav={false} className="flex h-full min-h-0 flex-col overflow-hidden bg-[#fbfcff]">
     <AiHeader/>
-    <div className="hide-scrollbar flex-1 overflow-y-auto px-9 pb-8 pt-10">
-      <AiMotion size="hero"/>
-      <h1 className="page-title mt-7">무엇이 궁금하신가요?</h1>
-      <p className="supporting-copy mt-3 max-w-[320px]">AI는 제품의 적합성을 판정하지 않아요.<br/>나의 취향과 제품 정보를 바탕으로 다음 선택을 도와드려요.</p>
+    <div className="hide-scrollbar flex-1 overflow-y-auto px-5 pb-6">
+      <div className="flex min-h-full flex-col items-center justify-center pb-2 text-center">
+        <AiLandingVisual/>
+        <h1 className="page-title -mt-1 max-w-[330px] leading-[1.22]">SKN AI와 함께<br/>내 기록에서 다음을 찾아봐요</h1>
+        <p className="supporting-copy mx-auto mt-3 max-w-[330px]">제품 정보와 내가 남긴 기록을 함께 살펴봐요.<br/>적합성을 단정하지 않고, 다음에 확인할 점을 정리해요.</p>
+        <StarterSuggestions suggestions={INITIAL_PROMPTS.map(item => item.label)} onSelect={selectStarter}/>
+      </div>
     </div>
-    <Composer value={text} onChange={setText} onSubmit={submit} pending={false} suggestions={INITIAL_PROMPTS.map(item => item.label)} onSuggestion={label => { if (label === '제품 검색') { navigate('/ai/search'); return } const item = INITIAL_PROMPTS.find(prompt => prompt.label === label); if (item) submit(item.text, item.mode) }} placeholder="내 화장품 경험에 대해서 물어보세요"/>
+    <Composer value={text} onChange={setText} onSubmit={submit} pending={false} placeholder="제품이나 내 사용 경험을 물어보세요"/>
   </Screen>
 }
 
@@ -43,7 +48,7 @@ export function ProductSearchPage() {
     queryFn: () => api.products(deferredQuery, null, 12),
   })
   const selectProduct = (product: Product) => navigate(startChatPath('PRODUCT', `${product.brand} ${product.name}을 내 기록과 비교해줘.`, { productId: product.id }))
-  return <Screen nav={false} className="flex h-full min-h-0 flex-col overflow-hidden bg-white">
+  return <Screen nav={false} className="flex h-full min-h-0 flex-col overflow-hidden bg-[#fbfcff]">
     <AiHeader onBack={() => navigate('/ai')}/>
     <div className="hide-scrollbar flex-1 overflow-y-auto px-5 pb-8 pt-5">
       <p className="text-xs font-medium text-[#68708a]">제품 비교 시작하기</p>
@@ -82,7 +87,7 @@ export function ChatStartPage() {
     startConversation()
   }, [startConversation])
 
-  return <Screen nav={false} className="flex h-full min-h-0 flex-col overflow-hidden bg-white">
+  return <Screen nav={false} className="flex h-full min-h-0 flex-col overflow-hidden bg-[#fbfcff]">
     <AiHeader onBack={() => navigate('/ai')}/>
     <div className="hide-scrollbar flex-1 overflow-y-auto px-5 pb-8 pt-5">
       {productId && product.isPending && <ProductContextSkeleton/>}
@@ -91,7 +96,7 @@ export function ChatStartPage() {
       {!create.isError && <ThinkingPanel product={Boolean(productId)} recommend={mode === 'RECOMMEND'}/>}
       {create.isError && <RetryCard message={create.error.message} onRetry={() => create.mutate()}/>}
     </div>
-    <Composer value="" onChange={() => {}} onSubmit={() => {}} pending suggestions={[]} placeholder="첫 답변을 준비하고 있어요…"/>
+    <Composer value="" onChange={() => {}} onSubmit={() => {}} pending placeholder="첫 답변을 준비하고 있어요…"/>
   </Screen>
 }
 
@@ -109,11 +114,11 @@ export function ChatPage() {
   const apply = useMutation({ mutationFn: () => api.applyRescue(conversationId), onSuccess: value => { queryClient.invalidateQueries(); navigate(`/experiences/${value.id}`) } })
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' }) }, [conversation.data?.messages.length, send.isPending])
   if (!validConversationId) return <Screen nav={false}><AiHeader onBack={() => navigate('/ai')}/><ErrorState message="대화 주소를 확인해주세요."/></Screen>
-  if (conversation.isPending) return <Screen nav={false} className="flex h-full min-h-0 flex-col overflow-hidden bg-white"><AiHeader onBack={() => navigate('/ai')}/><div className="grid flex-1 place-items-center"><AiMotion size="loading"/><span className="mt-3 text-xs text-[#7f858c]">대화를 불러오는 중…</span></div></Screen>
+  if (conversation.isPending) return <Screen nav={false} className="flex h-full min-h-0 flex-col overflow-hidden bg-[#fbfcff]"><AiHeader onBack={() => navigate('/ai')}/><div className="grid flex-1 place-items-center"><AiMotion size="loading"/><span className="mt-3 text-xs text-[#7f858c]">대화를 불러오는 중…</span></div></Screen>
   if (conversation.isError) return <Screen nav={false}><AiHeader onBack={() => navigate('/ai')}/><ErrorState message={conversation.error.message} onRetry={() => conversation.refetch()}/></Screen>
   const data = conversation.data
   const submit = (value: string) => { const message = value.trim(); if (message && !send.isPending) { const request = { text: message, requestId: crypto.randomUUID() }; setText(''); setPendingMessage(request); send.mutate(request) } }
-  return <Screen nav={false} className="flex h-full min-h-0 flex-col overflow-hidden bg-white">
+  return <Screen nav={false} className="flex h-full min-h-0 flex-col overflow-hidden bg-[#fbfcff]">
     <AiHeader onBack={() => navigate('/ai')}/>
     <div className="hide-scrollbar flex-1 overflow-y-auto px-5 pb-8 pt-4">
       {product.data && <ProductContextCard product={product.data}/>} 
@@ -122,23 +127,38 @@ export function ChatPage() {
       {data.rescuePlan && <RescuePlanCard conversation={data} onApply={() => apply.mutate()} pending={apply.isPending}/>} 
       {apply.isError && <p role="alert" className="mt-3 rounded-xl bg-[#fff5f5] p-3 text-xs leading-5 text-danger">{apply.error.message}</p>}
       {send.error && pendingMessage && <RetryCard message="메시지를 보내지 못했어요. 입력한 내용은 이 화면에 남아 있어요." onRetry={() => send.mutate(pendingMessage)}/>}
+      {!send.isPending && !pendingMessage && <FollowUpQuestions suggestions={data.quickReplies} onSelect={submit}/>}
       <div ref={bottomRef}/>
     </div>
-    <Composer value={text} onChange={setText} onSubmit={submit} pending={send.isPending} suggestions={data.quickReplies} placeholder={data.mode === 'RESCUE' ? '지금 상태를 평소 말하듯 적어주세요' : '내 화장품 경험에 대해서 물어보세요'}/>
+    <Composer value={text} onChange={setText} onSubmit={submit} pending={send.isPending} placeholder={data.mode === 'RESCUE' ? '지금 상태를 평소 말하듯 적어주세요' : '제품이나 내 사용 경험을 물어보세요'}/>
     {openEvidence && <EvidenceSheet refs={openEvidence.refs} webSources={openEvidence.webSources} onClose={() => setOpenEvidence(null)}/>}
   </Screen>
 }
 
-function Composer({ value, onChange, onSubmit, pending, suggestions, placeholder, onSuggestion }: { value: string; onChange: (value: string) => void; onSubmit: (value: string) => void; pending: boolean; suggestions: string[]; placeholder: string; onSuggestion?: (value: string) => void }) {
+function StarterSuggestions({ suggestions, onSelect }: { suggestions: string[]; onSelect: (value: string) => void }) {
+  return <div className="mt-6 flex max-w-[330px] flex-wrap justify-center gap-2" aria-label="AI 대화 시작 제안">{suggestions.map(suggestion => {
+    const caution = isCautionSuggestion(suggestion)
+    return <button type="button" key={suggestion} onClick={() => onSelect(suggestion)} className={`min-h-10 rounded-full border px-4 py-2 text-xs font-medium tracking-[-.01em] transition active:scale-[.98] ${caution ? 'border-[#efdad7] bg-[#fffafa] text-[#a55252]' : 'border-[#dce6f1] bg-white text-[#52647c]'}`}>{suggestion}</button>
+  })}</div>
+}
+
+function FollowUpQuestions({ suggestions, onSelect }: { suggestions: string[]; onSelect: (value: string) => void }) {
+  if (!suggestions.length) return null
+  return <section className="mb-1 mt-7" aria-label="이어지는 질문">
+    <p className="px-1 text-xs font-semibold tracking-[-.01em] text-[#596b82]">이어지는 질문</p>
+    <div className="mt-2 divide-y divide-[#e5ebf2] border-y border-[#e5ebf2]">{suggestions.slice(0, 3).map(suggestion => {
+      const caution = isCautionSuggestion(suggestion)
+      return <button type="button" key={suggestion} onClick={() => onSelect(suggestion)} className={`flex min-h-[50px] w-full items-center gap-3 py-3 text-left transition active:bg-[#f2f6fb] ${caution ? 'text-[#a55252]' : 'text-[#33445a]'}`}><span className="min-w-0 flex-1 text-[13px] font-medium leading-5 tracking-[-.012em]">{suggestion}</span><Plus size={17} strokeWidth={1.8} className="shrink-0 opacity-55"/></button>
+    })}</div>
+  </section>
+}
+
+function Composer({ value, onChange, onSubmit, pending, placeholder }: { value: string; onChange: (value: string) => void; onSubmit: (value: string) => void; pending: boolean; placeholder: string }) {
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const submit = (event: FormEvent) => { event.preventDefault(); onSubmit(value) }
   useEffect(() => { const input = inputRef.current; if (!input) return; input.style.height = '0px'; input.style.height = `${Math.min(input.scrollHeight, 112)}px` }, [value])
-  return <div className="safe-bottom z-30 shrink-0 bg-white/95 px-5 pb-3 pt-3 backdrop-blur-xl">
-    {!!suggestions.length && <div className="hide-scrollbar -mx-4 mb-3 flex gap-2 overflow-x-auto px-4 pb-0.5">{suggestions.slice(0, 3).map(suggestion => {
-      const caution = isCautionSuggestion(suggestion)
-      return <button type="button" key={suggestion} disabled={pending} onClick={() => (onSuggestion || onSubmit)(suggestion)} className={`inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full border px-4 py-2.5 text-sm font-medium transition active:scale-[.98] disabled:opacity-50 ${caution ? 'border-[#efcaca] bg-white text-[#b44d4d]' : 'border-[#cfe0ff] bg-white text-black'}`}>{caution && <AlertCircle size={13}/>}<span>{suggestion}</span></button>
-    })}</div>}
-    <form onSubmit={submit} className="field-control flex items-end gap-2 rounded-[21px] p-1.5 pl-5"><textarea ref={inputRef} disabled={pending} rows={1} value={value} onChange={e => onChange(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); onSubmit(value) } }} placeholder={placeholder} aria-label="AI에게 메시지 보내기" className="max-h-28 min-h-12 flex-1 resize-none overflow-y-auto bg-transparent py-3 text-sm leading-5 outline-none disabled:cursor-wait"/><button type="submit" disabled={pending || !value.trim()} aria-label="보내기" className="grid size-11 shrink-0 place-items-center rounded-full bg-white text-black shadow-sm transition active:scale-95 disabled:bg-transparent disabled:opacity-35 disabled:shadow-none"><Send size={21} strokeWidth={1.8}/></button></form>
+  return <div className="safe-bottom z-30 shrink-0 border-t border-[#e8eef7]/80 bg-[#fbfcff]/95 px-5 pb-3 pt-3 backdrop-blur-xl">
+    <form onSubmit={submit} className="flex items-end gap-2 rounded-[22px] border border-[#d4e5f6] bg-[#edf6ff] p-1.5 pl-4 shadow-[0_8px_28px_rgba(82,117,161,.08)] transition focus-within:border-[#a9c8e8] focus-within:bg-[#f5f9ff] focus-within:ring-4 focus-within:ring-[#dcecff]/70"><textarea ref={inputRef} disabled={pending} rows={1} value={value} onChange={e => onChange(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); onSubmit(value) } }} placeholder={placeholder} aria-label="AI에게 메시지 보내기" className="max-h-28 min-h-12 flex-1 resize-none overflow-y-auto bg-transparent py-3 text-base leading-6 text-[#1e2b3d] outline-none placeholder:text-[#8499b3] disabled:cursor-wait"/><button type="submit" disabled={pending || !value.trim()} aria-label="보내기" className="grid size-11 shrink-0 place-items-center rounded-full bg-[#607ea8] text-white shadow-[0_5px_14px_rgba(68,96,136,.2)] transition active:scale-95 disabled:bg-[#dce9f6] disabled:text-[#9bacc0] disabled:shadow-none"><Send size={20} strokeWidth={2}/></button></form>
   </div>
 }
 
@@ -180,7 +200,7 @@ function AiHistory({ conversations, loading, error, onRetry, onClose }: { conver
         </header>
 
         <div className="shrink-0 px-5 pt-5">
-          <button type="button" onClick={startNew} className="flex h-[52px] w-full items-center justify-center gap-2 rounded-[18px] bg-[#111722] text-sm font-bold tracking-[-.015em] text-white shadow-[0_8px_20px_rgba(17,23,34,.16)] transition hover:bg-black active:scale-[.985]"><Plus size={18} strokeWidth={2}/>새 대화 시작</button>
+          <button type="button" onClick={startNew} className="flex h-[52px] w-full items-center justify-center gap-2 rounded-[18px] bg-[#111722] text-sm font-[600] tracking-[-.015em] text-white shadow-[0_8px_20px_rgba(17,23,34,.16)] transition hover:bg-black active:scale-[.985]"><Plus size={18} strokeWidth={2}/>새 대화 시작</button>
         </div>
 
         <div className="hide-scrollbar flex-1 overflow-y-auto px-5 pb-7 pt-5" aria-live="polite">
@@ -206,17 +226,41 @@ function AiHistory({ conversations, loading, error, onRetry, onClose }: { conver
 }
 
 function AiMotion({ size }: { size: 'hero' | 'loading' | 'tiny' }) {
-  const dimensions = size === 'hero' ? 'size-[72px]' : size === 'loading' ? 'size-[64px]' : 'size-11'
+  const dimensions = size === 'hero' ? 'size-[124px] rounded-full' : size === 'loading' ? 'size-[64px]' : 'size-11'
   return <AssetMotion name="ai-drop-motion" poster="/skn-assets/ai-drop-motion-poster.png" loop className={dimensions}/>
+}
+
+function AiLandingVisual() {
+  return <div className="ai-landing-visual" aria-hidden="true">
+    <div className="ai-landing-halo"/>
+    <div className="ai-landing-waves">
+      <svg className="ai-landing-wave-track ai-landing-wave-fill" viewBox="0 0 920 220" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="ai-wave-fill" x1="0" y1="70" x2="0" y2="220" gradientUnits="userSpaceOnUse"><stop stopColor="#e9f1fc" stopOpacity=".46"/><stop offset="1" stopColor="#f8faff" stopOpacity="0"/></linearGradient>
+        </defs>
+        <path d="M0 128C58 82 172 82 230 128C288 174 402 174 460 128C518 82 632 82 690 128C748 174 862 174 920 128V220H0V128Z" fill="url(#ai-wave-fill)"/>
+      </svg>
+      <svg className="ai-landing-wave-track ai-landing-wave-one" viewBox="0 0 920 220" fill="none" preserveAspectRatio="none">
+        <path d="M0 128C58 82 172 82 230 128C288 174 402 174 460 128C518 82 632 82 690 128C748 174 862 174 920 128" stroke="#b8ccec" strokeWidth="1.4" strokeLinecap="round" vectorEffect="non-scaling-stroke"/>
+      </svg>
+      <svg className="ai-landing-wave-track ai-landing-wave-two" viewBox="0 0 920 220" fill="none" preserveAspectRatio="none">
+        <path d="M0 151C92 113 155 113 230 151C305 189 368 189 460 151C552 113 615 113 690 151C765 189 828 189 920 151" stroke="#c8d8f1" strokeWidth="1.1" strokeLinecap="round" vectorEffect="non-scaling-stroke"/>
+      </svg>
+      <svg className="ai-landing-wave-track ai-landing-wave-three" viewBox="0 0 920 220" fill="none" preserveAspectRatio="none">
+        <path d="M0 101C72 65 158 65 230 101C302 137 388 137 460 101C532 65 618 65 690 101C762 137 848 137 920 101" stroke="#d7ceeb" strokeWidth=".9" strokeLinecap="round" vectorEffect="non-scaling-stroke"/>
+      </svg>
+    </div>
+    <div className="ai-landing-orb"><AiMotion size="hero"/></div>
+  </div>
 }
 
 function ThinkingPanel({ compact = false, product = false, recommend = false }: { compact?: boolean; product?: boolean; recommend?: boolean }) {
   const text = product ? '제품 정보와 내 기록을 연결하고 있어요' : recommend ? '관련 경험과 제품 후보를 함께 살펴보고 있어요' : '내 기록에서 관련된 경험을 찾고 있어요'
-  return <div className={`${compact ? 'py-1' : 'mt-5'} flex items-center gap-3`} aria-live="polite"><AiMotion size={compact ? 'tiny' : 'loading'}/><div><p className="text-xs font-medium text-[#666]">{text}</p><div className="mt-2 w-fit rounded-full bg-[#5b5b5b] px-3 py-2"><TypingDots/></div></div></div>
+  return <div className={`${compact ? 'py-1' : 'mt-5'} flex items-center gap-3`} aria-live="polite"><AiMotion size={compact ? 'tiny' : 'loading'}/><div><p className="text-xs font-medium text-[#65758c]">{text}</p><div className="mt-2 w-fit rounded-full border border-[#dce8f5] bg-[#eef5fd] px-3 py-2"><TypingDots/></div></div></div>
 }
 
 function TypingDots() {
-  return <span className="flex gap-1.5" aria-label="AI 답변 작성 중"><span className="size-1.5 animate-bounce rounded-full bg-white/60"/><span className="size-1.5 animate-bounce rounded-full bg-white/60 [animation-delay:120ms]"/><span className="size-1.5 animate-bounce rounded-full bg-white/60 [animation-delay:240ms]"/></span>
+  return <span className="flex gap-1.5" aria-label="AI 답변 작성 중"><span className="size-1.5 animate-bounce rounded-full bg-[#839bbc]"/><span className="size-1.5 animate-bounce rounded-full bg-[#839bbc] [animation-delay:120ms]"/><span className="size-1.5 animate-bounce rounded-full bg-[#839bbc] [animation-delay:240ms]"/></span>
 }
 
 function UserMessage({ text, createdAt, pending = false }: { text: string; createdAt?: string; pending?: boolean }) {
@@ -225,7 +269,11 @@ function UserMessage({ text, createdAt, pending = false }: { text: string; creat
 
 function AssistantMessage({ message, recommend, onEvidence }: { message: Conversation['messages'][number]; recommend: boolean; onEvidence: () => void }) {
   const hasEvidence = message.evidenceRefs.length > 0 || (message.webSources?.length ?? 0) > 0
-  return <article className="w-full"><div className="w-fit max-w-[82%] rounded-[20px] bg-black px-4 py-3.5 text-sm leading-6 text-white"><MessageContent text={message.content} markdown inverse/>{message.status === 'FALLBACK' && <div className="mt-3 flex items-start gap-2 border-t border-white/15 pt-3 text-xs leading-4 text-white/60"><ShieldCheck size={13} className="mt-0.5 shrink-0"/>외부 AI 연결 없이 저장된 내 데이터로 답했어요.</div>}</div><span className="mt-1.5 block px-1 text-xs text-[#a0a5ac]">{messageTime(message.createdAt)}</span>{recommend && <RecommendedProductLinks refs={message.evidenceRefs}/>} {hasEvidence && <EvidenceSummary refs={message.evidenceRefs} webSources={message.webSources || []} onOpen={onEvidence}/>}</article>
+  return <article className="w-full">
+    <div className="mb-2 flex items-center gap-2 px-1"><span className="grid size-7 place-items-center rounded-full border border-[#dce7f4] bg-white"><img src="/skn-assets/skn-mark.png" alt="" className="h-3.5 w-auto"/></span><span className="text-[11px] font-semibold tracking-[.04em] text-[#617592]">SKN AI</span></div>
+    <div className="w-fit max-w-[94%] rounded-[8px_22px_22px_22px] border border-[#dce8f5] bg-[linear-gradient(145deg,#f2f7fd_0%,#f8fbff_100%)] px-4 py-4 text-[#1d2a3b] shadow-[0_8px_24px_rgba(68,91,124,.055)]"><MessageContent text={message.content} markdown/>{message.status === 'FALLBACK' && <div className="mt-4 flex items-start gap-2 border-t border-[#dbe6f2] pt-3 text-xs leading-5 text-[#718198]"><ShieldCheck size={14} className="mt-0.5 shrink-0 text-[#6e88ac]"/>외부 AI 연결 없이 저장된 내 데이터로 답했어요.</div>}{hasEvidence && <EvidenceSummary refs={message.evidenceRefs} webSources={message.webSources || []} onOpen={onEvidence}/>}</div>
+    <span className="mt-1.5 block px-1 text-xs text-[#a0a9b5]">{messageTime(message.createdAt)}</span>{recommend && <RecommendedProductLinks refs={message.evidenceRefs}/>}
+  </article>
 }
 
 function RetryCard({ message, onRetry }: { message: string; onRetry: () => void }) {
@@ -303,9 +351,9 @@ function titleFor(item: Conversation) {
   return item.messages.find(message => message.role === 'USER')?.content || '새 AI 대화'
 }
 
-function MessageContent({ text, markdown = false, inverse = false }: { text: string; markdown?: boolean; inverse?: boolean }) {
+function MessageContent({ text, markdown = false }: { text: string; markdown?: boolean }) {
   if (!markdown) return <p className="whitespace-pre-wrap">{text}</p>
-  return <div className={inverse ? 'min-w-0 text-sm leading-6 text-white' : 'min-w-0 text-sm leading-6 text-ink'}>
+  return <div className="min-w-0 text-sm leading-6 text-ink">
     <ReactMarkdown
       skipHtml
       remarkPlugins={[remarkGfm, remarkBreaks]}
@@ -314,11 +362,11 @@ function MessageContent({ text, markdown = false, inverse = false }: { text: str
         h2: ({ children }) => <h2 className="mb-2 mt-5 text-lg font-semibold tracking-[-.025em] first:mt-0">{children}</h2>,
         h3: ({ children }) => <h3 className="mb-2 mt-4 text-base font-semibold tracking-[-.015em] first:mt-0">{children}</h3>,
         p: ({ children }) => <p className="mb-3 whitespace-pre-wrap last:mb-0">{children}</p>,
-        strong: ({ children }) => <strong className={inverse ? 'font-semibold text-white' : 'font-semibold text-ink'}>{children}</strong>,
+        strong: ({ children }) => <strong className="font-semibold text-ink">{children}</strong>,
         ul: ({ children }) => <ul className="mb-3 ml-1 list-disc space-y-1.5 pl-5 marker:text-accent last:mb-0">{children}</ul>,
         ol: ({ children }) => <ol className="mb-3 ml-1 list-decimal space-y-1.5 pl-5 marker:font-semibold marker:text-accent last:mb-0">{children}</ol>,
         li: ({ children }) => <li className="pl-0.5 leading-6">{children}</li>,
-        blockquote: ({ children }) => <blockquote className={inverse ? 'my-3 border-l-2 border-white/50 pl-3 text-white/75' : 'my-3 rounded-r-xl border-l-3 border-accent bg-accent-soft px-3 py-2 text-muted'}>{children}</blockquote>,
+        blockquote: ({ children }) => <blockquote className="my-3 rounded-r-xl border-l-3 border-accent bg-accent-soft px-3 py-2 text-muted">{children}</blockquote>,
         a: ({ children, href }) => <a href={href} target="_blank" rel="noreferrer" aria-label={`출처 ${String(children)} 새 창에서 열기`} className="mx-0.5 inline-flex min-w-5 -translate-y-px items-center justify-center rounded-full bg-accent-soft px-1.5 py-0.5 text-xs font-semibold leading-4 text-accent no-underline ring-1 ring-inset ring-[#d9ddff]">{children}</a>,
         hr: () => <hr className="my-4 border-line"/>,
         table: ({ children }) => <div className="my-3 overflow-x-auto rounded-xl border border-line"><table className="w-full min-w-72 border-collapse text-xs">{children}</table></div>,
@@ -337,7 +385,7 @@ function EvidenceSummary({ refs, webSources, onOpen }: { refs: string[]; webSour
     return all
   }, {})
   const labels = [...(webSources.length ? [`외부 출처 ${webSources.length}`] : []), ...Object.entries(counts).map(([label, count]) => `${label} ${count}`)]
-  return <button type="button" onClick={onOpen} aria-haspopup="dialog" className="mt-3 flex w-full items-center gap-1.5 rounded-xl bg-soft px-3 py-2.5 text-left text-xs font-medium text-muted transition active:bg-[#e9ebe5]"><BookOpen size={13} className="shrink-0 text-accent"/><span className="min-w-0 flex-1">근거 보기 · {labels.join(' · ')}</span><ChevronRight size={14} className="shrink-0"/></button>
+  return <button type="button" onClick={onOpen} aria-haspopup="dialog" className="mt-4 flex w-full items-center gap-3 border-t border-[#dbe6f2] pt-3.5 text-left transition active:opacity-60"><span className="shrink-0 text-xs font-semibold text-[#435d80]">답변 근거</span><span className="min-w-0 flex-1 truncate text-right text-[11px] font-medium text-[#7b8ca2]">{labels.join(' · ')}</span><ChevronRight size={15} className="shrink-0 text-[#758ba8]"/></button>
 }
 
 function RecommendedProductLinks({ refs }: { refs: string[] }) {
@@ -347,13 +395,14 @@ function RecommendedProductLinks({ refs }: { refs: string[] }) {
     .filter(Number.isFinite))].slice(0, 3)
   const products = useQueries({ queries: productIds.map(id => ({ queryKey: ['product', id], queryFn: () => api.product(id) })) })
   if (!productIds.length) return null
-  if (products.some(result => result.isPending)) return <div className="mt-4 space-y-2" aria-label="추천 제품 불러오는 중">{productIds.map(id => <div key={id} className="h-[74px] animate-pulse rounded-2xl border border-line bg-soft"/>)}</div>
+  if (products.some(result => result.isPending)) return <div className="-mx-5 mt-4" aria-label="추천 제품 불러오는 중"><div className="hide-scrollbar flex gap-3 overflow-hidden px-5">{productIds.map(id => <div key={id} className="h-[232px] w-[184px] shrink-0 animate-pulse rounded-[24px] border border-[#e2eaf4] bg-[#f1f6fc]"/>)}</div></div>
   const loaded = products.flatMap(result => result.data ? [result.data] : [])
   if (!loaded.length) return null
-  return <section className="-mx-5 mt-4" aria-label="AI 추천 제품">
-    <div className="hide-scrollbar flex gap-2 overflow-x-auto px-5 pb-2">{loaded.map(product => <Link key={product.id} to={`/products/${product.id}`} className="w-[160px] shrink-0 rounded-[19px] border border-[#cfe0ff] bg-white p-2.5 transition active:scale-[.99]">
-      <div className="grid h-[140px] place-items-center rounded-[15px] border border-[#deebff] bg-white"><ProductGlyph category={product.category} src={product.imageUrl} size="md"/></div>
-      <BrandIdentity name={product.brand} logoUrl={product.brandLogoUrl} size="xs" className="mt-2.5 max-w-full" nameClassName="text-[#6f88b2]"/><span className="mt-1.5 block truncate text-sm font-medium text-black">{product.name}</span>
+  return <section className="-mx-5 mt-5" aria-label="AI 답변에 나온 제품">
+    <div className="mb-2.5 flex items-center justify-between px-5"><p className="text-xs font-semibold tracking-[-.01em] text-[#465a76]">답변에 나온 제품</p><span className="text-[11px] font-medium text-[#8a99ad]">{loaded.length}개</span></div>
+    <div className="hide-scrollbar flex snap-x snap-mandatory gap-3 overflow-x-auto px-5 pb-3">{loaded.map(product => <Link key={product.id} to={`/products/${product.id}`} className="group w-[184px] shrink-0 snap-start overflow-hidden rounded-[24px] border border-[#dbe7f4] bg-white shadow-[0_9px_25px_rgba(57,79,111,.07)] transition active:scale-[.985]">
+      <div className="relative grid h-[148px] place-items-center overflow-hidden bg-[radial-gradient(circle_at_50%_38%,#ffffff_0%,#f0f6fd_60%,#e9f2fc_100%)]"><span className="absolute left-3 top-3 rounded-full border border-white/90 bg-white/75 px-2.5 py-1 text-[10px] font-semibold text-[#6d819e] backdrop-blur">{product.category}</span><span className="absolute right-3 top-3 grid size-7 place-items-center rounded-full bg-white/85 text-[#607a9f] shadow-sm"><ChevronRight size={14}/></span><span className="translate-y-2 scale-[.68]"><ProductGlyph category={product.category} src={product.imageUrl} size="lg"/></span></div>
+      <div className="min-h-[88px] border-t border-[#e6edf5] px-3.5 py-3"><BrandIdentity name={product.brand} logoUrl={product.brandLogoUrl} size="xs" className="max-w-full" nameClassName="text-[#71829a]"/><span className="mt-1.5 line-clamp-2 block text-sm font-semibold leading-5 tracking-[-.02em] text-[#1e2a3a]">{product.name}</span></div>
     </Link>)}</div>
   </section>
 }
@@ -413,7 +462,7 @@ function sourceTier(tier: WebSource['tier']) {
   return 'P4 · 보조 자료'
 }
 
-type ResolvedEvidence = { ref: string; kind: 'PRODUCT' | 'ROUTINE' | 'RECORD' | 'PATTERN' | 'UNKNOWN'; eyebrow: string; title: string; subtitle?: string; brandName?: string; brandLogoUrl?: string | null; details: string[] }
+type ResolvedEvidence = { ref: string; kind: 'PRODUCT' | 'ROUTINE' | 'RECORD' | 'PATTERN' | 'UNKNOWN'; eyebrow: string; title: string; subtitle?: string; brandName?: string; brandLogoUrl?: string | null; details: string[]; sentiment?: ExperienceRecord['sentiment']; discomfort?: ExperienceRecord['discomfort'] }
 
 function resolveEvidence(ref: string, products: Product[], routines: Routine[], records: ExperienceRecord[], patterns: Pattern[]): ResolvedEvidence {
   const id = Number(ref.split('-').at(-1))
@@ -431,7 +480,7 @@ function resolveEvidence(ref: string, products: Product[], routines: Routine[], 
   }
   if (ref.startsWith('E-')) {
     const record = records.find(item => item.id === id)
-    return record ? { ref, kind: 'RECORD', eyebrow: '내가 남긴 사용 경험', title: record.productName, subtitle: `${sentimentText(record.sentiment)} · ${formatEvidenceDate(record.createdAt)}`, details: [record.note, record.tags.length ? `느낌: ${record.tags.join(', ')}` : '', record.discomfort === 'REPORTED' ? '피부 불편함을 함께 남김' : ''].filter(Boolean) } : unresolvedEvidence(ref)
+    return record ? { ref, kind: 'RECORD', eyebrow: '내가 남긴 사용 경험', title: record.productName, subtitle: formatEvidenceDate(record.createdAt), details: [record.note, record.tags.length ? record.tags.join(' · ') : ''].filter(Boolean), sentiment: record.sentiment, discomfort: record.discomfort } : unresolvedEvidence(ref)
   }
   return unresolvedEvidence(ref)
 }
@@ -442,9 +491,8 @@ function unresolvedEvidence(ref: string): ResolvedEvidence {
 
 function EvidenceCard({ item }: { item: ResolvedEvidence }) {
   const icon = item.kind === 'PRODUCT' ? <BadgeCheck size={18}/> : item.kind === 'ROUTINE' ? <Layers3 size={18}/> : item.kind === 'RECORD' ? <Clock3 size={18}/> : <Sparkles size={18}/>
-  return <article className="overflow-hidden rounded-[20px] border border-line bg-white"><div className="flex gap-3 p-4"><div className="grid size-10 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent">{icon}</div><div className="min-w-0 flex-1"><p className="text-xs font-semibold text-accent">{item.eyebrow}</p><h3 className="mt-1 text-sm font-semibold leading-5">{item.title}</h3>{item.brandName && <BrandIdentity name={item.brandName} logoUrl={item.brandLogoUrl} size="xs" className="mt-2 max-w-full"/>}{item.subtitle && <p className="mt-1.5 text-xs text-muted">{item.subtitle}</p>}</div></div>{item.details.length > 0 && <div className="border-t border-line bg-[#fcfcfa] px-4 py-3"><ul className="space-y-2">{item.details.map((detail, index) => <li key={index} className="flex gap-2 text-xs leading-5 text-muted"><span className="mt-2 size-1 shrink-0 rounded-full bg-[#aeb2aa]"/><span>{detail}</span></li>)}</ul></div>}</article>
+  return <article className="overflow-hidden rounded-[20px] border border-line bg-white"><div className="flex gap-3 p-4"><div className="grid size-10 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent">{icon}</div><div className="min-w-0 flex-1"><p className="text-xs font-semibold text-accent">{item.eyebrow}</p><h3 className="mt-1 text-sm font-semibold leading-5">{item.title}</h3>{item.sentiment && <ExperienceStatusGroup sentiment={item.sentiment} discomfort={item.discomfort} className="mt-2"/>}{item.brandName && <BrandIdentity name={item.brandName} logoUrl={item.brandLogoUrl} size="xs" className="mt-2 max-w-full"/>}{item.subtitle && <p className="mt-1.5 text-xs text-muted">{item.subtitle}</p>}</div></div>{item.details.length > 0 && <div className="divide-y divide-[#eceef1] border-t border-line bg-[#fcfcfa] px-4">{item.details.map((detail, index) => <p key={index} className="py-2.5 text-xs leading-5 text-muted">{detail}</p>)}</div>}</article>
 }
 
 function timeSlotLabel(value: Routine['items'][number]['timeSlot']) { return value === 'MORNING' ? '아침' : value === 'EVENING' ? '저녁' : '아침·저녁' }
-function sentimentText(value: ExperienceRecord['sentiment']) { return value === 'LIKED' ? '마음에 들었음' : value === 'DISAPPOINTED' ? '아쉬웠음' : '아직 모르겠음' }
 function formatEvidenceDate(value: string) { const date = new Date(value.replace(' ', 'T') + (value.includes('Z') ? '' : 'Z')); return Number.isNaN(date.getTime()) ? value.slice(0, 10) : new Intl.DateTimeFormat('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' }).format(date) }

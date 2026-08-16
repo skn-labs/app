@@ -223,8 +223,17 @@ public final class ApiModels {
     ) {}
 
     public record UpdateRoutineRequest(
-            @NotBlank String name,
+            @NotBlank @Size(max = 40) String name,
             @NotEmpty List<@NotNull RoutineItemInput> items
+    ) {}
+
+    public record RoutineNameSuggestionView(
+            String name,
+            boolean aiGenerated
+    ) {}
+
+    public record RenameRoutineRequest(
+            @NotBlank @Size(max = 40) String name
     ) {}
 
     public record CreateConversationRequest(

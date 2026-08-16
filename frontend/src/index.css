@@ -225,6 +225,42 @@ video:not([controls])::-webkit-media-controls { display: none !important; }
 @keyframes onboard-pop { from { opacity: 0; transform: scale(.9); } to { opacity: 1; transform: scale(1); } }
 @keyframes onboard-pulse { 0%, 100% { opacity: .72; transform: scale(1); } 50% { opacity: 1; transform: scale(1.05); } }
 @keyframes onboard-scan { 0% { transform: translateY(-105%); } 60%, 100% { transform: translateY(105%); } }
+@keyframes ai-landing-wave-flow {
+  0% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(-25%, -2px, 0); }
+  100% { transform: translate3d(-50%, 0, 0); }
+}
+@keyframes ai-landing-wave-flow-reverse {
+  0% { transform: translate3d(-50%, 0, 0); }
+  50% { transform: translate3d(-25%, 2px, 0); }
+  100% { transform: translate3d(0, 0, 0); }
+}
+@keyframes ai-landing-orb-float {
+  0%, 100% { transform: translate3d(0, 2px, 0); }
+  50% { transform: translate3d(0, -5px, 0); }
+}
+@keyframes ai-landing-halo-breathe {
+  0%, 100% { opacity: .46; transform: scale(.96); }
+  50% { opacity: .72; transform: scale(1.04); }
+}
+@keyframes routine-name-orbit { to { transform: rotate(360deg); } }
+@keyframes routine-name-path {
+  0% { stroke-dashoffset: 180; opacity: .28; }
+  55% { opacity: 1; }
+  100% { stroke-dashoffset: 0; opacity: .82; }
+}
+@keyframes routine-name-ready {
+  from { opacity: 0; transform: scale(.72); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes routine-name-reveal {
+  from { opacity: 0; transform: translateY(14px); filter: blur(5px); }
+  to { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+@keyframes routine-name-actions {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 .animate-rise { animation: rise .28s ease-out both; }
 .animate-slide-in { animation: slide-in .24s cubic-bezier(.2,.75,.2,1) both; }
 .animate-notification-page-in { animation: notification-page-in .4s cubic-bezier(.22, 1, .36, 1) both; }
@@ -237,6 +273,94 @@ video:not([controls])::-webkit-media-controls { display: none !important; }
 .onboard-scan { transform-box: fill-box; transform-origin: center; animation: onboard-scan 2.4s ease-in-out infinite; }
 .onboard-delay-1 { animation-delay: .18s; }
 .onboard-delay-2 { animation-delay: .36s; }
+.ai-landing-visual {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  width: min(460px, calc(100% + 40px));
+  height: 224px;
+  margin-inline: -20px;
+  place-items: center;
+  overflow: hidden;
+}
+.ai-landing-waves {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  overflow: hidden;
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 13%, #000 87%, transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0%, #000 13%, #000 87%, transparent 100%);
+}
+.ai-landing-wave-track {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 200%;
+  height: 100%;
+  will-change: transform;
+}
+.ai-landing-wave-one { animation: ai-landing-wave-flow 7.6s linear infinite; }
+.ai-landing-wave-two { animation: ai-landing-wave-flow-reverse 11.2s linear infinite; }
+.ai-landing-wave-three { animation: ai-landing-wave-flow 14.8s linear -4.6s infinite; }
+.ai-landing-wave-fill {
+  animation: ai-landing-wave-flow 18s linear -7s infinite;
+}
+.ai-landing-halo {
+  position: absolute;
+  z-index: -1;
+  width: 184px;
+  height: 184px;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(225, 237, 253, .9) 0%, rgba(232, 226, 249, .5) 43%, rgba(244, 248, 255, 0) 72%);
+  filter: blur(3px);
+  animation: ai-landing-halo-breathe 6.8s ease-in-out infinite;
+}
+.ai-landing-orb {
+  filter: drop-shadow(0 16px 26px rgba(91, 112, 151, .09));
+  animation: ai-landing-orb-float 5.4s ease-in-out infinite;
+}
+.routine-name-screen { min-height: 100%; }
+.routine-name-glow {
+  position: absolute;
+  border-radius: 999px;
+  pointer-events: none;
+  filter: blur(2px);
+}
+.routine-name-glow-one {
+  top: 12%;
+  right: -34%;
+  width: 280px;
+  height: 280px;
+  background: radial-gradient(circle, rgba(211, 226, 249, .72) 0%, rgba(233, 241, 253, .3) 52%, transparent 72%);
+}
+.routine-name-glow-two {
+  bottom: 4%;
+  left: -38%;
+  width: 260px;
+  height: 260px;
+  background: radial-gradient(circle, rgba(228, 237, 250, .6) 0%, rgba(241, 246, 253, .22) 54%, transparent 72%);
+}
+.routine-naming-mark {
+  transform: translateZ(0);
+  transition: transform .7s cubic-bezier(.22, 1, .36, 1);
+}
+.routine-name-orbit {
+  transform-box: view-box;
+  transform-origin: 80px 80px;
+  animation: routine-name-orbit 3.2s linear infinite;
+}
+.routine-name-path {
+  stroke-dasharray: 180;
+  stroke-dashoffset: 180;
+  animation: routine-name-path 1.65s cubic-bezier(.35, .05, .2, 1) infinite alternate;
+}
+.routine-name-check { opacity: 0; transform-box: fill-box; transform-origin: center; }
+.routine-naming-mark.is-ready { transform: scale(.92); }
+.routine-naming-mark.is-ready .routine-name-orbit { animation-play-state: paused; opacity: 0; transition: opacity .35s ease; }
+.routine-naming-mark.is-ready .routine-name-path { animation: none; stroke-dashoffset: 0; opacity: .2; transition: opacity .45s ease; }
+.routine-naming-mark.is-ready .routine-name-check { animation: routine-name-ready .55s cubic-bezier(.22, 1, .36, 1) .08s both; }
+.routine-name-reveal { animation: routine-name-reveal .7s cubic-bezier(.22, 1, .36, 1) both; }
+.routine-name-actions { animation: routine-name-actions .5s cubic-bezier(.22, 1, .36, 1) .18s both; }
 .hide-scrollbar::-webkit-scrollbar { display: none; }
 .hide-scrollbar { scrollbar-width: none; }
 .safe-top { padding-top: max(8px, env(safe-area-inset-top)); }
@@ -247,6 +371,6 @@ video:not([controls])::-webkit-media-controls { display: none !important; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .animate-rise, .animate-slide-in, .animate-notification-page-in, .animate-onboard-forward, .animate-onboard-back, .onboard-float, .onboard-draw, .onboard-pop, .onboard-pulse, .onboard-scan { animation: none !important; }
+  .animate-rise, .animate-slide-in, .animate-notification-page-in, .animate-onboard-forward, .animate-onboard-back, .onboard-float, .onboard-draw, .onboard-pop, .onboard-pulse, .onboard-scan, .ai-landing-wave-track, .ai-landing-halo, .ai-landing-orb, .routine-name-orbit, .routine-name-path, .routine-naming-mark.is-ready .routine-name-check, .routine-name-reveal, .routine-name-actions { animation: none !important; }
   .onboard-draw { stroke-dashoffset: 0; }
 }

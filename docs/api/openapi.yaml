@@ -284,6 +284,41 @@ paths:
       responses:
         '200': { description: 새 루틴 경험, content: { application/json: { schema: { $ref: '#/components/schemas/Experience' } } } }
         '409': { $ref: '#/components/responses/Problem' }
+  /me/routines/{routineId}:
+    get:
+      tags: [Routines]
+      summary: 저장된 루틴 버전 하나의 구성을 조회한다
+      operationId: getRoutine
+      parameters: [ { $ref: '#/components/parameters/RoutineId' } ]
+      responses:
+        '200': { description: 루틴 구성, content: { application/json: { schema: { $ref: '#/components/schemas/Routine' } } } }
+        '404': { $ref: '#/components/responses/Problem' }
+  /me/routines/{routineId}/name-suggestion:
+    post:
+      tags: [Routines]
+      summary: 저장된 제품·순서·사용 맥락만으로 루틴 이름을 제안한다
+      description: 제품명이나 브랜드를 쓰지 않고 제품 종류·순서·시간·빈도에서 기억하기 쉬운 특징 하나를 골라 실제 구성을 이해할 수 있는 자연스러운 한국어 제목을 제안한다. AI 실패 시에도 서버가 구성 기반 기본 이름을 반환하며 루틴을 변경하지 않는다.
+      operationId: suggestRoutineName
+      parameters: [ { $ref: '#/components/parameters/RoutineId' } ]
+      responses:
+        '200': { description: 이름 제안, content: { application/json: { schema: { $ref: '#/components/schemas/RoutineNameSuggestion' } } } }
+        '404': { $ref: '#/components/responses/Problem' }
+  /me/routines/{routineId}/name:
+    put:
+      tags: [Routines]
+      summary: 사용자가 확인한 이름을 현재 루틴과 진행 중인 경험에 적용한다
+      operationId: renameCurrentRoutine
+      parameters: [ { $ref: '#/components/parameters/RoutineId' } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RenameRoutineRequest' }
+      responses:
+        '200': { description: 이름이 반영된 루틴, content: { application/json: { schema: { $ref: '#/components/schemas/Routine' } } } }
+        '404': { $ref: '#/components/responses/Problem' }
+        '409': { $ref: '#/components/responses/Problem' }
+        '422': { $ref: '#/components/responses/Problem' }
   /me/routines/baseline:
     get:
       tags: [Routines]
@@ -441,6 +476,7 @@ components:
     ProductId: { name: productId, in: path, required: true, schema: { type: integer, format: int64 } }
     UserProductId: { name: userProductId, in: path, required: true, schema: { type: integer, format: int64 } }
     ExperienceId: { name: experienceId, in: path, required: true, schema: { type: integer, format: int64 } }
+    RoutineId: { name: routineId, in: path, required: true, schema: { type: integer, format: int64 } }
     PatternId: { name: patternId, in: path, required: true, schema: { type: integer, format: int64 } }
     ConversationId: { name: conversationId, in: path, required: true, schema: { type: integer, format: int64 } }
     NotificationId: { name: notificationId, in: path, required: true, schema: { type: integer, format: int64 } }
@@ -651,8 +687,19 @@ components:
       type: object
       required: [name, items]
       properties:
-        name: { type: string, minLength: 1 }
+        name: { type: string, minLength: 1, maxLength: 40 }
         items: { type: array, minItems: 1, maxItems: 12, items: { $ref: '#/components/schemas/RoutineItemInput' } }
+    RoutineNameSuggestion:
+      type: object
+      required: [name, aiGenerated]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 40 }
+        aiGenerated: { type: boolean }
+    RenameRoutineRequest:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 40 }
     StartExperienceRequest:
       type: object
       required: [userProductId, mode, clientRequestId]

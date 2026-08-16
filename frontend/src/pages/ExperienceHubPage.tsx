@@ -2,7 +2,11 @@ import { useQuery } from '@tanstack/react-query'
 import { ArrowRight, Clock3, History } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { api, ApiError } from '../lib/api'
+import { experienceRecordHref } from '../lib/experience'
 import type { Experience, Routine } from '../lib/types'
+import { ExperienceRecordItem } from '../components/ExperienceRecordItem'
+import { ExperienceActionIcon } from '../components/ExperienceActionIcon'
+import { ExperienceRecordStatus } from '../components/ExperienceStatusBadge'
 import { AppHeader, Card, ErrorState, Loading, PageHeading, Screen, SectionHeading } from '../components/ui'
 
 function isNotFound(error: unknown) {
@@ -44,7 +48,7 @@ export function ExperienceHubPage() {
           : <Card className="mt-3 border-[#d9e6ff] bg-[#fbfdff] px-5 py-8 text-center">
             <h3 className="text-lg font-medium">지금 확인 중인 경험이 없어요</h3>
             <p className="mx-auto mt-3 max-w-[290px] text-xs leading-5 text-[#777d88]">{current.data ? '현재 루틴은 그대로 사용 중이에요. 조합을 바꾸면 새 경험 기록이 시작됩니다.' : '실제로 사용할 제품과 순서를 정하면 그 조건으로 경험 기록이 시작됩니다.'}</p>
-            <Link to={home.data.productCount ? '/routine/edit' : '/explore'} className="mt-6 flex min-h-12 w-full items-center justify-center rounded-full bg-[#0a0a0a] px-5 text-sm font-medium text-white">{home.data.productCount ? '새 경험 시작하기' : '첫 화장품 추가하기'}</Link>
+            <Link to={home.data.productCount ? '/routine/new' : '/explore'} className="mt-6 flex min-h-12 w-full items-center justify-center rounded-full bg-[#0a0a0a] px-5 text-sm font-medium text-white">{home.data.productCount ? '새 루틴 만들기' : '첫 화장품 추가하기'}</Link>
           </Card>}
       </section>
 
@@ -52,7 +56,7 @@ export function ExperienceHubPage() {
         <SectionHeading eyebrow="ROUTINE" title="현재 사용 루틴" id="current-routine-title" action={<Link to="/routine/edit" className="rounded-full px-3 py-2 text-xs font-medium text-[#5365f5]">편집</Link>}/>
         {current.data
           ? <RoutineSummary routine={current.data}/>
-          : <Card className="mt-3 border-dashed"><p className="text-sm font-medium">등록된 루틴이 없어요</p><p className="mt-1 text-xs leading-5 text-[#73766f]">아침·저녁, 순서와 실제 빈도를 함께 저장할 수 있어요.</p><Link to="/routine/edit" className="mt-4 inline-flex min-h-11 items-center gap-1 text-xs font-medium text-[#5365f5]">루틴 만들기 <ArrowRight size={14}/></Link></Card>}
+          : <Card className="mt-3 border-dashed"><p className="text-sm font-medium">등록된 루틴이 없어요</p><p className="mt-1 text-xs leading-5 text-[#73766f]">아침·저녁, 순서와 실제 빈도를 함께 저장할 수 있어요.</p><Link to="/routine/new" className="mt-4 inline-flex min-h-11 items-center gap-1 text-xs font-medium text-[#5365f5]">루틴 만들기 <ArrowRight size={14}/></Link></Card>}
       </section>
 
       <section className="mt-10" aria-labelledby="baseline-routine-title">
@@ -63,9 +67,9 @@ export function ExperienceHubPage() {
       </section>
 
       <section className="mt-10 pb-4" aria-labelledby="recent-records-title">
-        <SectionHeading eyebrow="HISTORY" title="최근 경험" id="recent-records-title" action={<Link to="/records" className="rounded-full px-3 py-2 text-xs font-medium text-[#73766f]">전체보기</Link>}/>
+        <SectionHeading eyebrow="HISTORY" title="최근 경험" id="recent-records-title" action={<Link to="/records?view=history" className="rounded-full px-3 py-2 text-xs font-medium text-[#73766f]">전체보기</Link>}/>
         {records.data.length
-          ? <div className="mt-4 border-l border-[#e7e9e3] pl-5">{records.data.slice(0, 4).map(record => <article key={record.id} className="relative pb-6 last:pb-0"><span aria-hidden="true" className="absolute -left-[25px] top-1 size-2 rounded-full bg-[#5365f5] ring-4 ring-white"/><p className="text-xs font-medium text-[#73766f]">{record.createdAt.slice(0, 10)}</p><h3 className="mt-1 text-sm font-medium">{record.productName}</h3><p className="mt-1 line-clamp-2 text-xs leading-5 text-[#73766f]">{record.note || (record.sentiment === 'LIKED' ? '마음에 들었던 경험' : record.sentiment === 'DISAPPOINTED' ? '아쉬웠던 경험' : '아직 판단하기 어려운 경험')}</p></article>)}</div>
+          ? <div className="mt-4 divide-y divide-[#e7e9ed] border-y border-[#e7e9ed]">{records.data.slice(0, 4).map(record => <ExperienceRecordItem key={record.id} record={record} href={experienceRecordHref(record)} actionLabel={record.sessionId ? '이때의 루틴 보기' : record.userProductId ? '제품 정보 보기' : undefined}/>)}</div>
           : <Card className="mt-3 border-dashed"><div className="flex items-center gap-3"><History className="text-[#73766f]" size={19}/><p className="text-sm font-medium">아직 남긴 경험이 없어요</p></div></Card>}
       </section>
     </div>
@@ -79,11 +83,12 @@ function ActiveExperienceCard({ experience, onRecord, onDiscomfort }: { experien
       <div className="flex items-center justify-between gap-3"><span className="rounded-full bg-black px-3 py-1 text-xs font-medium text-white">확인 중 · DAY {day}</span><span className="text-xs text-[#73766f]">{experience.reviewDue ? '오늘 돌아보기' : `${experience.daysUntilReview}일 뒤 돌아보기`}</span></div>
       <h3 className="mt-5 text-xl font-medium tracking-[-.03em]">{experience.title}</h3>
       <p className="mt-2 line-clamp-1 text-xs text-[#73766f]">{experience.subtitle}</p>
+      <ExperienceRecordStatus record={experience.latestRecord} className="mt-3"/>
       <div role="progressbar" aria-label={`7일 중 ${day}일`} aria-valuemin={1} aria-valuemax={7} aria-valuenow={day} className="mt-5 h-1.5 overflow-hidden rounded-full bg-[#edf3ff]"><div className="h-full rounded-full bg-black" style={{ width: `${day / 7 * 100}%` }}/></div>
     </Link>
-    <div className="grid grid-cols-[1fr_auto] gap-2 border-t border-[#dce8ff] p-3">
-      <button type="button" onClick={onRecord} className="min-h-12 rounded-full bg-black px-4 text-sm font-medium text-white">지금 느낌 남기기</button>
-      <button type="button" onClick={onDiscomfort} aria-label="피부 불편함 기록" className="min-h-12 rounded-full border border-[#efcaca] bg-white px-4 text-xs font-medium text-[#b44d4d]">불편함</button>
+    <div className="grid grid-cols-2 gap-2.5 border-t border-[#e1e8f4] p-3">
+      <button type="button" onClick={onRecord} className="flex min-h-[54px] min-w-0 items-center justify-center gap-2 rounded-[17px] bg-[#111722] px-2.5 text-[12px] font-[600] leading-none tracking-[-.01em] text-white shadow-[0_8px_20px_rgba(17,23,34,.18)] transition active:scale-[.985]"><ExperienceActionIcon name="feeling" className="size-[18px] shrink-0"/><span className="whitespace-nowrap font-[600]">느낌 남기기</span></button>
+      <button type="button" onClick={onDiscomfort} aria-label="피부 불편함 기록" className="flex min-h-[54px] min-w-0 items-center justify-center gap-2 rounded-[17px] border border-[#dfd2cd] bg-white px-2.5 text-[12px] font-[600] leading-none tracking-[-.01em] text-[#744f49] transition active:scale-[.985]"><ExperienceActionIcon name="discomfort" className="size-[18px] shrink-0"/><span className="whitespace-nowrap font-[600]">불편함 기록</span></button>
     </div>
   </Card>
 }

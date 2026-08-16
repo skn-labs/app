@@ -24,11 +24,26 @@ public class RoutineController {
         return service.baselineRoutine();
     }
 
+    @GetMapping("/{routineId}")
+    RoutineView routine(@PathVariable long routineId) {
+        return service.routine(routineId);
+    }
+
     @PutMapping("/current")
     ExperienceView replace(
             @Valid @RequestBody UpdateRoutineRequest request,
             @RequestHeader("Idempotency-Key") String clientRequestId
     ) {
         return service.replaceRoutine(request, clientRequestId);
+    }
+
+    @PostMapping("/{routineId}/name-suggestion")
+    RoutineNameSuggestionView suggestName(@PathVariable long routineId) {
+        return service.suggestRoutineName(routineId);
+    }
+
+    @PutMapping("/{routineId}/name")
+    RoutineView rename(@PathVariable long routineId, @Valid @RequestBody RenameRoutineRequest request) {
+        return service.renameCurrentRoutine(routineId, request);
     }
 }

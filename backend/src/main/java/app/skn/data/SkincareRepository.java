@@ -281,6 +281,21 @@ public class SkincareRepository {
         return id;
     }
 
+    public boolean renameCurrentRoutine(long routineId, String name) {
+        int updated = jdbc.update("""
+                UPDATE routine
+                   SET name = ?
+                 WHERE user_id = ? AND id = ? AND status = 'CURRENT'
+                """, name, userId(), routineId);
+        if (updated == 0) return false;
+        jdbc.update("""
+                UPDATE experience_session
+                   SET title = ?
+                 WHERE user_id = ? AND routine_id = ? AND status = 'ACTIVE'
+                """, name, userId(), routineId);
+        return true;
+    }
+
     public void closeActiveExperience(String reason) {
         jdbc.update("""
                 UPDATE experience_session

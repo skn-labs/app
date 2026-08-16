@@ -1,10 +1,13 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { ArrowRight, ChevronRight, Search, Sparkles } from 'lucide-react'
+import { ArrowRight, ChevronRight, Search } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { api } from '../lib/api'
 import { startChatPath } from '../lib/chat'
 import type { Home, Pattern } from '../lib/types'
+import { ActionIcon } from '../components/ActionIcon'
+import { ExperienceActionIcon } from '../components/ExperienceActionIcon'
+import { ExperienceRecordStatus } from '../components/ExperienceStatusBadge'
 import { AppHeader, BottomSheet, ErrorState, Loading, Screen } from '../components/ui'
 import { ProductAddSheet } from '../components/ProductAddSheet'
 import heroWave from '../assets/figma/hero-wave.webp'
@@ -40,7 +43,7 @@ export function HomePage() {
 
       <section className="mt-5" aria-label="AI와 화장품 탐색">
         <button type="button" onClick={() => navigate('/ai')} className="group flex min-h-[74px] w-full items-center gap-3.5 overflow-hidden rounded-[20px] bg-[#050505] px-4 py-3.5 text-left text-white shadow-[0_8px_22px_rgba(0,0,0,.14)] transition hover:bg-black active:scale-[.99]">
-          <span className="grid size-11 shrink-0 place-items-center rounded-[15px] bg-white/[.08] text-[#dce6ff]"><Sparkles size={20} strokeWidth={1.65}/></span>
+          <span className="grid size-11 shrink-0 place-items-center overflow-hidden rounded-[15px] bg-white/[.08]"><img src="/skn-assets/ai-drop.png" alt="" className="size-12 max-w-none object-contain"/></span>
           <span className="min-w-0 flex-1"><strong className="block text-[14px] font-semibold leading-5 tracking-[-.025em]">피부에 대해 궁금한 게 있나요?</strong><span className="mt-1 block text-[11px] leading-4 text-[#cdd0d6]">SKN AI에게 편하게 물어보세요.</span></span>
           <ChevronRight size={18} strokeWidth={1.8} className="shrink-0 text-white/70 transition group-hover:translate-x-0.5"/>
         </button>
@@ -52,10 +55,10 @@ export function HomePage() {
       </section>
 
       <section className="mt-10" aria-labelledby="home-insight-title">
-        <div className="flex items-end justify-between gap-4"><div><h2 id="home-insight-title" className="text-lg font-semibold tracking-[-.025em]">MY INSIGHT</h2><p className="mt-1 text-[11px] leading-5 text-[#747b86]">최근 기록을 비교해, 반복된 경험만 연결해요.</p></div>{data.patterns.length > 0 && <Link to="/records" className="shrink-0 pb-0.5 text-[11px] font-semibold text-[#667085]">전체 보기</Link>}</div>
+        <div className="flex items-end justify-between gap-4"><div><h2 id="home-insight-title" className="text-lg font-semibold tracking-[-.025em]">INSIGHT</h2><p className="mt-1 text-[11px] leading-5 text-[#747b86]">최근 기록을 비교해, 반복된 경험만 연결해요.</p></div>{data.patterns.length > 0 && <Link to="/records" className="shrink-0 pb-0.5 text-[11px] font-semibold text-[#667085]">전체 보기</Link>}</div>
         {data.patterns.length
           ? <div className="hide-scrollbar -mx-5 mt-4 flex snap-x snap-mandatory gap-2.5 overflow-x-auto px-5 pb-1" aria-label="최근 인사이트">{data.patterns.slice(0, 3).map(pattern => <InsightCard key={pattern.id} pattern={pattern} peek={data.patterns.length > 1} onOpen={() => setSelectedInsight(pattern)}/>)}</div>
-          : <EmptyInsightCard recordCount={data.recordCount} href={experience ? `/experiences/${experience.id}/record` : data.productCount ? '/routine/edit' : '/explore'}/>}
+          : <EmptyInsightCard recordCount={data.recordCount} href={experience ? `/experiences/${experience.id}/record` : data.productCount ? '/routine/new' : '/explore'}/>}
       </section>
 
       <ProfilePreview recordCount={data.recordCount} patterns={data.patterns}/>
@@ -90,10 +93,11 @@ function ActiveExperienceCard({ experience, onOpen, onRecord }: { experience: No
       <div className="min-h-0 flex-1 pt-[clamp(8px,2.8vw,12px)]">
         <h2 className="line-clamp-1 max-w-[290px] text-[clamp(20px,5.6vw,24px)] font-semibold leading-[1.16] tracking-[-.04em] text-[#101725]">{experience.title}</h2>
         <p className="mt-1 line-clamp-1 text-xs font-medium leading-5 tracking-[-.015em] text-[#52647f]">{experience.subtitle}</p>
+        <ExperienceRecordStatus record={experience.latestRecord} className="mt-2"/>
       </div>
       <div className="grid grid-cols-2 gap-2.5 px-0.5">
-        <button type="button" onClick={onOpen} className="h-[clamp(43px,11.8vw,46px)] min-w-0 rounded-[15px] border border-[#cad5e5]/80 bg-white/90 text-[12.5px] font-[650] leading-none tracking-[-.02em] text-[#27354b] shadow-[0_4px_13px_rgba(43,65,102,.10)] backdrop-blur-md transition hover:border-[#b9c7dc] hover:bg-white active:scale-[.98]">연구 노트 보기</button>
-        <button type="button" onClick={onRecord} className="h-[clamp(43px,11.8vw,46px)] min-w-0 rounded-[15px] border border-[#111722] bg-[#111722] text-[12.5px] font-[650] leading-none tracking-[-.02em] text-white shadow-[0_5px_15px_rgba(17,23,34,.18)] transition hover:bg-black active:scale-[.98]">느낌 남기기</button>
+        <button type="button" onClick={onOpen} className="flex h-[clamp(43px,11.8vw,46px)] min-w-0 items-center justify-center gap-1.5 rounded-[15px] border border-[#cad5e5]/80 bg-white/90 px-2 text-[12.5px] font-bold leading-none tracking-[-.02em] text-[#27354b] shadow-[0_4px_13px_rgba(43,65,102,.10)] backdrop-blur-md transition hover:border-[#b9c7dc] hover:bg-white active:scale-[.98]"><ActionIcon name="progress" className="size-[18px] shrink-0"/><span className="whitespace-nowrap">진행 상황 보기</span></button>
+        <button type="button" onClick={onRecord} className="flex h-[clamp(43px,11.8vw,46px)] min-w-0 items-center justify-center gap-1.5 rounded-[15px] border border-[#111722] bg-[#111722] px-2 text-[12.5px] font-bold leading-none tracking-[-.02em] text-white shadow-[0_5px_15px_rgba(17,23,34,.18)] transition hover:bg-black active:scale-[.98]"><ExperienceActionIcon name="feeling" className="size-[18px] shrink-0"/><span className="whitespace-nowrap">느낌 남기기</span></button>
       </div>
     </div>
   </section>
@@ -108,7 +112,7 @@ function EmptyExperienceCard({ productCount }: { productCount: number }) {
     <div className="relative flex min-h-[300px] flex-col p-5">
       <span className="w-fit rounded-full bg-white/72 px-3 py-2 text-xs font-medium text-[#52678c] backdrop-blur">START YOUR SKN</span>
       <div className="my-auto max-w-[285px]"><h2 className="text-[28px] font-medium leading-[1.16] tracking-[-.045em]">첫 기록부터<br/>나만의 기준이 생겨요.</h2><p className="mt-3 max-w-[265px] text-sm leading-6 text-black/52">{productCount ? '가지고 있는 화장품으로 실제 사용 조합을 만들고, 느낀 순간을 이어보세요.' : '화장품 하나를 담으면 제품·루틴·경험이 연결되는 나만의 아카이브가 시작돼요.'}</p></div>
-      <Link to={productCount ? '/routine/edit' : '/explore'} className="flex h-[54px] w-full items-center justify-center gap-1 rounded-full bg-black text-[13px] font-semibold leading-none tracking-[-.015em] text-white shadow-[0_9px_24px_rgba(0,0,0,.18)] transition active:scale-[.98]">{productCount ? '새 경험 시작하기' : '첫 화장품 담기'}<ArrowRight size={17}/></Link>
+      <Link to={productCount ? '/routine/edit' : '/explore'} className="flex h-[54px] w-full items-center justify-center gap-1.5 rounded-full bg-black text-[13px] font-semibold leading-none tracking-[-.015em] text-white shadow-[0_9px_24px_rgba(0,0,0,.18)] transition active:scale-[.98]">{productCount ? '새 경험 시작하기' : '첫 화장품 담기'}<ArrowRight size={17}/></Link>
     </div>
   </section>
 }
@@ -197,7 +201,7 @@ function ProfilePreview({ recordCount, patterns }: { recordCount: number; patter
   }).join(' ')
 
   return <section className="mt-10 pb-8" aria-labelledby="profile-preview-title">
-    <Link to="/records" className="flex items-end justify-between gap-4"><span><h2 id="profile-preview-title" className="text-lg font-semibold tracking-[-.025em]">MY PROFILE</h2><p className="mt-1 text-[11px] leading-5 text-[#747b86]">나의 경험 지도</p></span><span className="inline-flex shrink-0 items-center gap-0.5 pb-0.5 text-[11px] font-semibold text-[#667085]">전체 보기<ChevronRight size={13}/></span></Link>
+    <Link to="/records" className="flex items-end justify-between gap-4"><span><h2 id="profile-preview-title" className="text-lg font-semibold tracking-[-.025em]">PROFILE</h2><p className="mt-1 text-[11px] leading-5 text-[#747b86]">나의 경험 지도</p></span><span className="inline-flex shrink-0 items-center gap-0.5 pb-0.5 text-[11px] font-semibold text-[#667085]">전체 보기<ChevronRight size={13}/></span></Link>
     <div className="mt-4 overflow-hidden rounded-[24px] border border-[#dce5f3] bg-[linear-gradient(155deg,#fbfdff,#eef4ff)] p-4 shadow-[0_8px_26px_rgba(49,73,115,.07)]">
       <span className="inline-flex rounded-full bg-white/85 px-3 py-2 text-[11px] font-medium text-[#52678c] shadow-[inset_0_0_0_1px_rgba(201,218,248,.75)]">{hasProfile ? `발견한 흐름 ${fields.length}개` : recordCount ? `기록 ${recordCount}건 비교 중` : '첫 기록을 기다리는 중'}</span>
 

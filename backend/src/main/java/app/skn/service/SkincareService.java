@@ -1,5 +1,6 @@
 package app.skn.service;
 
+import app.skn.ai.OpenAiGateway;
 import app.skn.api.ApiModels.*;
 import app.skn.common.ApiException;
 import app.skn.data.SkincareRepository;
@@ -22,9 +23,11 @@ public class SkincareService {
     private static final Set<String> TIME_SLOTS = Set.of("MORNING", "EVENING", "BOTH");
 
     private final SkincareRepository repository;
+    private final OpenAiGateway openAi;
 
-    public SkincareService(SkincareRepository repository) {
+    public SkincareService(SkincareRepository repository, OpenAiGateway openAi) {
         this.repository = repository;
+        this.openAi = openAi;
     }
 
     public HomeView home() {
@@ -135,6 +138,10 @@ public class SkincareService {
         return repository.findBaselineRoutine().orElseThrow(() -> ApiException.notFound("아직 비교 기준 루틴이 없어요."));
     }
 
+    public RoutineView routine(long routineId) {
+        return repository.findRoutine(routineId).orElseThrow(() -> ApiException.notFound("루틴을 찾을 수 없어요."));
+    }
+
     @Transactional
     public ExperienceView startExperience(StartExperienceRequest request) {
         var existing = repository.findSessionIdByClientRequest(request.clientRequestId());
@@ -205,6 +212,65 @@ public class SkincareService {
         long sessionId = repository.insertExperienceSession(
                 "ROUTINE", routineId, null, request.name().trim(), clientRequestId);
         return experience(sessionId);
+    }
+
+    public RoutineNameSuggestionView suggestRoutineName(long routineId) {
+        RoutineView routine = routine(routineId);
+        String fallback = fallbackRoutineName(routine);
+        String context = routine.items().stream()
+                .sorted(java.util.Comparator.comparingInt(RoutineItemView::position))
+                .map(item -> "%d. %s / %s / %s".formatted(
+                        item.position(), item.category(),
+                        timeSlotLabel(item.timeSlot()), item.frequency()))
+                .collect(java.util.stream.Collectors.joining("\n"));
+        var result = openAi.answer(
+                "ROUTINE_NAME",
+                """
+                당신은 SKN의 루틴 이름을 짓는 에디터다. 이름만 읽어도 사용자가
+                이 루틴의 특징을 바로 떠올릴 수 있는 자연스러운 한국어 제목을 만든다.
+
+                이름을 정하기 전에 서로 다른 후보를 내부적으로 다섯 개 만든 뒤 가장 좋은 하나만 고른다.
+                - 서버가 제공한 제품 종류, 순서, 사용 시간과 빈도만 근거로 사용한다.
+                - 브랜드명, 전체 제품명, 성분명과 제품명에서 가져온 수식어를 이름에 쓰지 않는다.
+                - 브랜드 이름처럼 추상적으로 작명하지 말고 실제 구성을 한 문장처럼 요약한다.
+                - 가장 기억하기 쉬운 특징 하나만 고른다. 같은 종류의 제품 수, 마지막 단계,
+                  다른 사용 빈도, 첫 단계와 마지막 단계 순으로 살핀다.
+                - 아래 문장 구조를 우선하되 입력에 실제 근거가 있을 때만 쓴다.
+                  세럼 2개를 더한 저녁 루틴
+                  선크림으로 마치는 아침 루틴
+                  앰플을 주 3회 더하는 저녁 루틴
+                  클렌저부터 크림까지 쓰는 저녁 루틴
+                  매일 쓰는 저녁 루틴
+                - 제품 종류는 세럼, 앰플, 토너, 크림, 클렌저, 선크림처럼 사용자가 바로 알아보는 말로 쓴다.
+                - 가급적 12~28자 안에서 끝내고, 조사와 어순을 자연스럽게 쓴다.
+
+                나만의, 완벽한, 빛나는, 기적, 시크릿, 프리미엄, 맞춤, 꿀피부 같은 광고성 표현을 쓰지 않는다.
+                레이어, 리듬, 페어처럼 뜻을 한 번 더 해석해야 하는 추상적인 조어를 쓰지 않는다.
+                제품 총개수나 N단계를 이름의 중심으로 쓰지 않는다. 같은 종류가 반복되는 특징을 설명할 때만 개수를 쓴다.
+                피부 타입, 효능, 안전성, 원인, 결과나 적합성을 추론하지 않는다.
+                따옴표, 설명, 접두어, 마침표, 이모지를 쓰지 않고 최종 이름 한 줄만 출력한다.
+                """,
+                context,
+                "사용자가 이름만 보고 실제 구성을 이해할 수 있는 가장 자연스러운 제목 하나를 정해줘."
+        );
+        boolean aiGenerated = "READY".equals(result.status());
+        return new RoutineNameSuggestionView(
+                aiGenerated ? cleanRoutineName(result.text(), fallback) : fallback,
+                aiGenerated
+        );
+    }
+
+    @Transactional
+    public RoutineView renameCurrentRoutine(long routineId, RenameRoutineRequest request) {
+        RoutineView routine = routine(routineId);
+        if (!"CURRENT".equals(routine.status())) {
+            throw ApiException.conflict("ROUTINE_NOT_CURRENT", "현재 사용 중인 루틴의 이름만 바꿀 수 있어요.");
+        }
+        String name = request.name().trim();
+        if (!repository.renameCurrentRoutine(routineId, name)) {
+            throw ApiException.conflict("ROUTINE_CHANGED", "루틴이 이미 변경됐어요. 현재 루틴을 다시 확인해주세요.");
+        }
+        return routine(routineId);
     }
 
     public ExperienceView activeExperience() {
@@ -292,6 +358,45 @@ public class SkincareService {
             case "ANYTIME" -> "수시";
             default -> "저녁";
         };
+    }
+
+    private String timeSlotLabel(String timeSlot) {
+        return switch (timeSlot) {
+            case "MORNING" -> "아침";
+            case "BOTH" -> "아침과 저녁";
+            default -> "저녁";
+        };
+    }
+
+    private String fallbackRoutineName(RoutineView routine) {
+        if (routine.items().size() == 1) {
+            String category = routine.items().get(0).category().trim();
+            return switch (routine.dayPart()) {
+                case "MORNING" -> "아침 " + category + " 루틴";
+                case "EVENING" -> "저녁 " + category + " 루틴";
+                default -> "아침·저녁 " + category + " 루틴";
+            };
+        }
+        return switch (routine.dayPart()) {
+            case "MORNING" -> "아침에 쓰는 루틴";
+            case "EVENING" -> "저녁에 쓰는 루틴";
+            default -> "아침과 저녁에 쓰는 루틴";
+        };
+    }
+
+    private String cleanRoutineName(String value, String fallback) {
+        if (value == null) return fallback;
+        String clean = value.lines().findFirst().orElse("")
+                .replaceAll("^[\\s\\\"'`‘’“”]+|[\\s\\\"'`‘’“”.。]+$", "")
+                .replaceFirst("^(루틴 이름|이름|제안)\\s*[:：-]\\s*", "")
+                .trim();
+        if (clean.isBlank()) return fallback;
+        return truncateRoutineName(clean);
+    }
+
+    private String truncateRoutineName(String value) {
+        String clean = value.trim();
+        return clean.length() <= 40 ? clean : clean.substring(0, 40).trim();
     }
 
     private String routineDayPart(List<RoutineItemInput> items) {

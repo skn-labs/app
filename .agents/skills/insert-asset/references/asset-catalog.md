@@ -127,6 +127,10 @@ SKN의 모든 애셋은 하나의 시각 언어를 공유한다: **맑은 물방
 | `AI 물방울(피그마).png` | AI 제품 탐색 디자인에 쓰인 둥근 투명 젤·물방울. 가장자리에 옅은 블루·라벤더 광택이 있고 중심은 거의 흰색이다. | 402×402, PNG | 투명 | AI 대화 시작 화면의 심벌과 내 화장품 빈 상태. Figma image ref `2d129e…`의 보존 원본. |
 | `loading.mp4` / `loading.webm` | `로딩창 애니메이션.mp4`를 402×402로 유지하면서 회청색 배경을 순백으로 보정하고 오디오를 제거한 웹용 유리 버블 모션. | MP4(H.264, ~127KB) / WebM(VP9, ~288KB) | 흰색 | AI 모션·로그인 로딩의 실제 배포 원본. 배포본은 `frontend/public/skn-assets/ai-drop-motion.*`. |
 | `orb.png` | 웹용 로딩 영상과 프레임·흰 배경이 정확히 맞는 맑은 유리 버블 정지본. | 402×402, PNG | 흰색, 불투명 | 웹용 로딩 영상의 poster. 배포본은 `frontend/public/skn-assets/ai-drop-motion-poster.png`. |
+| `제품 유형.svg` | 전체·클렌징·토너·세럼·앰플·크림·선케어를 페트리 접시와 화장품 용기 실루엣으로 구분한 7종 라인 아이콘 SVG 스프라이트. 회청색 선과 유형별 옅은 세럼 컬러를 사용한다. | SVG, 각 symbol viewBox 48×48 | 투명 | 제품 탐색의 유형 선택 시트. 배포본은 `frontend/public/skn-assets/product-category-icons.svg`. |
+| `현재 루틴.svg` | 순환하는 두 화살표 안에 세럼 방울을 넣은 올리브색 원형 라인 아이콘. 제품이 현재 사용 조합에 포함된 활성 상태를 나타낸다. | SVG, viewBox 24×24 | 투명 | 내 화장품 카드의 `현재 루틴` 활성 배지. 배포본은 `frontend/public/skn-assets/routine-active.svg`. |
+| `경험 행동.svg` | 반짝임과 미소가 있는 물방울 `느낌`, 피부 파동이 흐르는 물방울 `불편함`의 2종 모노톤 SVG 스프라이트. 경고가 아니라 서로 다른 관찰 기록을 표현하며 UI의 글자색을 따라간다. | SVG, 각 symbol viewBox 24×24 | 투명 | 경험 상세·허브의 `느낌 남기기`, `불편함 기록` 액션. 배포본은 `frontend/public/skn-assets/experience-actions.svg`. |
+| `맥락 행동.svg` | 눈 속 물방울로 표현한 진행 확인, 펌프형 화장품 용기와 더하기, 순서 목록과 더하기를 각각 분리한 3종 모노톤 SVG 스프라이트. 서로 다른 기능을 같은 물방울 모양으로 반복하지 않는다. | SVG, 각 symbol viewBox 24×24 | 투명 | 홈의 진행 확인과 내 화장품·루틴의 플로팅 추가 액션에만 제한적으로 사용. 배포본은 `frontend/public/skn-assets/context-action-icons.svg`. |
 
 정지 아이콘이면 PNG, 상태 전환·피드백 모션이면 대응 MP4. 로딩은 `로딩창 애니메이션.mp4`가 전용.
 

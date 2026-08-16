@@ -44,7 +44,7 @@ export function AuthPage() {
     <div className="safe-bottom flex min-h-0 flex-1 flex-col px-7">
       <div className="pt-10"><h1 className="text-2xl font-medium leading-[1.35] tracking-[-.035em]">당신의 피부를 연구할<br/>준비가 되었어요.</h1><p className="mt-3 text-sm leading-[1.65] text-[#73766f]">몇 가지 질문으로 당신에게 맞는<br/>케어를 시작할게요.</p></div>
       <div className="relative flex flex-1 items-center justify-center"><div aria-hidden="true" className="absolute size-[210px] rounded-full bg-[radial-gradient(circle,rgba(234,235,255,.65),rgba(255,255,255,0)_70%)] blur-xl"/><img src="/skn-assets/onboarding-orb.png" alt="투명한 세럼 구체" className="onboard-float relative size-[230px] object-contain"/></div>
-      <button type="button" onClick={() => moveTo('login')} className="h-[52px] w-full rounded-full bg-[#0a0a0a] text-base font-medium text-white shadow-[0_8px_22px_rgba(0,0,0,.14)] transition active:scale-[.98]">로그인</button>
+      <button type="button" onClick={() => moveTo('login')} className="h-[52px] w-full rounded-full bg-[#0a0a0a] text-base font-[600] text-white shadow-[0_8px_22px_rgba(0,0,0,.14)] transition active:scale-[.98]">로그인</button>
       <p className="pb-2 pt-4 text-center text-xs text-[#8e8e93]">처음이신가요? <button type="button" onClick={() => moveTo('signup')} className="font-medium text-[#3a3a3c] underline underline-offset-2">회원가입</button></p>
     </div>
     <PrototypeHomeIndicator/>
@@ -74,8 +74,8 @@ export function AuthPage() {
 
       <div className="flex-1"/>
       {demo.isError && <p role="alert" className="mb-2 text-center text-xs text-danger">데모를 준비하지 못했어요. 다시 시도해주세요.</p>}
-      <button type="submit" disabled={auth.isPending || !username || !password || (signup && (!usernameValid || !passwordValid))} className="h-[52px] w-full rounded-full bg-[#0a0a0a] text-base font-medium text-white shadow-[0_8px_22px_rgba(0,0,0,.14)] transition active:scale-[.98] disabled:bg-[#e5e5ea] disabled:text-[#c7c7cc] disabled:shadow-none disabled:active:scale-100">{signup ? '회원가입' : '로그인'}</button>
-      <button type="button" disabled={demo.isPending} onClick={() => demo.mutate()} className="mt-3 h-[52px] w-full rounded-full border border-[#202329] bg-white text-sm font-medium text-[#202329] transition hover:bg-[#f7f9fd] active:scale-[.98] disabled:cursor-wait disabled:border-[#d9dde4] disabled:text-[#a7abb2]">{demo.isPending ? '데모 준비 중…' : '기록이 있는 데모로 둘러보기'}</button>
+      <button type="submit" disabled={auth.isPending || !username || !password || (signup && (!usernameValid || !passwordValid))} className="h-[52px] w-full rounded-full bg-[#0a0a0a] text-base font-[600] text-white shadow-[0_8px_22px_rgba(0,0,0,.14)] transition active:scale-[.98] disabled:bg-[#e5e5ea] disabled:text-[#c7c7cc] disabled:shadow-none disabled:active:scale-100">{signup ? '회원가입' : '로그인'}</button>
+      <button type="button" disabled={demo.isPending} onClick={() => demo.mutate()} className="mt-3 h-[52px] w-full rounded-full border border-[#202329] bg-white text-sm font-[600] text-[#202329] transition hover:bg-[#f7f9fd] active:scale-[.98] disabled:cursor-wait disabled:border-[#d9dde4] disabled:text-[#a7abb2]">{demo.isPending ? '데모 준비 중…' : '기록이 있는 데모로 둘러보기'}</button>
       <p className="pb-2 pt-4 text-center"><button type="button" onClick={() => moveTo('welcome')} className="inline-flex items-center gap-1 text-xs text-[#7f8792] transition hover:text-black"><span aria-hidden="true">←</span> 처음 화면으로</button></p>
     </form>
     <PrototypeHomeIndicator/>
