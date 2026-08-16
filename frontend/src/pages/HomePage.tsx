@@ -39,16 +39,15 @@ export function HomePage() {
           : <EmptyExperienceCard productCount={data.productCount}/>}
       </div>
 
-      <section className="mt-5 overflow-hidden rounded-[24px] border border-black/[.055] bg-white shadow-[0_10px_28px_rgba(0,0,0,.09)]" aria-label="AI와 화장품 탐색">
-        <button type="button" onClick={() => navigate('/ai')} className="group flex min-h-[104px] w-full items-center gap-4 bg-[#050505] px-5 py-4 text-left text-white transition hover:bg-black active:bg-[#111]">
+      <section className="mt-5" aria-label="AI와 화장품 탐색">
+        <button type="button" onClick={() => navigate('/ai')} className="group flex min-h-[104px] w-full items-center gap-4 overflow-hidden rounded-[24px] bg-[#050505] px-5 py-4 text-left text-white shadow-[0_10px_26px_rgba(0,0,0,.14)] transition hover:bg-black active:scale-[.99]">
           <span className="grid size-11 shrink-0 place-items-center text-[#dce6ff]"><Sparkles size={30} strokeWidth={1.45}/></span>
           <span className="min-w-0 flex-1"><span className="block text-xs font-medium leading-5 text-[#cdd0d6]">SKN AI에게 편하게 물어보세요.</span><strong className="mt-0.5 block text-base font-semibold leading-[1.35] tracking-[-.02em]">피부에 대해 궁금한 게 있나요?</strong></span>
           <ChevronRight size={24} className="shrink-0 text-white/75 transition group-hover:translate-x-0.5"/>
         </button>
-        <button type="button" onClick={() => setProductAddOpen(true)} className="group flex min-h-[82px] w-full items-center gap-3.5 border-t border-black/[.055] bg-[linear-gradient(110deg,#f8faff_0%,#f4f7fc_100%)] px-5 py-3.5 text-left transition hover:bg-white active:bg-[#f1f4f9]">
-          <span className="grid size-10 shrink-0 place-items-center rounded-[15px] bg-white text-[#60779f] shadow-[0_5px_16px_rgba(65,91,136,.10)]"><Search size={19} strokeWidth={1.8}/></span>
-          <span className="min-w-0 flex-1"><span className="block text-[11px] font-medium leading-4 text-[#687b9b]">추천받거나 검색해 MY LAB에 담아보세요.</span><strong className="mt-0.5 block text-[15px] font-semibold leading-5 tracking-[-.025em] text-[#1a2230]">궁금한 제품이 있나요?</strong></span>
-          <ChevronRight size={20} className="shrink-0 text-[#7892bb] transition group-hover:translate-x-0.5"/>
+        <button type="button" onClick={() => setProductAddOpen(true)} className="group mt-3 flex min-h-[72px] w-full items-center gap-3 rounded-[20px] border border-[#dfe6f2] bg-[#f8faff] px-4 py-3 text-left shadow-[0_6px_20px_rgba(49,73,115,.055)] transition hover:border-[#cfdbea] hover:bg-white active:scale-[.99]">
+          <span className="min-w-0 flex-1"><span className="block text-[10px] font-semibold tracking-[.1em] text-[#7892bb]">MY LAB</span><strong className="mt-1 block text-[14px] font-semibold leading-5 tracking-[-.025em] text-[#1a2230]">궁금한 제품이 있나요?</strong><span className="mt-0.5 block text-[11px] leading-4 text-[#7b8290]">추천받거나 검색해 담아보세요.</span></span>
+          <span className="flex h-11 shrink-0 items-center gap-1.5 rounded-full bg-white px-4 text-[12px] font-semibold text-[#5f7396] shadow-[inset_0_0_0_1px_rgba(207,219,238,.9)] transition group-hover:bg-[#edf3ff]"><Search size={15} strokeWidth={1.9}/>제품 찾기</span>
         </button>
       </section>
 
@@ -110,7 +109,7 @@ function ActiveExperienceCard({ experience, onOpen, onEnd }: { experience: NonNu
 }
 
 function EmptyExperienceCard({ productCount }: { productCount: number }) {
-  return <section className="relative min-h-[300px] overflow-hidden rounded-[30px] border border-[#d8e5fb] shadow-[0_18px_48px_rgba(44,71,122,.16)]">
+  return <section className="relative min-h-[300px] overflow-hidden rounded-[28px] border border-[#dce5f3] shadow-[0_12px_34px_rgba(44,71,122,.11)]">
     <img src={heroWave} alt="" aria-hidden className="absolute inset-0 size-full scale-110 object-cover object-bottom"/>
     <div aria-hidden className="absolute inset-0 bg-[linear-gradient(145deg,rgba(255,255,255,.97)_0%,rgba(244,249,255,.8)_48%,rgba(204,224,255,.2)_100%)]"/>
     <div aria-hidden className="absolute -right-7 top-12 size-44 rounded-full border border-white/70 bg-white/22 shadow-[inset_0_0_34px_rgba(255,255,255,.8),0_14px_34px_rgba(106,143,202,.12)] backdrop-blur-[3px]"/>
@@ -125,7 +124,7 @@ function EmptyExperienceCard({ productCount }: { productCount: number }) {
 
 function InsightCard({ pattern, peek, onOpen }: { pattern: Pattern; peek: boolean; onOpen: () => void }) {
   const graph = insightGraph(pattern)
-  return <button type="button" onClick={onOpen} aria-label={`${pattern.title}, 근거와 함께 보기`} className={`relative min-h-[136px] snap-center overflow-hidden rounded-[23px] bg-[#f5f8ff] px-5 py-4 text-left transition active:scale-[.99] ${peek ? 'w-[94%] shrink-0' : 'w-full'}`}>
+  return <button type="button" onClick={onOpen} aria-label={`${pattern.title}, 근거와 함께 보기`} className={`relative min-h-[136px] snap-center overflow-hidden rounded-[24px] border border-[#dce5f3] bg-[#f5f8ff] px-5 py-4 text-left shadow-[0_8px_26px_rgba(49,73,115,.07)] transition hover:border-[#cfdbea] active:scale-[.99] ${peek ? 'w-[94%] shrink-0' : 'w-full'}`}>
     <svg viewBox="0 0 350 136" preserveAspectRatio="none" aria-hidden="true" className="pointer-events-none absolute inset-0 size-full">
       <path d={`${graph} L350 136 L108 136 Z`} fill="rgba(216,231,255,.56)"/>
       <path d={graph} fill="none" stroke="#c9dcff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke"/>
@@ -142,7 +141,7 @@ function EmptyInsightCard({ recordCount, href }: { recordCount: number; href: st
       ? '아직 비교할 비슷한 경험이 1개뿐이에요. 하나 더 쌓이면 반복된 흐름을 보여드려요.'
       : '아직 서로 비슷한 경험이 충분하지 않아요. 같은 제품이나 루틴의 느낌을 이어서 남겨보세요.'
   return <div className="mt-4">
-    <Link to={href} className="relative block min-h-[136px] overflow-hidden rounded-[23px] bg-[#f5f8ff] px-5 py-4 transition active:scale-[.99]">
+    <Link to={href} className="relative block min-h-[136px] overflow-hidden rounded-[24px] border border-[#dce5f3] bg-[#f5f8ff] px-5 py-4 shadow-[0_8px_26px_rgba(49,73,115,.07)] transition hover:border-[#cfdbea] active:scale-[.99]">
       <svg viewBox="0 0 350 136" preserveAspectRatio="none" aria-hidden="true" className="pointer-events-none absolute inset-0 size-full">
         <path d="M112 122 L158 109 L202 110" fill="none" stroke="#b9d0f6" strokeWidth="3" strokeLinecap="round" vectorEffect="non-scaling-stroke"/>
         <path d="M202 110 L248 84 L294 78 L350 46" fill="none" stroke="#cddbf1" strokeWidth="2" strokeDasharray="6 7" strokeLinecap="round" vectorEffect="non-scaling-stroke"/>
@@ -206,9 +205,9 @@ function ProfilePreview({ recordCount, patterns }: { recordCount: number; patter
     return `${point.x},${point.y}`
   }).join(' ')
 
-  return <section className="mt-11 pb-8" aria-labelledby="profile-preview-title">
-    <Link to="/records" className="flex items-center justify-between"><span><h2 id="profile-preview-title" className="text-lg font-medium tracking-[-.02em]">MY PROFILE</h2><p className="mt-1 text-xs text-[#636366]">나의 경험 지도</p></span><ChevronRight size={24}/></Link>
-    <div className="mt-5 overflow-hidden rounded-[28px] border border-[#d8e5fb] bg-[linear-gradient(155deg,#fbfdff,#eef4ff)] p-4 shadow-[0_14px_38px_rgba(68,98,151,.08)]">
+  return <section className="mt-10 pb-8" aria-labelledby="profile-preview-title">
+    <Link to="/records" className="flex items-end justify-between gap-4"><span><h2 id="profile-preview-title" className="text-lg font-semibold tracking-[-.025em]">MY PROFILE</h2><p className="mt-1 text-[11px] leading-5 text-[#747b86]">나의 경험 지도</p></span><span className="inline-flex shrink-0 items-center gap-0.5 pb-0.5 text-[11px] font-semibold text-[#667085]">전체 보기<ChevronRight size={13}/></span></Link>
+    <div className="mt-4 overflow-hidden rounded-[24px] border border-[#dce5f3] bg-[linear-gradient(155deg,#fbfdff,#eef4ff)] p-4 shadow-[0_8px_26px_rgba(49,73,115,.07)]">
       <span className="inline-flex rounded-full bg-white/85 px-3 py-2 text-[11px] font-medium text-[#52678c] shadow-[inset_0_0_0_1px_rgba(201,218,248,.75)]">{hasProfile ? `발견한 흐름 ${fields.length}개` : recordCount ? `기록 ${recordCount}건 비교 중` : '첫 기록을 기다리는 중'}</span>
 
       <div className="mx-auto mt-1 aspect-square w-full max-w-[236px]">
