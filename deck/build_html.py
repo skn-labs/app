@@ -62,12 +62,12 @@ def SD(html): SLIDES.append(f'<section class="slide dark">{html}</section>')
 
 # ---------- 01 TITLE ----------
 S(f"""
-<img class="orb" src="{ORB}" style="right:40px;top:150px;width:470px">
+<img class="orb" src="{ORB}" style="right:8px;top:160px;width:436px">
 <div class="pad">
   <img src="{LOGO}" style="height:42px">
   <span class="tag" style="position:absolute;right:76px;top:74px">AI · WELLNESS</span>
-  <h1 style="font-size:62px;margin-top:150px">써본 만큼,<br>나를 더 잘 알게 되는<br><span class="a" style="font-weight:500">스킨케어 경험 아카이브</span></h1>
-  <p class="sub" style="font-size:19px;margin-top:44px;line-height:1.5">화장품을 지나가는 경험으로 두지 않습니다.<br><b style="color:var(--ink);font-weight:600">AI가 내 기록에서 반복된 기준을 찾아 다음 탐색에 돌려줍니다.</b></p>
+  <h1 style="font-size:47px;margin-top:152px">매번 새로 사는데, 매번 처음이라면 —<br><span class="a" style="font-weight:600">AI가 내 스킨케어 경험을 나만의 기준으로.</span></h1>
+  <p class="sub" style="font-size:18px;margin-top:38px;line-height:1.6;max-width:770px"><b style="color:var(--ink);font-weight:600">스킨케어 헤비유저를 위한 AI 경험 아카이브.</b> 흩어지던 사용 경험이 쌓여 — 개인의 기준이자, <b style="color:var(--ink);font-weight:600">브랜드도 갖지 못한 실사용 데이터</b>가 됩니다.</p>
   <hr class="hr" style="position:absolute;left:76px;right:76px;bottom:78px">
   <div style="position:absolute;left:76px;bottom:44px" class="tag">PERSONAL SKINCARE EXPERIENCE ARCHIVE</div>
   <div style="position:absolute;right:76px;bottom:44px;font-size:15px;color:var(--accent);font-weight:600">skn-labs.vercel.app</div>
@@ -432,8 +432,8 @@ SD(f"""
 <img class="orb" src="{ORB}" style="right:60px;top:150px;width:430px;opacity:.9">
 <div class="pad">
   <img src="{LOGOP}" style="height:38px">
-  <h1 style="font-size:58px;margin-top:170px;font-weight:300">결국 남아야 할 것은,<br><span class="a" style="font-weight:500">사용자의 피부와 경험.</span></h1>
-  <p style="color:var(--subon);font-size:18px;margin-top:40px">써본 만큼 나를 더 잘 알게 되는 스킨케어 경험 아카이브.</p>
+  <h1 style="font-size:56px;margin-top:168px;font-weight:300">매번 처음이던 스킨케어에,<br><span class="a" style="font-weight:500">이제 나만의 기준을.</span></h1>
+  <p style="color:var(--subon);font-size:18px;margin-top:38px">그 경험은 개인의 기준이자, 브랜드도 갖지 못한 데이터가 됩니다 — SKN.</p>
   <hr class="hr" style="position:absolute;left:76px;right:76px;bottom:78px">
   <div style="position:absolute;left:76px;bottom:44px;font-size:15px;color:var(--sageon);font-weight:600">skn-labs.vercel.app</div>
   <div style="position:absolute;right:76px;bottom:44px" class="tag">AI · WELLNESS</div>

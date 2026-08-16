@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, PropsWithChildren, ReactNode } from 'react'
+import type { ButtonHTMLAttributes, ImgHTMLAttributes, PropsWithChildren, ReactNode, SyntheticEvent } from 'react'
 import { useEffect, useRef, useState } from 'react'
 import { Bot, ChevronLeft, CircleUserRound, FlaskConical, Home, MessageCircle, NotebookText, Sparkles, X } from 'lucide-react'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
@@ -56,12 +56,11 @@ type FloatingAddButtonProps = {
 
 export function FloatingAddButton({ label, kind, to, onClick }: FloatingAddButtonProps) {
   const common = 'pointer-events-auto bg-[#0a0a0a] text-white shadow-[0_12px_30px_rgba(0,0,0,.28)] transition duration-200 hover:-translate-y-0.5 hover:bg-black hover:shadow-[0_16px_34px_rgba(0,0,0,.32)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-4 active:translate-y-0 active:scale-95'
-  const className = kind === 'product'
-    ? `${common} grid size-14 place-items-center rounded-[20px]`
-    : `${common} flex h-14 items-center gap-2 rounded-full px-5 text-[13px] font-[600] tracking-[-.02em]`
+  const className = `${common} flex h-14 items-center gap-2 rounded-full px-5`
+  const textClassName = 'text-[13px] font-[600] leading-none tracking-[-.02em]'
   const content = kind === 'product'
-    ? <ActionIcon name="product-add" className="size-7"/>
-    : <><ActionIcon name="routine-add" className="size-[22px]"/><span>새 루틴</span></>
+    ? <><ActionIcon name="product-add" className="size-[22px]"/><span className={textClassName}>화장품 추가</span></>
+    : <><ActionIcon name="routine-add" className="size-[22px]"/><span className={textClassName}>새 루틴</span></>
   return <div className="pointer-events-none fixed inset-x-0 bottom-28 z-20 mx-auto flex max-w-[430px] justify-end px-5">
     {to
       ? <Link to={to} aria-label={label} className={className}>{content}</Link>
@@ -110,6 +109,44 @@ export function Eyebrow({ children, className = '' }: PropsWithChildren<{ classN
   return <p className={twMerge('text-xs font-medium uppercase tracking-[.07em] text-muted', className)}>{children}</p>
 }
 
+function isAnimatedProductSource(src: string) {
+  return /\.gif(?:$|[?#])/i.test(src)
+}
+
+/** Animated catalog sources are presented as a static first-frame preview. */
+export function StaticProductImage({ src, alt = '', className = '', onLoad, ...props }: Omit<ImgHTMLAttributes<HTMLImageElement>, 'src'> & { src: string }) {
+  const canvas = useRef<HTMLCanvasElement>(null)
+  const [frozenSrc, setFrozenSrc] = useState<string>()
+  const animated = isAnimatedProductSource(src)
+  const frozen = animated && frozenSrc === src
+
+  const freezeFirstFrame = (event: SyntheticEvent<HTMLImageElement>) => {
+    onLoad?.(event)
+    if (!animated) return
+    const image = event.currentTarget
+    const target = canvas.current
+    const context = target?.getContext('2d')
+    if (!target || !context || !image.naturalWidth || !image.naturalHeight) return
+    const maxEdge = 4096
+    const maxPixels = 4_194_304
+    const scale = Math.min(
+      1,
+      maxEdge / Math.max(image.naturalWidth, image.naturalHeight),
+      Math.sqrt(maxPixels / (image.naturalWidth * image.naturalHeight)),
+    )
+    target.width = Math.max(1, Math.round(image.naturalWidth * scale))
+    target.height = Math.max(1, Math.round(image.naturalHeight * scale))
+    context.drawImage(image, 0, 0, target.width, target.height)
+    setFrozenSrc(src)
+  }
+
+  if (!animated) return <img {...props} src={src} alt={alt} className={className} onLoad={onLoad}/>
+  return <>
+    <img {...props} src={src} alt="" aria-hidden="true" className={twMerge(className, frozen ? 'hidden' : 'invisible')} onLoad={freezeFirstFrame}/>
+    <canvas ref={canvas} role={alt ? 'img' : undefined} aria-label={alt || undefined} aria-hidden={!alt} className={twMerge(className, !frozen && 'hidden')}/>
+  </>
+}
+
 export function ProductGlyph({ category = '제품', size = 'md', src }: { category?: string; size?: 'xs' | 'sm' | 'md' | 'lg'; src?: string }) {
   const [failed, setFailed] = useState(false)
   const isDropper = /세럼|앰플/.test(category)
@@ -117,7 +154,7 @@ export function ProductGlyph({ category = '제품', size = 'md', src }: { catego
   const dims = size === 'lg' ? 'h-48 w-36' : size === 'sm' ? 'h-14 w-12' : size === 'xs' ? 'h-12 w-11' : 'h-24 w-18'
   if (src && !failed) {
     return <div className={twMerge('shrink-0 overflow-hidden rounded-2xl border border-line bg-white', dims)}>
-      <img src={src} alt={category} loading="lazy" referrerPolicy="no-referrer" onError={() => setFailed(true)} className="h-full w-full object-contain p-1.5"/>
+      <StaticProductImage src={src} alt={category} loading="lazy" referrerPolicy="no-referrer" onError={() => setFailed(true)} className="h-full w-full object-contain p-1.5"/>
     </div>
   }
   return <div className={twMerge('relative grid shrink-0 place-items-end', dims)} aria-hidden="true">

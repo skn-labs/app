@@ -55,12 +55,14 @@ export type RoutineItem = {
 
 export type RoutineItemInput = { userProductId: number; timeSlot: 'MORNING' | 'EVENING' | 'BOTH'; frequency: string }
 
+export type RoutineInsight = { text: string; keywords: string[]; generatedAt: string }
+
 export type Routine = {
   id: number; name: string; dayPart: 'MORNING' | 'EVENING' | 'ANYTIME';
-  status: string; startedAt: string; items: RoutineItem[];
+  status: string; startedAt: string; items: RoutineItem[]; insight?: RoutineInsight;
 }
 
-export type RoutineNameSuggestion = { name: string; aiGenerated: boolean }
+export type RoutineNameSuggestion = { name: string; aiGenerated: boolean; insight?: RoutineInsight }
 
 export type ExperienceRecord = {
   id: number; sessionId?: number; userProductId?: number; productName: string;
@@ -69,11 +71,16 @@ export type ExperienceRecord = {
   tags: string[]; createdAt: string;
 }
 
+export type ExperienceRecordSummary = {
+  totalCount: number; likedCount: number; disappointedCount: number;
+  unsureCount: number; discomfortCount: number;
+}
+
 export type Experience = {
   id: number; subjectType: 'ROUTINE' | 'PRODUCT'; routineId?: number; userProductId?: number;
   title: string; subtitle: string; status: string; startedAt: string; reviewDueAt: string;
   day: number; daysUntilReview: number; reviewDue: boolean; routine?: Routine;
-  product?: UserProduct; latestRecord?: ExperienceRecord;
+  product?: UserProduct; latestRecord?: ExperienceRecord; recordSummary: ExperienceRecordSummary;
 }
 
 export type PatternEvidence = {

@@ -25,7 +25,6 @@ const RecordsPage = lazy(() => import('./pages/RecordsPages').then(module => ({ 
 const ProfileEditPage = lazy(() => import('./pages/RecordsPages').then(module => ({ default: module.ProfileEditPage })))
 const RoutineDetailPage = lazy(() => import('./pages/RoutinesPages').then(module => ({ default: module.RoutineDetailPage })))
 const RoutineListPage = lazy(() => import('./pages/RoutinesPages').then(module => ({ default: module.RoutineListPage })))
-const ExperienceHubPage = lazy(() => import('./pages/ExperienceHubPage').then(module => ({ default: module.ExperienceHubPage })))
 const NotificationsPage = lazy(() => import('./pages/NotificationsPage').then(module => ({ default: module.NotificationsPage })))
 
 export default function App() {
@@ -53,7 +52,6 @@ export default function App() {
     : <Routes>
     <Route path="/" element={<HomePage/>}/>
     <Route path="/explore" element={<ExplorePage/>}/>
-    <Route path="/experience" element={<ExperienceHubPage/>}/>
     <Route path="/products/:id" element={<ProductPage/>}/>
     <Route path="/my-products" element={<ShelfPage/>}/>
     <Route path="/my-products/:id" element={<CustomProductPage/>}/>

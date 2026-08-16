@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { ArrowRight, ChevronRight, Search } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
@@ -7,7 +7,6 @@ import { startChatPath } from '../lib/chat'
 import type { Home, Pattern } from '../lib/types'
 import { ActionIcon } from '../components/ActionIcon'
 import { ExperienceActionIcon } from '../components/ExperienceActionIcon'
-import { ExperienceRecordStatus } from '../components/ExperienceStatusBadge'
 import { AppHeader, BottomSheet, ErrorState, Loading, Screen } from '../components/ui'
 import { ProductAddSheet } from '../components/ProductAddSheet'
 import heroWave from '../assets/figma/hero-wave.webp'
@@ -55,9 +54,9 @@ export function HomePage() {
       </section>
 
       <section className="mt-10" aria-labelledby="home-insight-title">
-        <div className="flex items-end justify-between gap-4"><div><h2 id="home-insight-title" className="text-lg font-semibold tracking-[-.025em]">INSIGHT</h2><p className="mt-1 text-[11px] leading-5 text-[#747b86]">최근 기록을 비교해, 반복된 경험만 연결해요.</p></div>{data.patterns.length > 0 && <Link to="/records" className="shrink-0 pb-0.5 text-[11px] font-semibold text-[#667085]">전체 보기</Link>}</div>
+        <div className="flex items-end justify-between gap-4"><div><h2 id="home-insight-title" className="text-lg font-semibold tracking-[-.025em]">INSIGHT</h2><p className="mt-1 text-[11px] leading-5 text-[#747b86]">최근 기록을 비교해, 반복된 경험만 연결해요.</p></div>{data.patterns.length > 0 && <Link to="/records" className="inline-flex shrink-0 items-center gap-0.5 pb-0.5 text-[11px] font-semibold text-[#667085]">전체 보기<ChevronRight size={13}/></Link>}</div>
         {data.patterns.length
-          ? <div className="hide-scrollbar -mx-5 mt-4 flex snap-x snap-mandatory gap-2.5 overflow-x-auto px-5 pb-1" aria-label="최근 인사이트">{data.patterns.slice(0, 3).map(pattern => <InsightCard key={pattern.id} pattern={pattern} peek={data.patterns.length > 1} onOpen={() => setSelectedInsight(pattern)}/>)}</div>
+          ? <InsightRail patterns={data.patterns.slice(0, 3)} onOpen={setSelectedInsight}/>
           : <EmptyInsightCard recordCount={data.recordCount} href={experience ? `/experiences/${experience.id}/record` : data.productCount ? '/routine/new' : '/explore'}/>}
       </section>
 
@@ -80,6 +79,49 @@ export function HomePage() {
   </Screen>
 }
 
+function InsightRail({ patterns, onOpen }: { patterns: Pattern[]; onOpen: (pattern: Pattern) => void }) {
+  const railRef = useRef<HTMLDivElement>(null)
+  const drag = useRef({ pointerId: -1, startX: 0, scrollLeft: 0, moved: false })
+  const [dragging, setDragging] = useState(false)
+
+  return <div
+    ref={railRef}
+    aria-label="최근 인사이트"
+    className={`hide-scrollbar -mx-5 mt-4 flex select-none gap-2.5 overflow-x-auto px-5 pb-1 ${dragging ? 'cursor-grabbing snap-none' : 'cursor-grab snap-x snap-mandatory'}`}
+    onPointerDown={event => {
+      if (event.pointerType !== 'mouse' || event.button !== 0) return
+      drag.current = { pointerId: event.pointerId, startX: event.clientX, scrollLeft: event.currentTarget.scrollLeft, moved: false }
+      event.currentTarget.setPointerCapture(event.pointerId)
+      setDragging(true)
+    }}
+    onPointerMove={event => {
+      if (drag.current.pointerId !== event.pointerId) return
+      const distance = event.clientX - drag.current.startX
+      if (Math.abs(distance) > 4) drag.current.moved = true
+      event.currentTarget.scrollLeft = drag.current.scrollLeft - distance
+    }}
+    onPointerUp={event => {
+      if (drag.current.pointerId !== event.pointerId) return
+      if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId)
+      drag.current.pointerId = -1
+      setDragging(false)
+    }}
+    onPointerCancel={() => {
+      drag.current.pointerId = -1
+      drag.current.moved = false
+      setDragging(false)
+    }}
+    onClickCapture={event => {
+      if (!drag.current.moved) return
+      event.preventDefault()
+      event.stopPropagation()
+      drag.current.moved = false
+    }}
+  >
+    {patterns.map(pattern => <InsightCard key={pattern.id} pattern={pattern} peek={patterns.length > 1} onOpen={() => onOpen(pattern)}/>)}
+  </div>
+}
+
 function ActiveExperienceCard({ experience, onOpen, onRecord }: { experience: NonNullable<Home['currentExperience']>; onOpen: () => void; onRecord: () => void }) {
   const day = Math.max(1, Math.min(7, experience.day))
   const subjectLabel = experience.subjectType === 'ROUTINE' ? '지금 연구 중인 루틴' : '지금 연구 중인 제품'
@@ -93,11 +135,10 @@ function ActiveExperienceCard({ experience, onOpen, onRecord }: { experience: No
       <div className="min-h-0 flex-1 pt-[clamp(8px,2.8vw,12px)]">
         <h2 className="line-clamp-1 max-w-[290px] text-[clamp(20px,5.6vw,24px)] font-semibold leading-[1.16] tracking-[-.04em] text-[#101725]">{experience.title}</h2>
         <p className="mt-1 line-clamp-1 text-xs font-medium leading-5 tracking-[-.015em] text-[#52647f]">{experience.subtitle}</p>
-        <ExperienceRecordStatus record={experience.latestRecord} className="mt-2"/>
       </div>
       <div className="grid grid-cols-2 gap-2.5 px-0.5">
-        <button type="button" onClick={onOpen} className="flex h-[clamp(43px,11.8vw,46px)] min-w-0 items-center justify-center gap-1.5 rounded-[15px] border border-[#cad5e5]/80 bg-white/90 px-2 text-[12.5px] font-bold leading-none tracking-[-.02em] text-[#27354b] shadow-[0_4px_13px_rgba(43,65,102,.10)] backdrop-blur-md transition hover:border-[#b9c7dc] hover:bg-white active:scale-[.98]"><ActionIcon name="progress" className="size-[18px] shrink-0"/><span className="whitespace-nowrap">진행 상황 보기</span></button>
-        <button type="button" onClick={onRecord} className="flex h-[clamp(43px,11.8vw,46px)] min-w-0 items-center justify-center gap-1.5 rounded-[15px] border border-[#111722] bg-[#111722] px-2 text-[12.5px] font-bold leading-none tracking-[-.02em] text-white shadow-[0_5px_15px_rgba(17,23,34,.18)] transition hover:bg-black active:scale-[.98]"><ExperienceActionIcon name="feeling" className="size-[18px] shrink-0"/><span className="whitespace-nowrap">느낌 남기기</span></button>
+        <button type="button" onClick={onOpen} className="flex h-[clamp(43px,11.8vw,46px)] min-w-0 items-center justify-center gap-1.5 rounded-[15px] border border-[#cad5e5]/80 bg-white/90 px-2 text-[11.5px] font-[600] leading-none tracking-[-.02em] text-[#27354b] shadow-[0_4px_13px_rgba(43,65,102,.10)] backdrop-blur-md transition hover:border-[#b9c7dc] hover:bg-white active:scale-[.98]"><ActionIcon name="progress" className="size-[18px] shrink-0"/><span className="whitespace-nowrap">진행 상황 보기</span></button>
+        <button type="button" onClick={onRecord} className="flex h-[clamp(43px,11.8vw,46px)] min-w-0 items-center justify-center gap-1.5 rounded-[15px] border border-[#111722] bg-[#111722] px-2 text-[11.5px] font-[600] leading-none tracking-[-.02em] text-white shadow-[0_5px_15px_rgba(17,23,34,.18)] transition hover:bg-black active:scale-[.98]"><ExperienceActionIcon name="feeling" className="size-[18px] shrink-0"/><span className="whitespace-nowrap">기록 남기기</span></button>
       </div>
     </div>
   </section>
@@ -111,7 +152,7 @@ function EmptyExperienceCard({ productCount }: { productCount: number }) {
     <img src="/skn-assets/onboarding-orb.png" alt="" aria-hidden className="absolute right-2 top-16 size-28 object-contain opacity-80"/>
     <div className="relative flex min-h-[300px] flex-col p-5">
       <span className="w-fit rounded-full bg-white/72 px-3 py-2 text-xs font-medium text-[#52678c] backdrop-blur">START YOUR SKN</span>
-      <div className="my-auto max-w-[285px]"><h2 className="text-[28px] font-medium leading-[1.16] tracking-[-.045em]">첫 기록부터<br/>나만의 기준이 생겨요.</h2><p className="mt-3 max-w-[265px] text-sm leading-6 text-black/52">{productCount ? '가지고 있는 화장품으로 실제 사용 조합을 만들고, 느낀 순간을 이어보세요.' : '화장품 하나를 담으면 제품·루틴·경험이 연결되는 나만의 아카이브가 시작돼요.'}</p></div>
+      <div className="my-auto max-w-[285px]"><h2 className="text-[28px] font-medium leading-[1.16] tracking-[-.045em]">첫 기록부터<br/>나만의 기준이 생겨요.</h2><p className="mt-3 max-w-[265px] text-sm leading-6 text-black/52">{productCount ? '가지고 있는 화장품으로 실제 사용 조합을 만들고, 사용한 순간을 기록해보세요.' : '화장품 하나를 담으면 제품·루틴·경험이 연결되는 나만의 아카이브가 시작돼요.'}</p></div>
       <Link to={productCount ? '/routine/edit' : '/explore'} className="flex h-[54px] w-full items-center justify-center gap-1.5 rounded-full bg-black text-[13px] font-semibold leading-none tracking-[-.015em] text-white shadow-[0_9px_24px_rgba(0,0,0,.18)] transition active:scale-[.98]">{productCount ? '새 경험 시작하기' : '첫 화장품 담기'}<ArrowRight size={17}/></Link>
     </div>
   </section>
@@ -134,7 +175,7 @@ function EmptyInsightCard({ recordCount, href }: { recordCount: number; href: st
     ? '아직 비교할 경험이 없어요. 첫 경험을 남기면 다음 기록부터 서로 살펴봐요.'
     : recordCount === 1
       ? '아직 비교할 비슷한 경험이 1개뿐이에요. 하나 더 쌓이면 반복된 흐름을 보여드려요.'
-      : '아직 서로 비슷한 경험이 충분하지 않아요. 같은 제품이나 루틴의 느낌을 이어서 남겨보세요.'
+      : '아직 서로 비슷한 경험이 충분하지 않아요. 같은 제품이나 루틴의 사용 기록을 조금 더 남겨보세요.'
   return <div className="mt-4">
     <Link to={href} className="relative block min-h-[136px] overflow-hidden rounded-[24px] border border-[#dce5f3] bg-[#f5f8ff] px-5 py-4 shadow-[0_8px_26px_rgba(49,73,115,.07)] transition hover:border-[#cfdbea] active:scale-[.99]">
       <svg viewBox="0 0 350 136" preserveAspectRatio="none" aria-hidden="true" className="pointer-events-none absolute inset-0 size-full">
@@ -162,7 +203,7 @@ function InsightEvidenceSheet({ pattern, onClose }: { pattern: Pattern | null; o
     <section className="mt-5 border-t border-[#dfe4eb]" aria-labelledby="home-insight-evidence-title">
       <h4 id="home-insight-evidence-title" className="pb-1 pt-4 text-[10px] font-semibold text-[#747d8a]">연결된 기록</h4>
       {visibleEvidence.length ? visibleEvidence.map(item => <article key={item.recordId} className="border-b border-[#e4e8ee] py-3.5">
-        <div className="flex items-center justify-between gap-3"><p className="text-[9px] font-semibold text-[#7b8799]">{item.polarity === 'SUPPORTS' ? '같은 방향의 기록' : '다르게 느낀 기록'}</p><time className="text-[9px] text-[#939aa5]">{formatInsightDate(item.createdAt)}</time></div>
+        <div className="flex items-center justify-between gap-3"><p className="text-[9px] font-semibold text-[#7b8799]">{item.polarity === 'SUPPORTS' ? '같은 방향의 기록' : '다른 방향의 기록'}</p><time className="text-[9px] text-[#939aa5]">{formatInsightDate(item.createdAt)}</time></div>
         <p className="mt-1.5 text-[12px] font-medium leading-[1.55] tracking-[-.015em]">“{item.note}”</p>
         <p className="mt-1 text-[9px] text-[#858d99]">{item.productName}</p>
       </article>) : <p className="border-b border-[#e4e8ee] py-4 text-[11px] leading-5 text-[#7c8491]">원본 기록은 상세 화면에서 확인할 수 있어요.</p>}

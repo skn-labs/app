@@ -52,6 +52,47 @@ class CoreFlowIntegrationTest {
     }
 
     @Test
+    void activeRoutineExperienceReturnsAccumulatedRecordSummary() throws Exception {
+        MockHttpSession session = signUpSession("record_summary_user");
+        long userProductId = addProduct(session, 1);
+        String experienceBody = mvc.perform(post("/api/v1/me/experiences").session(session)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"userProductId":%d,"mode":"ROUTINE","dayPart":"EVENING","clientRequestId":"summary-session"}
+                                """.formatted(userProductId)))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        long experienceId = json.readTree(experienceBody).path("id").asLong();
+
+        mvc.perform(post("/api/v1/me/experiences/{id}/records", experienceId).session(session)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"sentiment":"LIKED","note":"아침에는 편했어요","tags":[],"discomfort":"NOT_REPORTED","clientRequestId":"summary-record-1"}
+                                """))
+                .andExpect(status().isCreated());
+        mvc.perform(post("/api/v1/me/experiences/{id}/records", experienceId).session(session)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"sentiment":"DISAPPOINTED","note":"저녁에는 답답했어요","tags":["답답함"],"discomfort":"REPORTED","clientRequestId":"summary-record-2"}
+                                """))
+                .andExpect(status().isCreated());
+        mvc.perform(post("/api/v1/me/experiences/{id}/records", experienceId).session(session)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"sentiment":"LIKED","note":"다음 날은 괜찮았어요","tags":[],"discomfort":"UNKNOWN","clientRequestId":"summary-record-3"}
+                                """))
+                .andExpect(status().isCreated());
+
+        mvc.perform(get("/api/v1/home").session(session))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.currentExperience.recordSummary.totalCount").value(3))
+                .andExpect(jsonPath("$.currentExperience.recordSummary.likedCount").value(2))
+                .andExpect(jsonPath("$.currentExperience.recordSummary.disappointedCount").value(1))
+                .andExpect(jsonPath("$.currentExperience.recordSummary.unsureCount").value(0))
+                .andExpect(jsonPath("$.currentExperience.recordSummary.discomfortCount").value(1));
+    }
+
+    @Test
     @Transactional
     void productCatalogUsesStableCursorPages() throws Exception {
         insertCatalogProduct(1722, "라운드랩", "자작나무 수분 선크림", "선크림");
@@ -841,7 +882,7 @@ class CoreFlowIntegrationTest {
         mvc.perform(get("/api/v1/me/patterns").session(session))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].supportingCount").value(2))
-                .andExpect(jsonPath("$[0].title").value("가벼움을 좋게 느낀 경험이 반복됐어요"));
+                .andExpect(jsonPath("$[0].title").value("가벼움이 좋았다고 남긴 기록이 반복됐어요"));
     }
 
     @Test
@@ -885,6 +926,26 @@ class CoreFlowIntegrationTest {
                 .andExpect(jsonPath("$.name").value("아침과 저녁에 쓰는 루틴"))
                 .andExpect(jsonPath("$.aiGenerated").value(false));
 
+        jdbc.update("""
+                INSERT INTO routine_insight(
+                    routine_id, insight_text, model, prompt_version, input_snapshot_json
+                ) VALUES (?, ?, 'test-model', 'routine-insight-test', '{}')
+                """, routineId, "가벼운 사용감을 편하게 느낀 흐름을 이어가는 아침과 저녁 조합이에요.");
+        jdbc.update("INSERT INTO routine_insight_keyword(routine_id, position, keyword) VALUES (?, 0, '가벼운 마무리')", routineId);
+        jdbc.update("INSERT INTO routine_insight_keyword(routine_id, position, keyword) VALUES (?, 1, '아침 저녁')", routineId);
+        mvc.perform(get("/api/v1/me/routines/{id}", routineId).session(session))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.insight.text")
+                        .value("가벼운 사용감을 편하게 느낀 흐름을 이어가는 아침과 저녁 조합이에요."))
+                .andExpect(jsonPath("$.insight.keywords[0]").value("가벼운 마무리"))
+                .andExpect(jsonPath("$.insight.keywords[1]").value("아침 저녁"));
+        mvc.perform(post("/api/v1/me/routines/{id}/insight", routineId).session(session)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.text")
+                        .value("가벼운 사용감을 편하게 느낀 흐름을 이어가는 아침과 저녁 조합이에요."));
+
         mvc.perform(put("/api/v1/me/routines/{id}/name", routineId).session(session)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -900,6 +961,10 @@ class CoreFlowIntegrationTest {
         mvc.perform(get("/api/v1/me/routines/{id}", routineId).session(other))
                 .andExpect(status().isNotFound());
         mvc.perform(post("/api/v1/me/routines/{id}/name-suggestion", routineId).session(other)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isNotFound());
+        mvc.perform(post("/api/v1/me/routines/{id}/insight", routineId).session(other)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
                 .andExpect(status().isNotFound());

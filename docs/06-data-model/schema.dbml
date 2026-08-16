@@ -108,6 +108,26 @@ Table routine {
   ended_at text
 }
 
+Table routine_insight {
+  routine_id integer [pk, ref: > routine.id]
+  insight_text text [not null, note: '개인 기록·자기보고 맥락에서 AI가 만든 읽기 전용 자유문장']
+  model text [not null]
+  prompt_version text [not null]
+  input_snapshot_json text [not null, default: '{}', note: '사용한 개인 맥락의 종류와 원본 record ID snapshot']
+  generated_at text [not null]
+}
+
+Table routine_insight_keyword {
+  routine_id integer [not null, ref: > routine_insight.routine_id]
+  position integer [not null, note: '0..2']
+  keyword text [not null, note: 'AI가 개인 맥락에서 정리한 짧은 표현']
+
+  indexes {
+    (routine_id, position) [pk]
+    (routine_id, keyword) [unique]
+  }
+}
+
 Table routine_item {
   id integer [pk, increment]
   routine_id integer [not null, ref: > routine.id]

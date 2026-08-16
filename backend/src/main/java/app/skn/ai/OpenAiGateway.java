@@ -130,6 +130,106 @@ public class OpenAiGateway {
         return fallback(mode);
     }
 
+    /**
+     * 루틴 이름과 개인 데이터 기반 도움 문장을 한 번에 만든다. 내용은 한 문장이지만
+     * 전송 계약은 strict JSON Schema로 고정해 UI 필드가 서로 섞이지 않게 한다.
+     */
+    public RoutineIdentityResult routineIdentity(String instructions, String context, String userMessage) {
+        if (!properties.configured()) return routineIdentityFallback();
+
+        String input = """
+                [서버가 확인한 개인 맥락]
+                %s
+
+                [요청]
+                %s
+                """.formatted(context, userMessage);
+        Map<String, Object> schema = Map.of(
+                "type", "object",
+                "properties", Map.of(
+                        "name", Map.of("type", "string", "maxLength", 40),
+                        "insight", Map.of("type", "string", "maxLength", 70),
+                        "keywords", Map.of(
+                                "type", "array",
+                                "minItems", 2,
+                                "maxItems", 3,
+                                "items", Map.of("type", "string", "maxLength", 30)
+                        )
+                ),
+                "required", List.of("name", "insight", "keywords"),
+                "additionalProperties", false
+        );
+        Map<String, Object> request = new LinkedHashMap<>();
+        request.put("model", properties.model());
+        request.put("instructions", instructions);
+        request.put("input", input);
+        request.put("reasoning", Map.of("effort", properties.reasoningEffort()));
+        request.put("text", Map.of("format", Map.of(
+                "type", "json_schema",
+                "name", "skn_routine_identity",
+                "strict", true,
+                "schema", schema
+        )));
+        request.put("max_output_tokens", Math.min(properties.maxOutputTokens(), 900));
+        request.put("store", false);
+
+        for (int attempt = 1; attempt <= 2; attempt++) {
+            try {
+                String body = client.post()
+                        .uri("/responses")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + properties.apiKey())
+                        .body(request)
+                        .retrieve()
+                        .body(String.class);
+                RoutineIdentityResult parsed = parseRoutineIdentity(body);
+                if (parsed.name().isBlank() || parsed.insight().isBlank() || parsed.keywords().size() < 2) {
+                    throw new IllegalStateException("OpenAI 루틴 문장이 비어 있습니다.");
+                }
+                return new RoutineIdentityResult(
+                        parsed.name(), parsed.insight(), parsed.keywords(), "READY", properties.model()
+                );
+            } catch (RestClientResponseException error) {
+                boolean retryable = error.getStatusCode().value() == 429 || error.getStatusCode().is5xxServerError();
+                log.warn("OpenAI routine identity request failed: status={}, attempt={}",
+                        error.getStatusCode().value(), attempt);
+                if (!retryable || attempt == 2) break;
+                if (!waitBeforeRetry(error)) break;
+            } catch (ResourceAccessException error) {
+                log.warn("OpenAI routine identity request timed out: attempt={}", attempt);
+                if (attempt == 2) break;
+            } catch (Exception error) {
+                log.warn("OpenAI routine identity response could not be parsed: type={}",
+                        error.getClass().getSimpleName());
+                break;
+            }
+        }
+        return routineIdentityFallback();
+    }
+
+    RoutineIdentityResult parseRoutineIdentity(String body) throws Exception {
+        JsonNode root = objectMapper.readTree(body);
+        String outputText = null;
+        for (JsonNode output : root.path("output")) {
+            if (!"message".equals(output.path("type").asText())) continue;
+            for (JsonNode content : output.path("content")) {
+                if ("output_text".equals(content.path("type").asText())) {
+                    outputText = content.path("text").asText();
+                }
+            }
+        }
+        if (outputText == null || outputText.isBlank()) {
+            throw new IllegalStateException("OpenAI 응답에 루틴 텍스트가 없습니다.");
+        }
+        JsonNode structured = objectMapper.readTree(outputText);
+        return new RoutineIdentityResult(
+                structured.path("name").asText().trim(),
+                structured.path("insight").asText().trim(),
+                stringArray(structured.path("keywords"), 3, 30),
+                "READY",
+                properties.model()
+        );
+    }
+
     private Map<String, Object> responseSchema() {
         Map<String, Object> classification = Map.of(
                 "type", "object",
@@ -479,8 +579,16 @@ public class OpenAiGateway {
         );
     }
 
+    private RoutineIdentityResult routineIdentityFallback() {
+        return new RoutineIdentityResult("", "", List.of(), "FALLBACK",
+                properties.model() == null ? "unconfigured" : properties.model());
+    }
+
     public record AiResult(String text, String status, List<String> suggestedReplies,
                            List<String> evidenceRefs, List<WebSourceView> webSources) {}
+
+    public record RoutineIdentityResult(String name, String insight, List<String> keywords,
+                                        String status, String model) {}
 
     record ParsedResponse(String answer, List<String> suggestedReplies, List<String> evidenceRefs,
                           List<WebSourceView> webSources) {}

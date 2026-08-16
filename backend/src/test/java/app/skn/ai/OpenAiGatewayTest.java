@@ -74,6 +74,27 @@ class OpenAiGatewayTest {
         assertThat(sourceTier("https://pubmed.ncbi.nlm.nih.gov/1234/", "A randomized study", "P1")).isEqualTo("P3");
     }
 
+    @Test
+    void parsesRoutineIdentityWithAFreeTextInsight() throws Exception {
+        String outputText = json.writeValueAsString(Map.of(
+                "name", "크림으로 마치는 저녁 루틴",
+                "insight", "가벼운 사용감을 편하게 느낀 흐름을 이어, 저녁에는 수분감은 남기되 여러 겹의 답답함은 덜어낸 조합이에요.",
+                "keywords", List.of("가벼운 마무리", "저녁 중심", "촉촉한 사용감")
+        ));
+        String responseBody = json.writeValueAsString(Map.of(
+                "output", List.of(Map.of(
+                        "type", "message",
+                        "content", List.of(Map.of("type", "output_text", "text", outputText))
+                ))
+        ));
+
+        OpenAiGateway.RoutineIdentityResult result = gateway.parseRoutineIdentity(responseBody);
+
+        assertThat(result.name()).isEqualTo("크림으로 마치는 저녁 루틴");
+        assertThat(result.insight()).contains("가벼운 사용감").contains("답답함");
+        assertThat(result.keywords()).containsExactly("가벼운 마무리", "저녁 중심", "촉촉한 사용감");
+    }
+
     private String sourceTier(String url, String title, String requestedTier) throws Exception {
         String marker = "\uE200cite\uE202turn0search0\uE201";
         String outputText = json.writeValueAsString(Map.of(

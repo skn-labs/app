@@ -348,8 +348,8 @@ public class ConversationService {
             int recordCount = repository.recordCount();
             return fallbackResult(
                     "지금은 **반복 패턴으로 보여줄 근거가 없어요.** 사용 결과는 " + recordCount
-                            + "건 저장돼 있지만, 같은 느낌이 반복되고 반대 경험도 함께 쌓여야 패턴으로 연결할 수 있어요.",
-                    List.of("최근 사용 결과를 볼래", "새 느낌을 기록할래"), List.of());
+                            + "건 저장돼 있지만, 비슷한 사용 결과가 반복되고 반대 경험도 함께 쌓여야 패턴으로 연결할 수 있어요.",
+                    List.of("최근 사용 결과를 볼래", "새 기록을 남길래"), List.of());
         }
         List<PatternView> visible = patterns.stream().limit(2).toList();
         String details = visible.stream().map(pattern -> "- **" + pattern.title() + "** · 지지 "

@@ -42,6 +42,11 @@ public class RoutineController {
         return service.suggestRoutineName(routineId);
     }
 
+    @PostMapping("/{routineId}/insight")
+    RoutineInsightView generateInsight(@PathVariable long routineId) {
+        return service.generateRoutineInsight(routineId);
+    }
+
     @PutMapping("/{routineId}/name")
     RoutineView rename(@PathVariable long routineId, @Valid @RequestBody RenameRoutineRequest request) {
         return service.renameCurrentRoutine(routineId, request);

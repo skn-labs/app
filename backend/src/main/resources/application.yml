@@ -47,6 +47,14 @@ management:
 app:
   test-harness:
     enabled: ${TEST_HARNESS_ENABLED:false}
+  rate-limit:
+    # OpenAI 를 트리거하는 AI 대화 POST 만 보호한다. 한도는 넉넉해서 정상 사용자는 막히지 않고
+    # 짧은 시간의 과도한 반복 호출만 429 로 차단된다. 인메모리라 서버 재시작 시 초기화된다.
+    enabled: ${RATE_LIMIT_ENABLED:true}
+    per-minute: ${RATE_LIMIT_PER_MINUTE:10}
+    per-hour: ${RATE_LIMIT_PER_HOUR:60}
+    per-day: ${RATE_LIMIT_PER_DAY:200}
+    max-tracked-keys: ${RATE_LIMIT_MAX_TRACKED_KEYS:50000}
   openai:
     api-key: ${OPENAI_API_KEY:}
     model: ${OPENAI_MODEL:gpt-5.6-luna}

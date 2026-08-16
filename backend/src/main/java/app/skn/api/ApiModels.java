@@ -100,7 +100,32 @@ public final class ApiModels {
             String dayPart,
             String status,
             String startedAt,
-            List<RoutineItemView> items
+            List<RoutineItemView> items,
+            RoutineInsightView insight
+    ) {
+        public RoutineView(long id, String name, String dayPart, String status, String startedAt,
+                           List<RoutineItemView> items) {
+            this(id, name, dayPart, status, startedAt, items, null);
+        }
+    }
+
+    /** 저장된 루틴 버전에 귀속된, 수정할 수 없는 개인 데이터 기반 AI 문장이다. */
+    public record RoutineInsightView(
+            String text,
+            List<String> keywords,
+            String generatedAt
+    ) {
+        public RoutineInsightView(String text, String generatedAt) {
+            this(text, List.of(), generatedAt);
+        }
+    }
+
+    public record ExperienceRecordSummaryView(
+            int totalCount,
+            int likedCount,
+            int disappointedCount,
+            int unsureCount,
+            int discomfortCount
     ) {}
 
     public record ExperienceView(
@@ -118,7 +143,8 @@ public final class ApiModels {
             boolean reviewDue,
             RoutineView routine,
             UserProductView product,
-            ExperienceRecordView latestRecord
+            ExperienceRecordView latestRecord,
+            ExperienceRecordSummaryView recordSummary
     ) {}
 
     public record ExperienceRecordView(
@@ -229,8 +255,13 @@ public final class ApiModels {
 
     public record RoutineNameSuggestionView(
             String name,
-            boolean aiGenerated
-    ) {}
+            boolean aiGenerated,
+            RoutineInsightView insight
+    ) {
+        public RoutineNameSuggestionView(String name, boolean aiGenerated) {
+            this(name, aiGenerated, null);
+        }
+    }
 
     public record RenameRoutineRequest(
             @NotBlank @Size(max = 40) String name

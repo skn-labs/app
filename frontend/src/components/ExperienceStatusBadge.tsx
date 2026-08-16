@@ -1,7 +1,8 @@
 import type { HTMLAttributes } from 'react'
-import type { ExperienceRecord } from '../lib/types'
+import type { ExperienceRecord, ExperienceRecordSummary } from '../lib/types'
 
 export type ExperienceSentiment = 'LIKED' | 'DISAPPOINTED' | 'UNSURE'
+export type ExperienceDiscomfort = 'NOT_REPORTED' | 'REPORTED' | 'UNKNOWN'
 export type ExperienceStatus = ExperienceSentiment | 'DISCOMFORT'
 
 const STATUS_STYLE: Record<ExperienceStatus, { label: string; className: string }> = {
@@ -11,12 +12,31 @@ const STATUS_STYLE: Record<ExperienceStatus, { label: string; className: string 
   DISCOMFORT: { label: '불편함', className: 'bg-[#f7e7e7] text-[#964f52]' },
 }
 
-export function ExperienceStatusBadge({ status, size = 'sm', className = '', ...props }: {
+export function ExperienceStatusBadge({ status, size = 'sm', count, className = '', ...props }: {
   status: ExperienceStatus
   size?: 'sm' | 'md'
+  count?: number
 } & HTMLAttributes<HTMLSpanElement>) {
   const style = STATUS_STYLE[status]
-  return <span {...props} data-experience-status={status} className={`inline-flex shrink-0 items-center rounded-[6px] font-semibold leading-none tracking-[-.01em] ${size === 'md' ? 'h-7 gap-1.5 px-2.5 text-[11px]' : 'h-6 gap-1 px-2 text-[10px]'} ${style.className} ${className}`}><StatusGlyph status={status} size={size === 'md' ? 13 : 12}/><span>{style.label}</span></span>
+  return <span aria-label={count ? `${style.label} ${count}번` : undefined} {...props} data-experience-status={status} className={`inline-flex shrink-0 items-center rounded-[6px] font-semibold leading-none tracking-[-.01em] ${size === 'md' ? 'h-7 gap-1.5 px-2.5 text-[11px]' : 'h-6 gap-1 px-2 text-[10px]'} ${style.className} ${className}`}><StatusGlyph status={status} size={size === 'md' ? 13 : 12}/><span>{style.label}</span>{count !== undefined && <span aria-hidden="true" className="tabular-nums opacity-70">{count}</span>}</span>
+}
+
+export function ExperienceStatusSummary({ summary, size = 'sm', emptyLabel = '아직 남긴 기록 없음', className = '' }: {
+  summary: ExperienceRecordSummary
+  size?: 'sm' | 'md'
+  emptyLabel?: string
+  className?: string
+}) {
+  const items = ([
+    { status: 'LIKED', count: summary.likedCount },
+    { status: 'UNSURE', count: summary.unsureCount },
+    { status: 'DISAPPOINTED', count: summary.disappointedCount },
+    { status: 'DISCOMFORT', count: summary.discomfortCount },
+  ] satisfies { status: ExperienceStatus; count: number }[]).filter(item => item.count > 0)
+  if (!items.length) return <span data-experience-status="EMPTY" className={`inline-flex h-6 shrink-0 items-center text-[10px] font-medium text-[#858e9b] ${className}`}>{emptyLabel}</span>
+  return <span role="group" aria-label={`남긴 기록 ${summary.totalCount}개`} className={`hide-scrollbar flex min-w-0 flex-nowrap items-center gap-1 overflow-x-auto ${className}`}>
+    {items.map(item => <ExperienceStatusBadge key={item.status} status={item.status} count={item.count} size={size}/>)}
+  </span>
 }
 
 export function ExperienceStatusGroup({ sentiment, discomfort = 'NOT_REPORTED', size = 'sm', className = '' }: {
@@ -41,10 +61,10 @@ export function ExperienceRecordStatus({ record, emptyLabel = '아직 남긴 기
   return <span data-experience-status="EMPTY" className={`inline-flex h-6 shrink-0 items-center text-[10px] font-medium text-[#858e9b] ${className}`}>{emptyLabel}</span>
 }
 
-const SENTIMENT_OPTIONS: { value: ExperienceSentiment; hint: string }[] = [
-  { value: 'LIKED', hint: '다시 찾고 싶은 사용감' },
-  { value: 'UNSURE', hint: '조금 더 지켜보고 싶어요' },
-  { value: 'DISAPPOINTED', hint: '기대와 달랐던 사용감' },
+const SENTIMENT_OPTIONS: { value: ExperienceSentiment; label: string; hint: string }[] = [
+  { value: 'LIKED', label: '좋았어요', hint: '다시 찾고 싶은 사용감' },
+  { value: 'UNSURE', label: '모르겠어요', hint: '조금 더 지켜보고 싶어요' },
+  { value: 'DISAPPOINTED', label: '아쉬웠어요', hint: '기대와 달랐던 사용감' },
 ]
 
 export function ExperienceSentimentPicker({ value, onChange, disabled = false, compact = false, className = '' }: {
@@ -54,8 +74,8 @@ export function ExperienceSentimentPicker({ value, onChange, disabled = false, c
   compact?: boolean
   className?: string
 }) {
-  return <div role="radiogroup" aria-label="전반적인 인상" className={`overflow-hidden rounded-[18px] border border-[#dde3eb] bg-white ${className}`}>
-    {SENTIMENT_OPTIONS.map((option, index) => {
+  return <div role="radiogroup" aria-label="전반적인 인상" className={`grid grid-cols-3 gap-1 rounded-[17px] border border-[#dfe4eb] bg-[#eef2f7] p-1 ${className}`}>
+    {SENTIMENT_OPTIONS.map(option => {
       const selected = value === option.value
       return <button
         type="button"
@@ -64,39 +84,32 @@ export function ExperienceSentimentPicker({ value, onChange, disabled = false, c
         disabled={disabled}
         key={option.value}
         onClick={() => onChange(option.value)}
-        className={`flex w-full items-center gap-3 px-4 text-left transition disabled:opacity-45 ${compact ? 'min-h-[54px]' : 'min-h-[62px]'} ${index ? 'border-t border-[#e7eaf0]' : ''} ${selected ? 'bg-[#f4f7fc]' : 'bg-white active:bg-[#f7f9fc]'}`}
+        className={`flex min-w-0 flex-col items-center justify-center rounded-[13px] px-1.5 text-center transition disabled:opacity-45 ${compact ? 'min-h-[54px]' : 'min-h-[68px]'} ${selected ? 'bg-white text-[#1b2432] shadow-[0_2px_8px_rgba(38,52,73,.11),inset_0_0_0_1px_rgba(199,208,220,.72)]' : 'text-[#737d8a] active:bg-white/60'}`}
       >
-        <ExperienceStatusBadge status={option.value} size={compact ? 'sm' : 'md'}/>
-        {!compact && <span className="min-w-0 flex-1 text-[11px] font-medium leading-4 text-[#778291]">{option.hint}</span>}
-        <span aria-hidden="true" className={`ml-auto grid size-5 shrink-0 place-items-center rounded-full border ${selected ? 'border-[#657ea6] bg-[#657ea6] text-white' : 'border-[#ccd3dd] bg-white'}`}>
-          {selected && <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="m2.4 6.2 2.15 2.05L9.7 3.8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>}
-        </span>
+        <span className="text-[12px] font-[600] leading-4 tracking-[-.02em]">{option.label}</span>
+        {!compact && <span className="mt-1 text-[9px] font-medium leading-3 text-[#8a929d]">{option.hint}</span>}
       </button>
     })}
   </div>
 }
 
-export function ExperienceDiscomfortToggle({ checked, onChange, disabled = false, className = '' }: {
-  checked: boolean
-  onChange: (checked: boolean) => void
+export function ExperienceDiscomfortPicker({ value, onChange, disabled = false, className = '' }: {
+  value?: ExperienceDiscomfort | ''
+  onChange: (value: ExperienceDiscomfort) => void
   disabled?: boolean
   className?: string
 }) {
-  return <button
-    type="button"
-    aria-pressed={checked}
-    disabled={disabled}
-    onClick={() => onChange(!checked)}
-    className={`flex min-h-[72px] w-full items-center gap-3 rounded-[18px] border px-4 py-3 text-left transition disabled:opacity-45 ${checked ? 'border-[#dfb9ba] bg-[#fff7f7]' : 'border-[#dde3eb] bg-white active:bg-[#f7f9fc]'} ${className}`}
-  >
-    <span className="min-w-0 flex-1">
-      <ExperienceStatusBadge status="DISCOMFORT"/>
-      <span className="mt-1.5 block text-[11px] font-medium leading-[1.55] text-[#727b88]">따가움·붉어짐처럼 피부가 불편했다면 별도로 남겨요.</span>
-    </span>
-    <span aria-hidden="true" className={`grid size-6 shrink-0 place-items-center rounded-[7px] border ${checked ? 'border-[#a95b5e] bg-[#a95b5e] text-white' : 'border-[#cbd2dc] bg-white'}`}>
-      {checked && <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="m2.8 7.2 2.45 2.3 5.9-6" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/></svg>}
-    </span>
-  </button>
+  const options: { value: ExperienceDiscomfort; label: string; selectedClassName: string }[] = [
+    { value: 'NOT_REPORTED', label: '없었어요', selectedClassName: 'border-[#bed0e9] bg-[#edf4ff] text-[#466184]' },
+    { value: 'REPORTED', label: '있었어요', selectedClassName: 'border-[#dfb9ba] bg-[#fff0f0] text-[#8b4d50]' },
+    { value: 'UNKNOWN', label: '모르겠어요', selectedClassName: 'border-[#d6dae1] bg-[#f1f3f6] text-[#5d6877]' },
+  ]
+  return <div role="radiogroup" aria-label="피부 불편함 여부" className={`grid grid-cols-3 gap-1.5 rounded-[18px] border border-[#dfe5ee] bg-white p-1.5 ${className}`}>
+    {options.map(option => {
+      const selected = value === option.value
+      return <button type="button" role="radio" aria-checked={selected} disabled={disabled} key={option.value} onClick={() => onChange(option.value)} className={`flex min-h-12 items-center justify-center rounded-[13px] border text-[12px] font-semibold tracking-[-.015em] transition disabled:opacity-45 ${selected ? option.selectedClassName : 'border-transparent text-[#7f8792] active:bg-[#f5f7fa]'}`}><span>{option.label}</span>{selected && <span aria-hidden="true" className="ml-1 size-1.5 rounded-full bg-current"/>}</button>
+    })}
+  </div>
 }
 
 function StatusGlyph({ status, size }: { status: ExperienceStatus; size: number }) {

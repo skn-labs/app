@@ -1,4 +1,4 @@
-import type { AppNotification, Auth, Conversation, Experience, ExperienceRecord, Home, NotificationInbox, OnboardingResult, Pattern, Preference, Product, ProductPage, QuickAccount, Routine, RoutineItemInput, RoutineNameSuggestion, SavedRecord, SkinProfile, UserProduct } from './types'
+import type { AppNotification, Auth, Conversation, Experience, ExperienceRecord, Home, NotificationInbox, OnboardingResult, Pattern, Preference, Product, ProductPage, QuickAccount, Routine, RoutineInsight, RoutineItemInput, RoutineNameSuggestion, SavedRecord, SkinProfile, UserProduct } from './types'
 
 export class ApiError extends Error {
   status: number
@@ -52,6 +52,7 @@ export const api = {
   routine: (id: number) => request<Routine>(`/api/v1/me/routines/${id}`),
   replaceRoutine: (name: string, items: RoutineItemInput[], idempotencyKey: string = uid()) => request<Experience>('/api/v1/me/routines/current', { method: 'PUT', headers: { 'Idempotency-Key': idempotencyKey }, body: JSON.stringify({ name, items }) }),
   suggestRoutineName: (id: number) => request<RoutineNameSuggestion>(`/api/v1/me/routines/${id}/name-suggestion`, { method: 'POST', body: '{}' }),
+  generateRoutineInsight: (id: number) => request<RoutineInsight>(`/api/v1/me/routines/${id}/insight`, { method: 'POST', body: '{}' }),
   renameRoutine: (id: number, name: string) => request<Routine>(`/api/v1/me/routines/${id}/name`, { method: 'PUT', body: JSON.stringify({ name }) }),
   startExperience: (userProductId: number, mode: 'PRODUCT' | 'ROUTINE', dayPart = 'EVENING') => request<Experience>('/api/v1/me/experiences', { method: 'POST', body: JSON.stringify({ userProductId, mode, dayPart, clientRequestId: uid() }) }),
   experience: (id: number) => request<Experience>(`/api/v1/me/experiences/${id}`),

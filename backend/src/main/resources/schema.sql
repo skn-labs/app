@@ -364,6 +364,25 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_current_routine_per_user
     ON routine(user_id)
     WHERE status = 'CURRENT';
 
+CREATE TABLE IF NOT EXISTS routine_insight (
+    routine_id INTEGER PRIMARY KEY,
+    insight_text TEXT NOT NULL CHECK (length(insight_text) BETWEEN 1 AND 500),
+    model TEXT NOT NULL,
+    prompt_version TEXT NOT NULL,
+    input_snapshot_json TEXT NOT NULL DEFAULT '{}',
+    generated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (routine_id) REFERENCES routine(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS routine_insight_keyword (
+    routine_id INTEGER NOT NULL,
+    position INTEGER NOT NULL CHECK (position BETWEEN 0 AND 2),
+    keyword TEXT NOT NULL CHECK (length(keyword) BETWEEN 1 AND 30),
+    PRIMARY KEY (routine_id, position),
+    UNIQUE (routine_id, keyword),
+    FOREIGN KEY (routine_id) REFERENCES routine_insight(routine_id) ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS routine_item (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     routine_id INTEGER NOT NULL,
@@ -635,7 +654,18 @@ INSERT OR IGNORE INTO comparison_baseline(id, user_id, routine_id, confirmed_rec
 
 INSERT OR IGNORE INTO personal_pattern(id, user_id, title, summary, confidence_note) VALUES
   (1, 1, '가벼운 제품을 아침에 썼을 때 만족도가 높았어요', '밀림이 없고 산뜻하다고 남긴 기록이 서로 다른 제품에서 반복됐어요.', '지지 2건 · 반대 1건 · 피부 타입 판정이 아님'),
-  (2, 1, '리치한 제형은 계절에 따라 느낌이 달랐어요', '겨울에는 좋았던 크림이 더운 시기에는 답답하다고 기록됐어요.', '지지 2건 · 기록이 더 필요함');
+  (2, 1, '리치한 제형은 계절에 따라 사용 결과가 달랐어요', '겨울에는 좋았던 크림이 더운 시기에는 답답하다고 기록됐어요.', '지지 2건 · 기록이 더 필요함');
+
+-- 이전 버전에서 서버가 만든 패턴 제목도 현재 사용자 문구로 맞춘다.
+UPDATE personal_pattern
+   SET title = '리치한 제형은 계절에 따라 사용 결과가 달랐어요'
+ WHERE title = '리치한 제형은 계절에 따라 느낌이 달랐어요';
+UPDATE personal_pattern
+   SET title = replace(title, '을 좋게 느낀 경험이 반복됐어요', '이 좋았다고 남긴 기록이 반복됐어요')
+ WHERE title LIKE '%을 좋게 느낀 경험이 반복됐어요';
+UPDATE personal_pattern
+   SET title = replace(title, '을 아쉽게 느낀 경험이 반복됐어요', '이 아쉬웠다고 남긴 기록이 반복됐어요')
+ WHERE title LIKE '%을 아쉽게 느낀 경험이 반복됐어요';
 
 INSERT OR IGNORE INTO pattern_evidence(pattern_id, record_id, polarity) VALUES
   (1, 1, 'SUPPORTS'), (1, 2, 'SUPPORTS'), (1, 3, 'CONTRADICTS'),
@@ -648,7 +678,7 @@ INSERT OR IGNORE INTO notification(
 )
 SELECT es.user_id, 'EXPERIENCE_CHECK_IN', es.id,
        'DAY 2, 오늘은 어땠나요?',
-       '작은 변화라도 괜찮아요. 느낀 점을 남겨보세요.',
+       '작은 변화라도 괜찮아요. 오늘의 사용 기록을 남겨보세요.',
        datetime(es.started_at, '+1 day'),
        (SELECT MIN(er.created_at) FROM experience_record er WHERE er.session_id = es.id),
        'experience-check-in:' || es.id
@@ -661,7 +691,7 @@ INSERT OR IGNORE INTO notification(
 )
 SELECT es.user_id, 'EXPERIENCE_REVIEW_DUE', es.id,
        '7일 경험을 돌아볼 시간이에요',
-       es.title || '에서 느낀 점을 남겨보세요.',
+       es.title || '의 사용 기록을 남겨보세요.',
        es.review_due_at,
        'experience-review:' || es.id
   FROM experience_session es

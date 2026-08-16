@@ -20,7 +20,7 @@ export function ExperienceRecordItem({ record, href, actionLabel, showTitle = tr
       <h3 className="min-w-0 flex-1 truncate text-[14px] font-semibold tracking-[-.02em] text-[#242d3b]">{record.productName}</h3>
       {href && !actionLabel && <ChevronRight aria-hidden="true" size={15} className="shrink-0 text-[#8994a3]"/>}
     </div>}
-    <p className={`mt-1.5 line-clamp-3 text-[12px] font-medium leading-[1.65] ${record.note ? 'text-[#626c7a]' : 'text-[#9199a4]'}`}>{record.note || '선택한 느낌으로 남긴 기록'}</p>
+    <p className={`mt-1.5 line-clamp-3 text-[12px] font-medium leading-[1.65] ${record.note ? 'text-[#626c7a]' : 'text-[#9199a4]'}`}>{record.note || '선택한 내용만 기록했어요.'}</p>
     {record.tags.length > 0 && <p className="mt-2 truncate text-[10px] font-medium text-[#7d8795]">{record.tags.slice(0, 4).join(' · ')}{record.tags.length > 4 ? ` 외 ${record.tags.length - 4}` : ''}</p>}
     {href && actionLabel && <span className="mt-2.5 inline-flex items-center gap-0.5 text-[10px] font-semibold text-[#607493]">{actionLabel}<ChevronRight size={12}/></span>}
   </article>

@@ -1,6 +1,8 @@
 package app.skn.common;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.http.HttpHeaders;
 import org.slf4j.MDC;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,7 +21,10 @@ import java.util.Map;
 public class ApiExceptionHandler {
     private static final Logger log = LoggerFactory.getLogger(ApiExceptionHandler.class);
     @ExceptionHandler(ApiException.class)
-    ProblemDetail handleApi(ApiException error, HttpServletRequest request) {
+    ProblemDetail handleApi(ApiException error, HttpServletRequest request, HttpServletResponse response) {
+        if (error.retryAfterSeconds() != null) {
+            response.setHeader(HttpHeaders.RETRY_AFTER, String.valueOf(error.retryAfterSeconds()));
+        }
         return problem(error.status(), error.code(), error.getMessage(), request, null);
     }
 

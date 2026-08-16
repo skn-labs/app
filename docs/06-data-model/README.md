@@ -50,6 +50,8 @@ erDiagram
 | `product_source_fact` | 출처를 다시 열 수 있는 제품 사실 | 출처명·URL·확인 시각이 모두 있는 행만 API와 AI의 `출처 확인 사실`로 노출 |
 | `user_product` | 사용자가 가진 화장품 | 카탈로그 제품 또는 사용자 직접 입력 이름 중 하나는 필수 |
 | `routine` | 특정 기간 실제로 사용한 조합 | 사용자별 `CURRENT` 하나, 수정은 기존 행 보존 후 새 행 생성 |
+| `routine_insight` | 개인 기록·자기보고 맥락에서 AI가 정리한 루틴의 읽기 전용 도움 문장 | 루틴 버전당 한 문장이며 제품·순서와 분리 저장. 모델·프롬프트 버전·입력 record ID snapshot을 함께 추적 |
+| `routine_insight_keyword` | 루틴 AI 문장과 함께 보여주는 개인 키워드 2~3개 | 표시 순서를 보존하며 같은 루틴 안에서 중복하지 않음 |
 | `routine_item` | 루틴의 제품·아침/저녁·순서·빈도 | 루틴 안에서 제품은 하나이며 `BOTH`로 아침·저녁 사용을 함께 표현 |
 | `experience_session` | 제품 하나 또는 루틴을 써보는 한 번의 기간 | 사용자별 `ACTIVE` 하나, 시작 7일 후가 기본 전체 확인 시점 |
 | `experience_record` | 만족·아쉬움·모름, 원문, 불편 여부 | 만족도와 불편함은 별도 축, 중복 제출은 `client_request_id`로 차단 |

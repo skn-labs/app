@@ -13,6 +13,13 @@ spring:
 app:
   test-harness:
     enabled: true
+  rate-limit:
+    # 통합 테스트에서 인터셉터 경로는 그대로 타되 한도는 높게 둬서 정상 흐름을 막지 않는다.
+    # 429 동작은 낮은 한도를 주입하는 전용 테스트에서 검증한다.
+    enabled: true
+    per-minute: 100000
+    per-hour: 100000
+    per-day: 100000
   openai:
     api-key: ""
     model: gpt-5.6-luna

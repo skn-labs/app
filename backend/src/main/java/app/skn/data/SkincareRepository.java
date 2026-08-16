@@ -241,38 +241,114 @@ public class SkincareRepository {
     }
 
     public Optional<RoutineView> findBaselineRoutine() {
-        return jdbc.query("""
+        List<RoutineHeader> routines = jdbc.query("""
                 SELECT r.id, r.name, r.day_part, r.status, r.started_at
                   FROM comparison_baseline cb
                   JOIN routine r ON r.id = cb.routine_id
                  WHERE cb.user_id = ? AND cb.ended_at IS NULL
                  ORDER BY cb.id DESC LIMIT 1
-                """, (rs, rowNum) -> mapRoutine(rs), userId()).stream().findFirst();
+                """, this::mapRoutineHeader, userId());
+        return routines.stream().findFirst().map(this::hydrateRoutine);
     }
 
     public List<RoutineView> findBaselineRoutines(int limit) {
-        return jdbc.query("""
+        List<RoutineHeader> routines = jdbc.query("""
                 SELECT r.id, r.name, r.day_part, r.status, r.started_at
                   FROM comparison_baseline cb
                   JOIN routine r ON r.id = cb.routine_id
                  WHERE cb.user_id = ?
                  ORDER BY cb.id DESC
                  LIMIT ?
-                """, (rs, rowNum) -> mapRoutine(rs), userId(), limit);
+                """, this::mapRoutineHeader, userId(), limit);
+        return routines.stream().map(this::hydrateRoutine).toList();
     }
 
     private Optional<RoutineView> findRoutineByStatus(String status) {
-        return jdbc.query("""
+        List<RoutineHeader> routines = jdbc.query("""
                 SELECT id, name, day_part, status, started_at
                   FROM routine WHERE user_id = ? AND status = ? ORDER BY id DESC LIMIT 1
-                """, (rs, rowNum) -> mapRoutine(rs), userId(), status).stream().findFirst();
+                """, this::mapRoutineHeader, userId(), status);
+        return routines.stream().findFirst().map(this::hydrateRoutine);
     }
 
     public Optional<RoutineView> findRoutine(long routineId) {
-        return jdbc.query("""
+        List<RoutineHeader> routines = jdbc.query("""
                 SELECT id, name, day_part, status, started_at
                   FROM routine WHERE user_id = ? AND id = ?
-                """, (rs, rowNum) -> mapRoutine(rs), userId(), routineId).stream().findFirst();
+                """, this::mapRoutineHeader, userId(), routineId);
+        return routines.stream().findFirst().map(this::hydrateRoutine);
+    }
+
+    public Optional<RoutineInsightView> findRoutineInsight(long routineId) {
+        return jdbc.query("""
+                SELECT ri.insight_text, ri.generated_at, rik.keyword
+                  FROM routine_insight ri
+                  JOIN routine r ON r.id = ri.routine_id
+                  LEFT JOIN routine_insight_keyword rik ON rik.routine_id = ri.routine_id
+                 WHERE r.user_id = ? AND r.id = ?
+                 ORDER BY rik.position
+                """, rs -> {
+            if (!rs.next()) {
+                return Optional.empty();
+            }
+            String text = rs.getString("insight_text");
+            String generatedAt = rs.getString("generated_at");
+            List<String> keywords = new ArrayList<>();
+            do {
+                String keyword = rs.getString("keyword");
+                if (keyword != null) {
+                    keywords.add(keyword);
+                }
+            } while (rs.next());
+            return Optional.of(new RoutineInsightView(text, keywords, generatedAt));
+        }, userId(), routineId);
+    }
+
+    public boolean routineInsightUsesPrompt(long routineId, String promptVersion) {
+        Integer count = jdbc.queryForObject("""
+                SELECT COUNT(*)
+                  FROM routine_insight ri
+                  JOIN routine r ON r.id = ri.routine_id
+                 WHERE r.user_id = ? AND r.id = ? AND ri.prompt_version = ?
+                """, Integer.class, userId(), routineId, promptVersion);
+        return count != null && count > 0;
+    }
+
+    @Transactional
+    public void saveRoutineInsight(long routineId, String text, String model, String promptVersion,
+                                   List<String> keywords, List<Long> recordIds,
+                                   boolean preferenceUsed, boolean profileUsed) {
+        if (findRoutine(routineId).isEmpty()) {
+            throw ApiException.notFound("루틴을 찾을 수 없어요.");
+        }
+        String snapshot;
+        try {
+            snapshot = objectMapper.writeValueAsString(Map.of(
+                    "recordIds", recordIds == null ? List.of() : recordIds,
+                    "preferenceUsed", preferenceUsed,
+                    "profileUsed", profileUsed
+            ));
+        } catch (Exception ignored) {
+            snapshot = "{}";
+        }
+        jdbc.update("""
+                INSERT INTO routine_insight(
+                    routine_id, insight_text, model, prompt_version, input_snapshot_json
+                ) VALUES (?, ?, ?, ?, ?)
+                ON CONFLICT(routine_id) DO UPDATE SET
+                    insight_text = excluded.insight_text,
+                    model = excluded.model,
+                    prompt_version = excluded.prompt_version,
+                    input_snapshot_json = excluded.input_snapshot_json,
+                    generated_at = CURRENT_TIMESTAMP
+                """, routineId, text, model, promptVersion, snapshot);
+        jdbc.update("DELETE FROM routine_insight_keyword WHERE routine_id = ?", routineId);
+        for (int index = 0; index < Math.min(keywords.size(), 3); index++) {
+            jdbc.update("""
+                    INSERT INTO routine_insight_keyword(routine_id, position, keyword)
+                    VALUES (?, ?, ?)
+                    """, routineId, index, keywords.get(index));
+        }
     }
 
     public List<Long> findRoutineUserProductIds(long routineId) {
@@ -436,6 +512,34 @@ public class SkincareRepository {
                 """, this::mapExperienceRecord, userId());
     }
 
+    public List<ExperienceRecordView> findExperienceRecordsForRoutine(long routineId, int limit) {
+        return jdbc.query("""
+                SELECT er.*,
+                       COALESCE(p.name, up.custom_name,
+                           (SELECT es.title FROM experience_session es WHERE es.id = er.session_id)) AS product_name
+                  FROM experience_record er
+                  LEFT JOIN user_product up ON up.id = er.user_product_id
+                  LEFT JOIN product p ON p.id = up.product_id
+                 WHERE er.user_id = ?
+                   AND (
+                       er.user_product_id IN (
+                           SELECT ri.user_product_id
+                             FROM routine_item ri
+                            WHERE ri.routine_id = ?
+                       )
+                       OR er.session_id IN (
+                           SELECT es.id
+                             FROM experience_session es
+                             JOIN routine r ON r.user_id = es.user_id
+                            WHERE r.id = ?
+                              AND es.routine_id IN (r.id, r.based_on_routine_id)
+                       )
+                   )
+                 ORDER BY er.created_at DESC, er.id DESC
+                 LIMIT ?
+                """, this::mapExperienceRecord, userId(), routineId, routineId, limit);
+    }
+
     public Optional<ExperienceRecordView> findExperienceRecord(long recordId) {
         return jdbc.query("""
                 SELECT er.*,
@@ -454,6 +558,24 @@ public class SkincareRepository {
                   FROM experience_record er JOIN experience_session es ON es.id = er.session_id
                  WHERE er.user_id = ? AND er.session_id = ? ORDER BY er.id DESC LIMIT 1
                 """, this::mapExperienceRecord, userId(), sessionId).stream().findFirst();
+    }
+
+    private ExperienceRecordSummaryView summarizeExperienceRecords(long sessionId) {
+        return jdbc.queryForObject("""
+                SELECT COUNT(*) AS total_count,
+                       SUM(CASE WHEN sentiment = 'LIKED' THEN 1 ELSE 0 END) AS liked_count,
+                       SUM(CASE WHEN sentiment = 'DISAPPOINTED' THEN 1 ELSE 0 END) AS disappointed_count,
+                       SUM(CASE WHEN sentiment = 'UNSURE' THEN 1 ELSE 0 END) AS unsure_count,
+                       SUM(CASE WHEN discomfort = 'REPORTED' THEN 1 ELSE 0 END) AS discomfort_count
+                  FROM experience_record
+                 WHERE user_id = ? AND session_id = ?
+                """, (summaryRs, rowNum) -> new ExperienceRecordSummaryView(
+                summaryRs.getInt("total_count"),
+                summaryRs.getInt("liked_count"),
+                summaryRs.getInt("disappointed_count"),
+                summaryRs.getInt("unsure_count"),
+                summaryRs.getInt("discomfort_count")
+        ), userId(), sessionId);
     }
 
     public int recordCount() {
@@ -559,7 +681,7 @@ public class SkincareRepository {
     }
 
     private static String patternTitle(String tag, boolean liked) {
-        return tag + "을 " + (liked ? "좋게" : "아쉽게") + " 느낀 경험이 반복됐어요";
+        return tag + "이 " + (liked ? "좋았다고" : "아쉬웠다고") + " 남긴 기록이 반복됐어요";
     }
 
     public long insertConversation(String mode, Long productId, Long experienceId) {
@@ -876,7 +998,7 @@ public class SkincareRepository {
                 )
                 SELECT user_id, 'EXPERIENCE_CHECK_IN', id,
                        'DAY 2, 오늘은 어땠나요?',
-                       '작은 변화라도 괜찮아요. 느낀 점을 남겨보세요.',
+                       '작은 변화라도 괜찮아요. 오늘의 사용 기록을 남겨보세요.',
                        datetime(started_at, '+1 day'), 'experience-check-in:' || id
                   FROM experience_session WHERE id = ? AND user_id = ?
                 """, sessionId, userId());
@@ -886,7 +1008,7 @@ public class SkincareRepository {
                 )
                 SELECT user_id, 'EXPERIENCE_REVIEW_DUE', id,
                        '7일 경험을 돌아볼 시간이에요',
-                       title || '에서 느낀 점을 남겨보세요.',
+                       title || '의 사용 기록을 남겨보세요.',
                        review_due_at, 'experience-review:' || id
                   FROM experience_session WHERE id = ? AND user_id = ?
                 """, sessionId, userId());
@@ -912,7 +1034,7 @@ public class SkincareRepository {
         NotificationActionView action;
         if (type.startsWith("EXPERIENCE_") && experienceId != null) {
             action = completedAt == null
-                    ? new NotificationActionView("RECORD_EXPERIENCE", "느낌 남기기", "/experiences/" + experienceId + "/record")
+                    ? new NotificationActionView("RECORD_EXPERIENCE", "기록 남기기", "/experiences/" + experienceId + "/record")
                     : new NotificationActionView("RECORDS", "남긴 기록 보기", "/records");
         } else if (type.equals("PATTERN_READY") && patternId != null) {
             action = new NotificationActionView("PATTERN", "패턴 보기", "/patterns/" + patternId);
@@ -930,8 +1052,15 @@ public class SkincareRepository {
         );
     }
 
-    private RoutineView mapRoutine(ResultSet rs) throws SQLException {
-        long routineId = rs.getLong("id");
+    private RoutineHeader mapRoutineHeader(ResultSet rs, int rowNum) throws SQLException {
+        return new RoutineHeader(
+                rs.getLong("id"), rs.getString("name"), rs.getString("day_part"),
+                rs.getString("status"), rs.getString("started_at")
+        );
+    }
+
+    private RoutineView hydrateRoutine(RoutineHeader routine) {
+        long routineId = routine.id();
         List<RoutineItemView> items = jdbc.query("""
                 SELECT ri.user_product_id, ri.time_slot, ri.position, ri.frequency,
                        COALESCE(p.name, up.custom_name) AS product_name,
@@ -951,9 +1080,12 @@ public class SkincareRepository {
                 itemRs.getString("time_slot"),
                 itemRs.getInt("position"), itemRs.getString("frequency")
         ), routineId);
-        return new RoutineView(routineId, rs.getString("name"), rs.getString("day_part"),
-                rs.getString("status"), rs.getString("started_at"), items);
+        return new RoutineView(routineId, routine.name(), routine.dayPart(),
+                routine.status(), routine.startedAt(), items,
+                findRoutineInsight(routineId).orElse(null));
     }
+
+    private record RoutineHeader(long id, String name, String dayPart, String status, String startedAt) {}
 
     private ExperienceView mapExperience(ResultSet rs) throws SQLException {
         long id = rs.getLong("id");
@@ -973,7 +1105,8 @@ public class SkincareRepository {
         return new ExperienceView(
                 id, subjectType, routineId, userProductId, rs.getString("title"), subtitle,
                 rs.getString("status"), startedAt, reviewDueAt, day, Math.max(0, untilReview),
-                untilReview <= 0, routine, product, findLatestRecordForSession(id).orElse(null)
+                untilReview <= 0, routine, product, findLatestRecordForSession(id).orElse(null),
+                summarizeExperienceRecords(id)
         );
     }
 
