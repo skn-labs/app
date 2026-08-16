@@ -33,10 +33,20 @@ export type ProductFact = {
   checkedAt: string;
 }
 
+export type ProductAchievement = {
+  type: 'AWARD' | 'RANKING' | 'MILESTONE';
+  periodLabel: string;
+  title: string;
+  detail: string;
+  sourceLabel: string;
+  sourceUrl: string;
+  checkedAt: string;
+}
+
 export type Product = {
   id: number; brand: string; brandLogoUrl?: string; name: string; category: string; volume?: string;
   versionLabel?: string; description?: string; texture?: string; verified: boolean;
-  guide?: ProductGuide | null; facts: ProductFact[];
+  guide?: ProductGuide | null; facts: ProductFact[]; achievements: ProductAchievement[];
   personalRecordCount: number; owned: boolean; imageUrl?: string;
 }
 

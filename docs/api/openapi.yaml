@@ -4,13 +4,13 @@ info:
   version: 1.0.0-hackathon
   description: |
     React 모바일 앱과 Spring Boot API가 실제로 사용하는 계약이다.
-    인증은 HttpOnly 세션 쿠키를 사용하고 OpenAI API 키는 서버에서만 읽는다.
+    인증은 발급 후 30일에 만료되는 단일 액세스 토큰을 HttpOnly 쿠키로 사용하고 OpenAI API 키는 서버에서만 읽는다.
 servers:
   - url: /api/v1
 security:
-  - sessionCookie: []
+  - accessTokenCookie: []
 tags:
-  - { name: Auth, description: 간단 계정과 세션 }
+  - { name: Auth, description: 간단 계정과 30일 액세스 토큰 }
   - { name: Home, description: 현재 경험 중심 홈 }
   - { name: Catalog, description: 제품 카탈로그와 출처가 구분된 사용 가이드 }
   - { name: Collection, description: 내 화장품 }
@@ -26,7 +26,7 @@ paths:
     post:
       tags: [Auth]
       security: []
-      summary: 아이디와 비밀번호로 가입하고 세션을 시작한다
+      summary: 아이디와 비밀번호로 가입하고 30일 액세스 토큰을 발급한다
       operationId: signUp
       requestBody:
         required: true
@@ -58,7 +58,7 @@ paths:
       summary: 기록이 채워진 시연 계정으로 들어간다
       operationId: enterDemo
       responses:
-        '200': { description: 데모 세션 시작, content: { application/json: { schema: { $ref: '#/components/schemas/Auth' } } } }
+        '200': { description: 데모 액세스 토큰 발급, content: { application/json: { schema: { $ref: '#/components/schemas/Auth' } } } }
   /auth/quick-accounts:
     get:
       tags: [Auth, Demo]
@@ -73,7 +73,7 @@ paths:
     post:
       tags: [Auth, Demo]
       security: []
-      summary: 테스트 계정으로 세션을 바꾸다
+      summary: 테스트 계정의 액세스 토큰으로 바꾼다
       description: TEST_HARNESS_ENABLED=true인 시연 환경에서만 제공하며, 데모 계정은 별도 데모 진입 API를 사용한다.
       operationId: quickLogin
       parameters:
@@ -84,7 +84,7 @@ paths:
   /auth/me:
     get:
       tags: [Auth]
-      summary: 현재 세션 계정을 조회한다
+      summary: 현재 액세스 토큰의 계정을 조회한다
       operationId: getMe
       responses:
         '200': { description: 현재 계정, content: { application/json: { schema: { $ref: '#/components/schemas/Auth' } } } }
@@ -100,7 +100,7 @@ paths:
   /auth/logout:
     post:
       tags: [Auth]
-      summary: 현재 세션을 끝낸다
+      summary: 현재 액세스 토큰을 폐기한다
       operationId: logout
       responses:
         '204': { description: 로그아웃됨 }
@@ -493,10 +493,11 @@ paths:
 
 components:
   securitySchemes:
-    sessionCookie:
+    accessTokenCookie:
       type: apiKey
       in: cookie
-      name: JSESSIONID
+      name: skn_access_token
+      description: 발급 후 30일에 절대 만료되는 불투명 액세스 토큰. HttpOnly, SameSite=Lax이며 HTTPS에서는 Secure로 발급한다. 리프레시 토큰은 없다.
   parameters:
     ProductId: { name: productId, in: path, required: true, schema: { type: integer, format: int64 } }
     UserProductId: { name: userProductId, in: path, required: true, schema: { type: integer, format: int64 } }
@@ -594,7 +595,7 @@ components:
         profile: { $ref: '#/components/schemas/SkinProfile' }
     Product:
       type: object
-      required: [id, brand, name, category, verified, guide, facts, personalRecordCount, owned]
+      required: [id, brand, name, category, verified, guide, facts, achievements, personalRecordCount, owned]
       properties:
         id: { type: integer, format: int64 }
         brand: { type: string }
@@ -606,6 +607,11 @@ components:
         verified: { type: boolean, description: legacy 확인 flag와 source-backed fact가 모두 있을 때만 true }
         guide: { $ref: '#/components/schemas/ProductGuide' }
         facts: { type: array, items: { $ref: '#/components/schemas/ProductFact' } }
+        achievements:
+          type: array
+          maxItems: 3
+          description: 제품과 정확히 일치하고 발생 시점과 출처가 확인된 외부 성과 이력. 제품 사실·효능·안전·개인 적합성 근거가 아님
+          items: { $ref: '#/components/schemas/ProductAchievement' }
         personalRecordCount: { type: integer, minimum: 0 }
         owned: { type: boolean }
         imageUrl: { type: [string, 'null'], format: uri }
@@ -649,6 +655,17 @@ components:
         sourceLabel: { type: string, minLength: 1, maxLength: 150 }
         sourceUrl: { type: string, format: uri }
         checkedAt: { type: string, format: date-time }
+    ProductAchievement:
+      type: object
+      required: [type, periodLabel, title, detail, sourceLabel, sourceUrl, checkedAt]
+      properties:
+        type: { type: string, enum: [AWARD, RANKING, MILESTONE] }
+        periodLabel: { type: string, minLength: 1, maxLength: 40, description: 성과가 발생한 시점 또는 기간 }
+        title: { type: string, minLength: 1, maxLength: 120 }
+        detail: { type: string, minLength: 1, maxLength: 300 }
+        sourceLabel: { type: string, minLength: 1, maxLength: 150 }
+        sourceUrl: { type: string, format: uri }
+        checkedAt: { type: string, format: date-time, description: 저장된 출처를 마지막으로 대조한 시각 }
     ProductPage:
       type: object
       required: [items, hasMore]

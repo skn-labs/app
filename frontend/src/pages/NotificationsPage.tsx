@@ -1,10 +1,21 @@
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Bell, Clock3 } from 'lucide-react'
+import { Bell, CalendarClock, Clock3, Compass, Hexagon, NotebookPen, Sparkles, TrendingUp, type LucideIcon } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { AppHeader, BottomSheet, Button, EmptyState, ErrorState, Loading, Screen } from '../components/ui'
 import { api } from '../lib/api'
 import type { AppNotification } from '../lib/types'
+
+type NotificationMeta = { Icon: LucideIcon; tint: string; glow: string }
+const TYPE_META: Record<AppNotification['type'], NotificationMeta> = {
+  EXPERIENCE_CHECK_IN: { Icon: NotebookPen, tint: '#5365f5', glow: 'rgba(83,101,245,.24)' },
+  EXPERIENCE_REVIEW_DUE: { Icon: CalendarClock, tint: '#5365f5', glow: 'rgba(83,101,245,.24)' },
+  PATTERN_READY: { Icon: Sparkles, tint: '#7b5bd6', glow: 'rgba(123,91,214,.24)' },
+  PROFILE_READY: { Icon: Hexagon, tint: '#3f9d6b', glow: 'rgba(63,157,107,.24)' },
+  PROFILE_UPDATED: { Icon: TrendingUp, tint: '#3f9d6b', glow: 'rgba(63,157,107,.24)' },
+  PRODUCT_DISCOVERY: { Icon: Compass, tint: '#d1873a', glow: 'rgba(209,135,58,.24)' },
+}
+const FALLBACK_META: NotificationMeta = { Icon: Bell, tint: '#5365f5', glow: 'rgba(83,101,245,.24)' }
 
 export function NotificationsPage() {
   const navigate = useNavigate()
@@ -24,17 +35,32 @@ export function NotificationsPage() {
     navigate(item.action.href)
   }
 
-  return <Screen nav={false} className="animate-notification-page-in relative z-30 bg-white will-change-transform">
+  const items = inbox.data?.items ?? []
+  const unread = inbox.data?.unreadCount ?? 0
+
+  return <Screen nav={false} className="relative z-30 bg-white">
     <AppHeader back backTo="/" profile={false} notifications={false} sticky/>
     <div className="px-5 pb-12 pt-8">
       <div className="flex items-end justify-between gap-4">
-        <div><p className="text-xs font-medium tracking-[.08em] text-muted">NOTIFICATIONS</p><h1 className="mt-2 text-4xl font-medium leading-none tracking-[-.06em]">알림창</h1></div>
-        {!!inbox.data?.unreadCount && <button type="button" disabled={readAll.isPending} onClick={() => readAll.mutate()} className="min-h-11 rounded-full px-3 text-xs font-medium text-muted transition hover:bg-soft disabled:opacity-50">모두 읽음</button>}
+        <div>
+          <p className="text-xs font-medium tracking-[.08em] text-muted">NOTIFICATIONS</p>
+          <div className="mt-2 flex items-center gap-2.5">
+            <h1 className="text-4xl font-medium leading-none tracking-[-.06em]">알림창</h1>
+            {unread > 0 && <span className="grid h-6 min-w-6 place-items-center rounded-full bg-accent px-1.5 text-xs font-semibold tabular-nums text-white">{unread}</span>}
+          </div>
+        </div>
+        {unread > 0 && <button type="button" disabled={readAll.isPending} onClick={() => readAll.mutate()} className="min-h-11 shrink-0 rounded-full px-3 text-xs font-medium text-muted transition hover:bg-soft disabled:opacity-50">모두 읽음</button>}
       </div>
 
-      {inbox.isPending ? <Loading label="알림을 불러오는 중"/>
+      {inbox.isPending ? <Loading variant="notifications" label="알림을 불러오는 중" className="px-0 pt-7"/>
         : inbox.isError ? <ErrorState message={inbox.error.message} onRetry={() => inbox.refetch()}/>
-          : inbox.data.items.length ? <div className="mt-12 divide-y divide-line/55">{inbox.data.items.map(item => <NotificationRow key={item.id} item={item} onOpen={() => open(item)} onSnooze={() => setSnoozeTarget(item)}/>)}</div>
+          : items.length ? <div className="mt-8">{items.map((item, index) => {
+            const showHeader = index === 0 || bucketOf(items[index - 1].availableAt) !== bucketOf(item.availableAt)
+            return <Fragment key={item.id}>
+              {showHeader && <p className={`px-1 pb-2.5 text-[11px] font-semibold uppercase tracking-[.07em] text-[#adb0aa] ${index === 0 ? '' : 'pt-7'}`}>{bucketOf(item.availableAt)}</p>}
+              <NotificationRow item={item} index={index} onOpen={() => open(item)} onSnooze={() => setSnoozeTarget(item)}/>
+            </Fragment>
+          })}</div>
             : <EmptyState icon={<Bell size={24}/>} title="도착한 알림이 없어요" body="경험을 돌아볼 시점이나 새 패턴이 생기면 이곳에서 알려드려요."/>}
     </div>
 
@@ -48,25 +74,44 @@ export function NotificationsPage() {
   </Screen>
 }
 
-function NotificationRow({ item, onOpen, onSnooze }: { item: AppNotification; onOpen: () => void; onSnooze: () => void }) {
+function NotificationRow({ item, index, onOpen, onSnooze }: { item: AppNotification; index: number; onOpen: () => void; onSnooze: () => void }) {
   const quiet = item.read || item.completed
   const canSnooze = item.type.startsWith('EXPERIENCE_') && !item.completed
-  return <article className="flex min-h-[92px] items-stretch gap-1 py-2">
-    <button type="button" onClick={onOpen} className="interactive-card flex min-w-0 flex-1 items-center gap-4 rounded-[18px] px-1 text-left">
-      <span aria-hidden="true" className={`size-3 shrink-0 rounded-full ${quiet ? 'bg-[#d9e6ff]' : 'bg-black'}`}/>
-      <span className="min-w-0 flex-1">
-        <span className={`block truncate text-base font-medium tracking-[-.025em] ${quiet ? 'text-[#656565]' : 'text-black'}`}>{item.title}</span>
-        <span className="mt-2 block truncate text-xs text-[#9abfff]">{item.body}</span>
+  const meta = TYPE_META[item.type] ?? FALLBACK_META
+  const Icon = meta.Icon
+  return <article className="animate-onboard-rise flex items-center gap-1" style={{ animationDelay: `${Math.min(index, 10) * 35}ms` }}>
+    <button type="button" onClick={onOpen} className="interactive-card flex min-w-0 flex-1 items-start gap-3.5 rounded-[18px] p-2.5 text-left">
+      <span aria-hidden="true" className="grid size-11 shrink-0 place-items-center rounded-[14px]" style={quiet ? { background: '#f2f4ef', color: '#9a9d97' } : { background: meta.tint, color: '#fff', boxShadow: `0 5px 14px ${meta.glow}` }}><Icon size={19} strokeWidth={1.9}/></span>
+      <span className="min-w-0 flex-1 pt-0.5">
+        <span className="flex items-start justify-between gap-2.5">
+          <span className={`min-w-0 truncate text-[15px] leading-5 tracking-[-.02em] ${quiet ? 'font-medium text-[#6f736c]' : 'font-semibold text-ink'}`}>{item.title}</span>
+          <span className="shrink-0 whitespace-nowrap pt-px text-[11px] tabular-nums text-[#adb0aa]">{relativeTime(item.availableAt)}</span>
+        </span>
+        <span className={`mt-1 line-clamp-2 text-[13px] leading-[1.5] ${quiet ? 'text-[#9a9d97]' : 'text-muted'}`}>{item.body}</span>
       </span>
-      <span className="shrink-0 self-start pt-5 text-xs tabular-nums text-[#8c8c8c]">{relativeTime(item.availableAt)}</span>
     </button>
-    {canSnooze && <button type="button" onClick={onSnooze} aria-label={`${item.title} 알림 미루기`} className="grid w-10 shrink-0 place-items-center rounded-full text-[#9a9a9a] transition hover:bg-soft"><Clock3 size={16}/></button>}
+    {canSnooze && <button type="button" onClick={onSnooze} aria-label={`${item.title} 알림 미루기`} className="grid size-10 shrink-0 place-items-center rounded-full text-[#a5a8a2] transition hover:bg-soft hover:text-muted"><Clock3 size={16}/></button>}
   </article>
 }
 
-function relativeTime(value: string) {
+function bucketOf(value: string) {
+  const date = parseTime(value)
+  if (Number.isNaN(date.getTime())) return '이전'
+  const now = new Date()
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
+  const time = date.getTime()
+  if (time >= startOfToday) return '오늘'
+  if (time >= startOfToday - 6 * 86400000) return '지난 7일'
+  return '이전'
+}
+
+function parseTime(value: string) {
   const normalized = /Z$|[+-]\d\d:\d\d$/.test(value) ? value : `${value.replace(' ', 'T')}Z`
-  const date = new Date(normalized)
+  return new Date(normalized)
+}
+
+function relativeTime(value: string) {
+  const date = parseTime(value)
   if (Number.isNaN(date.getTime())) return value.slice(0, 10)
   const seconds = Math.max(0, Math.floor((Date.now() - date.getTime()) / 1000))
   if (seconds < 60) return '방금 전'

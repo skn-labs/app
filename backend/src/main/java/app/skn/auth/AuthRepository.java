@@ -46,6 +46,30 @@ public class AuthRepository {
         ), userId).stream().findFirst();
     }
 
+    public void insertAccessToken(String tokenHash, long userId, long expiresAt) {
+        jdbc.update("""
+                INSERT INTO auth_access_token(token_hash, user_id, expires_at)
+                VALUES (?, ?, ?)
+                """, tokenHash, userId, expiresAt);
+    }
+
+    public Optional<Long> findUserIdByAccessToken(String tokenHash, long now) {
+        return jdbc.queryForList("""
+                SELECT user_id
+                  FROM auth_access_token
+                 WHERE token_hash = ?
+                   AND expires_at > ?
+                """, Long.class, tokenHash, now).stream().findFirst();
+    }
+
+    public void deleteAccessToken(String tokenHash) {
+        jdbc.update("DELETE FROM auth_access_token WHERE token_hash = ?", tokenHash);
+    }
+
+    public void deleteExpiredAccessTokens(long now) {
+        jdbc.update("DELETE FROM auth_access_token WHERE expires_at <= ?", now);
+    }
+
     public List<QuickAccountView> findQuickAccounts() {
         return jdbc.query("""
                 SELECT username, display_name

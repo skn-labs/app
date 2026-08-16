@@ -9,7 +9,7 @@ import type { ExperienceRecord, Pattern, SkinProfile } from '../lib/types'
 import { ExperienceRecordItem } from '../components/ExperienceRecordItem'
 import { ExperienceStatusBadge } from '../components/ExperienceStatusBadge'
 import { ProductAddSheet } from '../components/ProductAddSheet'
-import { AiBadge, AppHeader, BottomSheet, Button, Card, ErrorState, Loading, PageHeading, Screen, StickyActionBar, TopBar } from '../components/ui'
+import { AiBadge, AppHeader, BottomSheet, Button, Card, ErrorState, Loading, PageHeading, Screen, Skeleton, StickyActionBar, TopBar } from '../components/ui'
 
 const SKIN_TYPE_LABELS: Record<SkinProfile['skinType'], string> = {
   DRY: '건성',
@@ -26,6 +26,13 @@ const TRIAL_FREQUENCY_LABELS: Record<SkinProfile['trialFrequency'], string> = {
   EVERY_FEW_MONTHS: '몇 달에 한 번 시도해요',
   ONE_OR_TWO_MONTHLY: '한 달에 1~2개 정도 시도해요',
   THREE_PLUS_MONTHLY: '한 달에 3개 이상 시도해요',
+}
+const SKIN_CONDITION_LABELS: Record<number, string> = {
+  1: '많이 예민한 편이에요',
+  2: '조금 예민한 편이에요',
+  3: '평소와 비슷해요',
+  4: '편안한 편이에요',
+  5: '아주 편안한 편이에요',
 }
 const PROFILE_CONCERNS = ['건조함', '당김', '유분기', '번들거림', '여드름', '좁쌀 트러블', '홍조', '민감함', '잡티', '칙칙함', '다크서클', '색소침착', '각질', '거친 피부결', '모공', '블랙헤드', '주름', '탄력 저하', '처짐']
 const PROFILE_TEXTURES = ['가벼운 발림', '촉촉한 발림', '쫀쫀한 발림', '무거운 발림', '산뜻한 마무리', '보송한 마무리', '촉촉한 마무리', '윤기 있는 마무리', '무향', '시트러스·허브 향', '플로럴 향', '우디·머스크 향', '기타 향']
@@ -55,7 +62,7 @@ export function RecordsPage() {
   const reset = useMutation({ mutationFn: (scenario: 'default' | 'empty-experience' | 'cold-start') => api.resetDemo(scenario), onSuccess: () => { queryClient.invalidateQueries(); navigate('/') } })
 
   const pending = auth.isPending || profile.isPending
-  if (pending) return <Screen nav={false}><AppHeader back sticky profile={false} notifications={false}/><Loading label="내 프로필을 불러오는 중"/></Screen>
+  if (pending) return <Screen nav={false}><AppHeader back sticky profile={false} notifications={false}/><Loading variant="records" label="내 프로필을 불러오는 중"/></Screen>
 
   const loadError = auth.error || (profile.error && !isNotFound(profile.error) ? profile.error : null)
   if (loadError) return <Screen nav={false}><AppHeader back sticky profile={false} notifications={false}/><ErrorState message={loadError.message} onRetry={() => {
@@ -89,7 +96,7 @@ export function RecordsPage() {
         <p className="text-[10px] font-semibold tracking-[.12em] text-[#77869c]">내가 남긴 원문</p><h2 id="records-title" className="mt-1.5 text-[23px] font-semibold tracking-[-.04em] text-[#171d29]">경험 기록</h2>
         <p className="mt-2 text-[11px] leading-5 text-[#798493]">직접 남긴 기록을 당시 제품과 루틴에 연결해 보관해요.</p>
 
-        {records.isPending ? <div className="mt-5 h-[390px] animate-pulse rounded-[22px] bg-[#edf1f7]" aria-label="경험 기록을 불러오는 중"/>
+        {records.isPending ? <div className="mt-5 space-y-3" role="status" aria-label="경험 기록을 불러오는 중"><Skeleton className="h-28 rounded-[22px]"/><Skeleton className="h-28 rounded-[22px]"/><Skeleton className="h-28 rounded-[22px]"/></div>
           : records.isError ? <div className="mt-5 rounded-[22px] border border-[#dce5f1] bg-white px-5 py-7 text-center"><p className="text-sm font-semibold">경험 기록을 불러오지 못했어요.</p><button type="button" onClick={() => records.refetch()} className="mt-4 min-h-10 rounded-full border border-[#c5d5ec] px-4 text-xs font-semibold text-[#526b93]">다시 불러오기</button></div>
             : !recordItems.length ? <div className="mt-5 rounded-[24px] border border-dashed border-[#cfdbeb] bg-[linear-gradient(150deg,#fff,#f1f6ff)] px-6 py-9 text-center"><span className="mx-auto grid size-11 place-items-center rounded-full bg-white text-[#6d83a6] shadow-[0_5px_18px_rgba(47,68,102,.08)]"><BookOpen size={19}/></span><h3 className="mt-4 text-[16px] font-semibold tracking-[-.025em]">첫 기록을 남겨보세요</h3><p className="mx-auto mt-2 max-w-[260px] text-[11px] leading-5 text-[#788497]">좋았던 점도, 아직 모르겠는 점도 그대로 남기면 다음 탐색의 기준이 돼요.</p><Link to="/explore" className="mt-5 inline-flex min-h-11 items-center justify-center rounded-full bg-[#172033] px-5 text-[12px] font-semibold text-white">첫 경험 시작하기</Link></div>
               : <ExperienceCalendar records={recordItems}/>}
@@ -109,25 +116,49 @@ export function RecordsPage() {
 }
 
 function PersonalContextCard({ profile, onEdit, onExplore }: { profile: SkinProfile; onEdit: () => void; onExplore: () => void }) {
-  const concern = profile.concerns[0] || '지금의 피부 고민'
-  const texture = profile.textures[0] || '편안한 사용감'
   const avoids = [...profile.avoids, profile.avoidNote.trim()].filter(Boolean)
-  return <section className="relative mt-7 overflow-hidden rounded-[26px] border border-[#d7e4f6] bg-[linear-gradient(145deg,#edf4ff_0%,#f8faff_62%,#f1f6ff_100%)] p-5 shadow-[0_9px_28px_rgba(55,79,120,.07)]" aria-labelledby="personal-context-title">
-    <div aria-hidden className="absolute -right-10 -top-12 size-36 rounded-full border border-white/80 bg-white/30"/>
-    <div className="relative flex items-start justify-between gap-4"><div><p className="text-[10px] font-semibold tracking-[.1em] text-[#6d83a6]">내가 입력한 기준</p><h2 id="personal-context-title" className="mt-2 max-w-[280px] text-[22px] font-semibold leading-[1.32] tracking-[-.04em]">{texture}을 선호하고,<br/>{concern}을 살펴보고 있어요.</h2></div><button type="button" onClick={onEdit} aria-label="내 탐색 기준 수정" className="grid size-10 shrink-0 place-items-center rounded-full border border-white/80 bg-white/70 text-[#62738c] transition hover:bg-white active:scale-95"><Pencil size={16}/></button></div>
-    <div className="relative mt-5 space-y-3 rounded-[18px] border border-white/85 bg-white/58 p-4 backdrop-blur-sm">
-      <ProfileContextRow label="관심" values={profile.concerns}/>
-      <ProfileContextRow label="선호" values={profile.textures}/>
-      <ProfileContextRow label="피하고 싶은 것" values={avoids.length ? avoids : ['선택 없음']}/>
-    </div>
-    <p className="relative mt-3 text-[10px] leading-4 text-[#78869b]">{SKIN_TYPE_LABELS[profile.skinType]} · 최근 상태 {profile.skinCondition}/5 · {TRIAL_FREQUENCY_LABELS[profile.trialFrequency]}</p>
-    <button type="button" onClick={onExplore} className="relative mt-5 flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-[#172033] px-5 text-[13px] font-semibold text-white shadow-[0_7px_20px_rgba(23,32,51,.14)] transition active:scale-[.985]"><Search size={16}/>이 기준으로 제품 찾아보기</button>
-    <p className="relative mt-3 text-center text-[10px] leading-4 text-[#7d899a]">직접 입력한 참고 정보이며 실제 사용 경험이나 진단이 아니에요.</p>
-  </section>
+  return <>
+    <section className="mt-7 overflow-hidden rounded-[22px] border border-[#dfe5ed] bg-white shadow-[0_7px_22px_rgba(38,52,76,.045)]" aria-labelledby="personal-context-title">
+      <header className="flex min-h-[68px] items-center justify-between gap-4 px-5">
+        <h2 id="personal-context-title" className="text-[16px] font-semibold tracking-[-.025em] text-[#1d2430]">내가 입력한 기준</h2>
+        <button type="button" onClick={onEdit} className="inline-flex min-h-10 items-center gap-1.5 rounded-full px-2 text-[11px] font-semibold text-[#687588] transition hover:bg-[#f3f6fa] active:scale-95"><Pencil size={14}/>수정</button>
+      </header>
+
+      <dl className="border-t border-[#e7ebf0] px-5">
+        <ProfileContextRow label="관심" values={profile.concerns}/>
+        <ProfileContextRow label="선호" values={profile.textures}/>
+        <ProfileContextRow label="피하고 싶은 것" values={avoids.length ? avoids : ['선택 없음']}/>
+      </dl>
+
+      <dl className="border-t border-[#e7ebf0] bg-[#f8faff] px-5">
+        <ProfileFact label="피부 타입" value={SKIN_TYPE_LABELS[profile.skinType]}/>
+        <ProfileFact label="최근 피부 상태" value={SKIN_CONDITION_LABELS[profile.skinCondition] || '입력한 상태 없음'}/>
+        <ProfileFact label="새 제품 시도" value={TRIAL_FREQUENCY_LABELS[profile.trialFrequency]}/>
+      </dl>
+
+      <button type="button" onClick={onExplore} className="group flex min-h-[58px] w-full items-center gap-3 border-t border-[#e7ebf0] px-5 text-left transition hover:bg-[#fafbfd] active:bg-[#f5f7fa]">
+        <Search size={16} className="shrink-0 text-[#68778c]"/>
+        <span className="min-w-0 flex-1 text-[13px] font-semibold tracking-[-.018em] text-[#263142]">입력한 기준으로 제품 찾기</span>
+        <ChevronRight size={17} className="shrink-0 text-[#8b96a5] transition group-hover:translate-x-0.5"/>
+      </button>
+    </section>
+    <p className="mt-2.5 px-1 text-[10px] leading-4 text-[#858e9a]">입력한 프로필은 제품 탐색에만 참고하며, 사용 경험이나 진단으로 해석하지 않아요.</p>
+  </>
 }
 
 function ProfileContextRow({ label, values }: { label: string; values: string[] }) {
-  return <div className="grid grid-cols-[72px_1fr] gap-2"><span className="pt-0.5 text-[10px] font-semibold text-[#8090a7]">{label}</span><span className="flex min-w-0 flex-wrap gap-1.5">{values.slice(0, 4).map(value => <span key={value} className="max-w-full truncate rounded-full bg-white px-2.5 py-1 text-[10px] font-medium text-[#3f4c60] shadow-[inset_0_0_0_1px_rgba(214,226,244,.9)]">{value}</span>)}{values.length > 4 && <span className="px-1 py-1 text-[10px] font-semibold text-[#7b8798]">+{values.length - 4}</span>}</span></div>
+  const visible = values.slice(0, 4)
+  return <div className="grid min-h-[52px] grid-cols-[88px_1fr] items-center gap-3 border-b border-[#edf0f4] last:border-b-0">
+    <dt className="text-[11px] font-medium text-[#7b8593]">{label}</dt>
+    <dd className="min-w-0 text-[13px] font-medium leading-5 tracking-[-.012em] text-[#313a48]">{visible.join(' · ')}{values.length > 4 && <span className="ml-1 text-[11px] text-[#8490a0]">외 {values.length - 4}개</span>}</dd>
+  </div>
+}
+
+function ProfileFact({ label, value }: { label: string; value: string }) {
+  return <div className="grid min-h-[44px] grid-cols-[88px_1fr] items-center gap-3 border-b border-[#e8edf3] last:border-b-0">
+    <dt className="text-[10px] font-medium text-[#8490a0]">{label}</dt>
+    <dd className="text-[11px] font-medium leading-5 text-[#596679]">{value}</dd>
+  </div>
 }
 
 const profileHexPoint = (index: number, radius: number) => {
@@ -149,7 +180,7 @@ function ExperienceMap({ patterns, recordCount, loading }: { patterns: Pattern[]
   return <section className="mt-9" aria-labelledby="experience-map-title">
     <div className="flex items-end justify-between gap-4"><div><p className="text-[10px] font-semibold tracking-[.1em] text-[#77869c]">경험에서 발견한 흐름</p><h2 id="experience-map-title" className="mt-1 text-[22px] font-semibold tracking-[-.04em]">나의 경험 지도</h2></div>{fields.length > 0 && <span className="pb-0.5 text-[11px] font-semibold text-[#748095]">필드 {fields.length}개</span>}</div>
     <div className="mt-4 overflow-hidden rounded-[26px] border border-[#d8e4f4] bg-[linear-gradient(155deg,#fbfdff,#eef4ff)] p-5 shadow-[0_8px_25px_rgba(55,79,120,.055)]">
-      {loading ? <div className="grid min-h-[280px] place-items-center" role="status"><div className="text-center"><span className="mx-auto block size-7 animate-spin rounded-full border-2 border-[#d4e0f2] border-t-[#698bc4]"/><p className="mt-3 text-[11px] font-medium text-[#758196]">경험 지도를 만드는 중</p></div></div> : <>
+      {loading ? <div className="min-h-[280px] py-2" role="status" aria-label="경험 지도를 만드는 중"><Skeleton className="mx-auto aspect-square w-full max-w-[242px] rounded-[32%]"/></div> : <>
         {!fields.length && <span className="inline-flex rounded-full bg-white/85 px-3 py-2 text-[11px] font-medium text-[#52678c] shadow-[inset_0_0_0_1px_rgba(201,218,248,.75)]">{emptyStatus}</span>}
         <div className={`mx-auto aspect-square w-full max-w-[242px] ${fields.length ? '' : 'mt-1'}`}>
           <svg viewBox="0 0 240 240" className="size-full overflow-visible" role="img" aria-label={fields.length ? `${fields.length}개 경험 필드의 근거량 지도` : `인사이트 형성 진행 상태, 경험 ${recordCount}건`}>
@@ -184,7 +215,7 @@ export function ProfileEditPage() {
   useEffect(() => { if (profile.data && !draft) setDraft(profile.data) }, [draft, profile.data])
   const save = useMutation({ mutationFn: () => api.saveSkinProfile(draft!), onSuccess: value => { queryClient.setQueryData(['skin-profile'], value); navigate('/records') } })
   if (profile.isError) return <Screen nav={false}><AppHeader back backTo="/records" sticky profile={false} notifications={false}/><ErrorState message={profile.error.message} onRetry={() => profile.refetch()}/></Screen>
-  if (profile.isPending || !draft) return <Screen nav={false}><AppHeader back backTo="/records" sticky profile={false} notifications={false}/><Loading label="프로필을 준비하는 중"/></Screen>
+  if (profile.isPending || !draft) return <Screen nav={false}><AppHeader back backTo="/records" sticky profile={false} notifications={false}/><Loading variant="form" label="프로필을 준비하는 중"/></Screen>
   const toggle = (field: 'concerns' | 'textures' | 'avoids', value: string) => setDraft(current => current ? { ...current, [field]: current[field].includes(value) ? current[field].filter(item => item !== value) : [...current[field], value] } : current)
   const valid = draft.concerns.length > 0 && draft.textures.length > 0
   return <Screen nav={false} className="bg-[#fbfcff] pb-32">
@@ -296,7 +327,7 @@ export function PatternPage() {
   const pattern = useQuery({ queryKey: ['pattern', patternId], queryFn: () => api.pattern(patternId), enabled: Number.isSafeInteger(patternId) && patternId > 0 })
 
   if (!Number.isSafeInteger(patternId) || patternId < 1) return <Screen nav={false}><TopBar title="내 패턴" back/><ErrorState message="패턴 주소를 확인해주세요."/></Screen>
-  if (pattern.isPending) return <Screen nav={false}><TopBar title="내 패턴" back/><Loading/></Screen>
+  if (pattern.isPending) return <Screen nav={false}><TopBar title="내 패턴" back/><Loading variant="detail" label="패턴을 정리하는 중"/></Screen>
   if (pattern.isError) return <Screen nav={false}><TopBar title="내 패턴" back/><ErrorState message={pattern.error.message} onRetry={() => pattern.refetch()}/></Screen>
 
   const data = pattern.data

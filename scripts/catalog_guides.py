@@ -1124,7 +1124,7 @@ def run(args: argparse.Namespace) -> int:
     atomic_write_json(args.artifacts / "mapping-report.json", report)
 
     selected = select_products(products, args.ids, args.limit)
-    model = os.environ.get("OPENAI_MODEL", "").strip() or "gpt-5.6-luna"
+    model = os.environ.get("OPENAI_MODEL", "").strip() or "gpt-5.6-terra"
     api_key = os.environ.get("OPENAI_API_KEY", "").strip() or None
     resolved = generate_guides(
         selected=selected,

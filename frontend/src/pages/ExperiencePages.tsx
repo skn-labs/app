@@ -8,14 +8,21 @@ import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'reac
 import { api, ApiError, uid } from '../lib/api'
 import { startChatPath } from '../lib/chat'
 import { formatExperienceRecordDate } from '../lib/experience'
-import type { Experience, ExperienceRecord, RoutineItemInput, SavedRecord, UserProduct } from '../lib/types'
+import type { Experience, ExperienceRecord, Routine, RoutineItemInput, SavedRecord, UserProduct } from '../lib/types'
 import { BeforeChangeSheet } from '../components/BeforeChangeSheet'
 import { BrandIdentity } from '../components/BrandIdentity'
 import { ExperienceRecordItem } from '../components/ExperienceRecordItem'
 import { ExperienceActionIcon } from '../components/ExperienceActionIcon'
 import { ExperienceDiscomfortPicker, ExperienceRecordStatus, ExperienceSentimentPicker, ExperienceStatusGroup, type ExperienceDiscomfort, type ExperienceSentiment } from '../components/ExperienceStatusBadge'
 import { ProductAddSheet } from '../components/ProductAddSheet'
-import { AppHeader, BottomSheet, BrandMark, Button, ErrorState, Loading, PageHeading, ProductGlyph, Screen, StickyActionBar, TopBar } from '../components/ui'
+import { AppHeader, BottomSheet, BrandMark, Button, ErrorState, Loading, PageHeading, ProductGlyph, Screen, Skeleton, StickyActionBar, TopBar } from '../components/ui'
+
+function mergeCurrentRoutine(previous: Routine[] | undefined, current: Routine) {
+  const archived = (previous || [])
+    .filter(routine => routine.id !== current.id)
+    .map(routine => routine.status === 'CURRENT' ? { ...routine, status: 'PAST' as const } : routine)
+  return [current, ...archived]
+}
 
 export function ExperiencePage() {
   const { id } = useParams(); const experienceId = Number(id)
@@ -27,7 +34,7 @@ export function ExperiencePage() {
     .filter(record => record.sessionId === experienceId)
     .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime()), [experienceId, records.data])
   if (!validExperienceId) return <Screen nav={false}><AppHeader back profile={false} notifications={false}/><ErrorState message="사용 경험 주소를 확인해주세요."/></Screen>
-  if (experience.isPending) return <Screen nav={false}><AppHeader back profile={false} notifications={false}/><Loading/></Screen>
+  if (experience.isPending) return <Screen nav={false}><AppHeader back profile={false} notifications={false}/><Loading variant="detail" label="사용 기록을 준비하는 중"/></Screen>
   if (experience.isError) return <Screen nav={false}><AppHeader back profile={false} notifications={false}/><ErrorState message={experience.error.message} onRetry={() => experience.refetch()}/></Screen>
   const data = experience.data
   const day = Math.max(1, Math.min(7, data.day))
@@ -66,7 +73,7 @@ export function RecordPage() {
   const openRescueChat = () => navigate(startChatPath('RESCUE', note.trim() || '지금 사용 중인 조합에서 불편함이 있었어.', { experienceId }))
   const complete = useMutation({ mutationFn: () => api.completeExperience(experienceId), onSuccess: () => { queryClient.invalidateQueries(); navigate('/') } })
   if (!validExperienceId) return <Screen nav={false}><AppHeader back profile={false} notifications={false}/><ErrorState message="사용 경험 주소를 확인해주세요."/></Screen>
-  if (experience.isPending) return <Screen nav={false}><AppHeader back profile={false} notifications={false}/><Loading/></Screen>
+  if (experience.isPending) return <Screen nav={false}><AppHeader back profile={false} notifications={false}/><Loading variant="form" label="기록 화면을 준비하는 중"/></Screen>
   if (experience.isError) return <Screen nav={false}><AppHeader back profile={false} notifications={false}/><ErrorState message={experience.error.message}/></Screen>
   if (saved) return <SavedRecordResult saved={saved} reviewCompleted={experience.data.reviewDue} experienceEnded={endAfterSave} onRescue={openRescueChat} onContinue={() => navigate(experience.data.reviewDue || endAfterSave ? '/' : `/experiences/${experienceId}`)} onComplete={() => complete.mutate()} completing={complete.isPending} completeError={complete.error?.message}/>
   const tagOptions = ['가벼움','촉촉함','산뜻함','흡수가 빠름','밀림 없음','답답함','무거움','따가움','붉어짐','계절 차이']
@@ -180,6 +187,11 @@ export function RoutineEditPage() {
   const routineItems = () => selected.map(userProductId => ({ userProductId, timeSlot: settings[userProductId]?.timeSlot || 'EVENING', frequency: settings[userProductId]?.frequency || '매일' } as RoutineItemInput))
   const save = useMutation({ mutationFn: () => api.replaceRoutine(creating ? '새 루틴' : current.data?.name || '내 스킨케어 루틴', routineItems(), saveRequestId.current), onSuccess: value => {
     if (auth.data) try { sessionStorage.removeItem(routineDraftKey(auth.data.userId, draftMode)) } catch { /* 서버 저장이 우선이다 */ }
+    if (value.routine) {
+      queryClient.setQueryData(['current-routine'], value.routine)
+      queryClient.setQueryData(['routine', value.routine.id], value.routine)
+      queryClient.setQueryData<Routine[]>(['routines'], previous => mergeCurrentRoutine(previous, value.routine!))
+    }
     queryClient.invalidateQueries()
     if (creating) setCreatedExperience(value)
     else navigate(`/experiences/${value.id}`)
@@ -213,7 +225,7 @@ export function RoutineEditPage() {
   const currentError = !creating && current.error && !(current.error instanceof ApiError && current.error.status === 404) ? current.error : null
   const pageTitle = creating ? '새 루틴 만들기' : '루틴 편집'
   if (createdExperience) return <RoutineNamingFlow experience={createdExperience}/>
-  if (auth.isPending || products.isPending || (!creating && current.isPending) || home.isPending || !initialized) return <Screen nav={false}><TopBar title={pageTitle} back/><Loading label={creating ? '새 루틴을 준비하는 중' : '편집 중인 루틴을 불러오는 중'}/></Screen>
+  if (auth.isPending || products.isPending || (!creating && current.isPending) || home.isPending || !initialized) return <Screen nav={false}><TopBar title={pageTitle} back/><Loading variant="form" label={creating ? '새 루틴을 준비하는 중' : '편집 중인 루틴을 불러오는 중'}/></Screen>
   const loadError = auth.error || products.error || currentError || home.error
   if (loadError) return <Screen nav={false}><TopBar title={pageTitle} back/><ErrorState message={loadError.message} onRetry={() => { auth.refetch(); products.refetch(); if (!creating) current.refetch(); home.refetch() }}/></Screen>
   const canAdd = selected.length < 12
@@ -341,10 +353,18 @@ function RoutineNamingFlow({ experience }: { experience: Experience }) {
   const finish = useMutation({ mutationFn: async (destination: 'complete' | 'edit') => ({
     destination,
     routine: await api.renameRoutine(routine!.id, suggestion.data!.name),
-  }), onSuccess: ({ destination, routine: renamedRoutine }) => {
+  }), onSuccess: async ({ destination, routine: renamedRoutine }) => {
     queryClient.setQueryData(['current-routine'], renamedRoutine)
-    queryClient.invalidateQueries()
-    navigate(destination === 'edit' ? '/routine/edit' : '/routines', { replace: true })
+    queryClient.setQueryData(['routine', renamedRoutine.id], renamedRoutine)
+    queryClient.setQueryData<Routine[]>(['routines'], previous => mergeCurrentRoutine(previous, renamedRoutine))
+    void queryClient.invalidateQueries({ queryKey: ['home'] })
+    try {
+      await queryClient.refetchQueries({ queryKey: ['routines'], exact: true, type: 'all' })
+    } catch { /* 낙관적으로 합친 최신 루틴으로 이동을 계속한다. */ }
+    navigate(destination === 'edit' ? '/routine/edit' : '/routines', {
+      replace: true,
+      state: destination === 'complete' ? { focusRoutineId: renamedRoutine.id } : null,
+    })
   } })
   if (!routine) return <Screen nav={false}><ErrorState message="만든 루틴 정보를 불러오지 못했어요." onRetry={() => navigate(`/experiences/${experience.id}`, { replace: true })}/></Screen>
   const loading = suggestion.isPending || !suggestion.data
@@ -485,7 +505,7 @@ function ExperienceOverview({ experience, day }: { experience: Experience; day: 
 function ExperienceJournal({ records, loading, failed, onRetry }: { records: ExperienceRecord[]; loading: boolean; failed: boolean; onRetry: () => void }) {
   return <section className="mt-9" aria-labelledby="experience-journal-title">
     <div className="flex min-h-10 items-center justify-between gap-4"><h2 id="experience-journal-title" className="text-[23px] font-semibold tracking-[-.04em] text-[#171d29]">기록</h2>{!loading && <span className="text-[11px] font-semibold tabular-nums text-[#7b8593]">{records.length}개</span>}</div>
-    {loading && !records.length && <div className="mt-3 space-y-3" aria-label="사용 기록을 불러오는 중"><div className="h-24 animate-pulse rounded-[18px] bg-[#eef1f5]"/><div className="h-20 animate-pulse rounded-[18px] bg-[#f2f4f7]"/></div>}
+    {loading && !records.length && <div className="mt-3 space-y-3" role="status" aria-label="사용 기록을 불러오는 중"><Skeleton className="h-24 rounded-[18px]"/><Skeleton className="h-20 rounded-[18px]"/></div>}
     {!loading && !records.length && <div className="mt-3 flex items-start gap-3 border-y border-[#e0e5ec] py-6"><span className="grid size-9 shrink-0 place-items-center rounded-full bg-[#eef3fa] text-[#7185a3]"><BookOpen size={16}/></span><div className="min-w-0"><p className="text-[14px] font-semibold text-[#303949]">{failed ? '사용 기록을 불러오지 못했어요' : '아직 남긴 기록이 없어요'}</p><p className="mt-1 text-[11px] leading-5 text-[#818995]">{failed ? '잠시 뒤 다시 시도해주세요.' : '사용해본 날, 확인한 만큼만 남겨도 충분해요.'}</p>{failed && <button type="button" onClick={onRetry} className="mt-2 min-h-9 text-[11px] font-semibold text-[#657187] underline underline-offset-3">다시 시도</button>}</div></div>}
     {records.length > 0 && <div className="mt-3 divide-y divide-[#e5e9ef] border-y border-[#e5e9ef]">{records.map(record => <ExperienceRecordItem key={record.id} record={record} showTitle={false}/>)}</div>}
     {failed && records.length > 0 && <div className="mt-3 flex items-center justify-center gap-2 text-[10px] text-[#8b7272]"><span>전체 목록을 불러오지 못해 최근 기록만 보여드려요.</span><button type="button" onClick={onRetry} className="min-h-8 shrink-0 px-1 font-semibold underline underline-offset-2">다시 시도</button></div>}

@@ -25,6 +25,7 @@ public final class ApiModels {
             boolean verified,
             ProductGuide guide,
             List<ProductFact> facts,
+            List<ProductAchievement> achievements,
             int personalRecordCount,
             boolean owned,
             String imageUrl
@@ -49,6 +50,16 @@ public final class ApiModels {
     public record ProductFact(
             String type,
             String text,
+            String sourceLabel,
+            String sourceUrl,
+            String checkedAt
+    ) {}
+
+    public record ProductAchievement(
+            String type,
+            String periodLabel,
+            String title,
+            String detail,
             String sourceLabel,
             String sourceUrl,
             String checkedAt

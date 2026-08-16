@@ -5,9 +5,14 @@ import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { twMerge } from 'tailwind-merge'
 import { ActionIcon } from './ActionIcon'
 import { NotificationBell } from './NotificationBell'
+import { PageSkeleton as PageSkeletonView, type SkeletonVariant } from './Skeleton'
+import { useNavigationMotion } from '../lib/navigationMotionContext'
+
+export { PageSkeleton, Skeleton } from './Skeleton'
 
 export function Screen({ children, className = '', nav = true }: PropsWithChildren<{ className?: string; nav?: boolean }>) {
-  return <main className={twMerge('mobile-shell h-full min-h-0 overflow-y-auto overscroll-contain bg-paper text-ink', nav && 'pb-28', className)}>{children}{nav && <BottomNav />}</main>
+  const motion = useNavigationMotion()
+  return <main className={twMerge('mobile-shell h-full min-h-0 overflow-y-auto overscroll-contain bg-paper text-ink', nav && 'pb-28', motion !== 'none' && `skn-route-${motion}`, className)}>{children}</main>
 }
 
 export function TopBar({ title, back = false, backTo, right }: { title: string; back?: boolean; backTo?: string; right?: ReactNode }) {
@@ -31,16 +36,16 @@ export function AppHeader({ back = false, backTo, onBack, left, right, profile =
   </header>
 }
 
-function BottomNav() {
+export function BottomNav() {
   const items = [
     { to: '/', label: '홈', icon: Home, end: true },
-    { to: '/my-products', label: 'My Lab', icon: FlaskConical },
+    { to: '/my-products', label: '화장품', icon: FlaskConical },
     { to: '/routines', label: '루틴', icon: NotebookText },
     { to: '/ai', label: 'AI', icon: MessageCircle },
   ]
   return <div className="safe-bottom pointer-events-none fixed inset-x-0 bottom-0 z-30 mx-auto flex max-w-[430px] justify-center px-7">
     <nav aria-label="주요 메뉴" className="pointer-events-auto flex h-[66px] w-full max-w-[334px] items-center justify-around rounded-[40px] border border-black/[.035] bg-white/96 px-2 shadow-[0_12px_36px_rgba(0,0,0,.13)] backdrop-blur-xl">
-      {items.map(({ to, label, icon: Icon, end }) => <NavLink key={to} to={to} end={end} aria-label={label} className={({ isActive }) => twMerge('grid size-11 place-items-center rounded-full text-[#c7c9c4] transition active:scale-95', isActive && 'text-[#0a0a0a]')}>
+      {items.map(({ to, label, icon: Icon, end }) => <NavLink key={to} to={to} end={end} aria-label={label} className={({ isActive }) => twMerge('grid size-11 place-items-center rounded-full text-[#c7c9c4] transition-[color,background-color,transform,box-shadow] duration-150 active:scale-95', isActive && 'bg-[#f2f6fc] text-[#111722] shadow-[inset_0_0_0_1px_rgba(180,199,229,.2)]')}>
         <Icon size={23} strokeWidth={1.9}/><span className="sr-only">{label}</span>
       </NavLink>)}
     </nav>
@@ -165,8 +170,8 @@ export function ProductGlyph({ category = '제품', size = 'md', src }: { catego
   </div>
 }
 
-export function Loading({ label = '불러오는 중' }: { label?: string }) {
-  return <div className="grid min-h-[55svh] place-items-center" role="status" aria-live="polite"><div className="flex flex-col items-center gap-3 text-sm text-muted"><span aria-hidden="true" className="size-6 animate-spin rounded-full border-2 border-line border-t-accent"/><span>{label}</span></div></div>
+export function Loading({ label = '화면을 준비하는 중', variant = 'generic', className = '' }: { label?: string; variant?: SkeletonVariant; className?: string }) {
+  return <PageSkeletonView label={label} variant={variant} className={className}/>
 }
 
 export function ErrorState({ message, onRetry }: { message: string; onRetry?: () => void }) {
@@ -196,8 +201,8 @@ export function BottomSheet({ open, onClose, title, children }: PropsWithChildre
   }, [open])
 
   if (!open) return null
-  return <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/35 backdrop-blur-[2px]" onPointerDown={onClose}>
-    <section ref={sheet} role="dialog" aria-modal="true" aria-labelledby="bottom-sheet-title" tabIndex={-1} className="safe-bottom w-full max-w-[430px] animate-rise rounded-t-[28px] bg-white px-5 pb-4 pt-3 shadow-2xl outline-none" onPointerDown={event => event.stopPropagation()}>
+  return <div className="skn-sheet-backdrop fixed inset-0 z-50 flex items-end justify-center bg-black/35 backdrop-blur-[2px]" onPointerDown={onClose}>
+    <section ref={sheet} role="dialog" aria-modal="true" aria-labelledby="bottom-sheet-title" tabIndex={-1} className="skn-sheet-surface safe-bottom w-full max-w-[430px] rounded-t-[28px] bg-white px-5 pb-4 pt-3 shadow-2xl outline-none" onPointerDown={event => event.stopPropagation()}>
       <div aria-hidden="true" className="mx-auto mb-5 h-1 w-10 rounded-full bg-[#d9dcd6]"/><div className="mb-5 flex items-start justify-between gap-4"><h2 id="bottom-sheet-title" className="text-2xl font-medium tracking-[-.035em]">{title}</h2><button type="button" onClick={onClose} aria-label="닫기" className="-mr-2 -mt-2 grid size-11 shrink-0 place-items-center rounded-full text-muted transition hover:bg-soft active:scale-95"><X size={19}/></button></div>{children}
     </section>
   </div>
@@ -211,8 +216,9 @@ export function AiBadge() {
  * 앱의 모든 브랜드 영상을 같은 품질과 재생 규칙으로 보여준다.
  *
  * poster를 먼저 그리고 영상이 준비된 뒤에만 덮어 첫 프레임 번쩍임을 막는다.
- * webm → mp4 → poster 순으로 대체하며, 동작 줄이기 설정이나 재생 실패 시에도
- * 완료 콜백을 한 번 호출해 화면 전환이 멈추지 않게 한다.
+ * webm → mp4 → poster 순으로 대체하며, 동작 줄이기 설정이나 로드 실패 시에도
+ * 완료 콜백을 한 번 호출해 화면 전환이 멈추지 않게 한다. 재생 준비 전의
+ * 일시적인 play() 실패는 포스터로 고정하지 않고 canplay에서 다시 시도한다.
  */
 export function AssetMotion({ name, poster, alt = '', loop = false, playing = true, className = '', mediaClassName = '', onEnded }: {
   name: string
@@ -251,9 +257,19 @@ export function AssetMotion({ name, poster, alt = '', loop = false, playing = tr
     if (!playing) {
       element.pause()
       element.currentTime = 0
+      setReady(false)
     } else {
-      if (!previousPlaying.current) element.currentTime = 0
-      element.play().catch(() => setFallbackOnly(true))
+      if (!previousPlaying.current) {
+        element.currentTime = 0
+        endedOnce.current = false
+      }
+      if (element.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+        void element.play().catch(() => {
+          // Safari는 소스를 준비하는 동안 play()를 일시적으로 거부할 수 있다.
+          // 포스터를 유지하고 canplay 이벤트에서 다시 시도한다.
+          setReady(false)
+        })
+      }
     }
     previousPlaying.current = playing
   }, [fallbackOnly, name, playing])
@@ -263,9 +279,13 @@ export function AssetMotion({ name, poster, alt = '', loop = false, playing = tr
   return <span role={alt ? 'img' : undefined} aria-label={alt || undefined} aria-hidden={!alt}
     className={twMerge('relative block shrink-0 overflow-hidden bg-[#fff]', className)}>
     <img src={poster} alt="" draggable={false} className={mediaClasses}/>
-    {!fallbackOnly && <video ref={video} tabIndex={-1} aria-hidden="true" poster={poster} autoPlay={playing} muted playsInline loop={loop}
+    {!fallbackOnly && <video key={name} ref={video} tabIndex={-1} aria-hidden="true" poster={poster} autoPlay={playing} muted playsInline loop={loop}
       preload={playing ? 'auto' : 'metadata'} disablePictureInPicture controlsList="nodownload noplaybackrate nofullscreen"
-      onLoadedData={() => setReady(true)} onError={() => setFallbackOnly(true)} onEnded={finish}
+      onCanPlay={event => {
+        if (!playing) return
+        void event.currentTarget.play().catch(() => setReady(false))
+      }}
+      onPlaying={() => setReady(true)} onError={() => setFallbackOnly(true)} onEnded={finish}
       className={twMerge(mediaClasses, 'transition-opacity duration-150 motion-reduce:transition-none', ready ? 'opacity-100' : 'opacity-0')}>
       <source src={`/skn-assets/${name}.webm`} type="video/webm"/>
       <source src={`/skn-assets/${name}.mp4`} type="video/mp4"/>

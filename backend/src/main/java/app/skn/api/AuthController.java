@@ -10,6 +10,7 @@ import app.skn.auth.AuthService;
 import app.skn.auth.CurrentUser;
 import app.skn.service.OnboardingService;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -31,24 +32,26 @@ public class AuthController {
 
     @PostMapping("/signup")
     @ResponseStatus(HttpStatus.CREATED)
-    AuthView signUp(@Valid @RequestBody SignUpRequest request, HttpServletRequest servletRequest) {
-        return service.signUp(request, servletRequest);
+    AuthView signUp(@Valid @RequestBody SignUpRequest request, HttpServletRequest servletRequest,
+                    HttpServletResponse servletResponse) {
+        return service.signUp(request, servletRequest, servletResponse);
     }
 
     @PostMapping("/quick-signup")
     @ResponseStatus(HttpStatus.CREATED)
-    AuthView quickSignUp(HttpServletRequest servletRequest) {
-        return service.quickSignUp(servletRequest);
+    AuthView quickSignUp(HttpServletRequest servletRequest, HttpServletResponse servletResponse) {
+        return service.quickSignUp(servletRequest, servletResponse);
     }
 
     @PostMapping("/login")
-    AuthView login(@Valid @RequestBody LoginRequest request, HttpServletRequest servletRequest) {
-        return service.login(request, servletRequest);
+    AuthView login(@Valid @RequestBody LoginRequest request, HttpServletRequest servletRequest,
+                   HttpServletResponse servletResponse) {
+        return service.login(request, servletRequest, servletResponse);
     }
 
     @PostMapping("/demo")
-    AuthView demo(HttpServletRequest servletRequest) {
-        return service.demo(servletRequest);
+    AuthView demo(HttpServletRequest servletRequest, HttpServletResponse servletResponse) {
+        return service.demo(servletRequest, servletResponse);
     }
 
     @GetMapping("/quick-accounts")
@@ -57,8 +60,9 @@ public class AuthController {
     }
 
     @PostMapping("/quick-login/{username}")
-    AuthView quickLogin(@PathVariable String username, HttpServletRequest servletRequest) {
-        return service.quickLogin(username, servletRequest);
+    AuthView quickLogin(@PathVariable String username, HttpServletRequest servletRequest,
+                        HttpServletResponse servletResponse) {
+        return service.quickLogin(username, servletRequest, servletResponse);
     }
 
     @GetMapping("/me")
@@ -68,14 +72,14 @@ public class AuthController {
 
     @PostMapping("/logout")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    void logout(HttpServletRequest servletRequest) {
-        service.logout(servletRequest);
+    void logout(HttpServletRequest servletRequest, HttpServletResponse servletResponse) {
+        service.logout(servletRequest, servletResponse);
     }
 
     @DeleteMapping("/me")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    void deleteAccount(HttpServletRequest servletRequest) {
-        service.deleteAccount(currentUser, servletRequest);
+    void deleteAccount(HttpServletRequest servletRequest, HttpServletResponse servletResponse) {
+        service.deleteAccount(currentUser, servletRequest, servletResponse);
     }
 
     @PostMapping("/onboarding")

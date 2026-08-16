@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { ArrowRight, BookOpen, ChevronRight, MessageCircle, PencilLine } from 'lucide-react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useLocation, useParams } from 'react-router-dom'
 import { api, ApiError } from '../lib/api'
 import { startChatPath } from '../lib/chat'
 import type { Routine } from '../lib/types'
@@ -35,7 +35,7 @@ function routineGlance(routine: Routine) {
 }
 
 export function RoutineListPage() {
-  const auth = useQuery({ queryKey: ['auth'], queryFn: api.me })
+  const location = useLocation()
   const archive = useQuery({ queryKey: ['routines'], queryFn: api.routines })
   const [expandedId, setExpandedId] = useState<number | null>(null)
   const [activeIndex, setActiveIndex] = useState(0)
@@ -44,23 +44,27 @@ export function RoutineListPage() {
   const positionedInitialCard = useRef(false)
   const drag = useRef<{ pointerId: number; startX: number; scrollLeft: number; startIndex: number; moved: boolean } | null>(null)
   const suppressClick = useRef(false)
+  const requestedRoutineId = (location.state as { focusRoutineId?: unknown } | null)?.focusRoutineId
+  const focusRoutineId = typeof requestedRoutineId === 'number' && Number.isSafeInteger(requestedRoutineId) ? requestedRoutineId : null
 
   useLayoutEffect(() => {
     const element = carousel.current
     const routines = archive.data
     if (!element || !routines || positionedInitialCard.current) return
+    const requestedRoutineIndex = focusRoutineId === null ? -1 : routines.findIndex(routine => routine.id === focusRoutineId)
+    if (focusRoutineId !== null && requestedRoutineIndex < 0) return
     const currentRoutineIndex = routines.findIndex(routine => routine.status === 'CURRENT')
-    const initialIndex = routines.length ? (currentRoutineIndex >= 0 ? currentRoutineIndex : 0) + 1 : 0
+    const routineIndex = requestedRoutineIndex >= 0 ? requestedRoutineIndex : currentRoutineIndex >= 0 ? currentRoutineIndex : 0
+    const initialIndex = routines.length ? routineIndex + 1 : 0
     const card = element.querySelectorAll<HTMLElement>('[data-routine-card]')[initialIndex]
     if (!card) return
     element.scrollLeft = card.offsetLeft - (element.clientWidth - card.offsetWidth) / 2
     setActiveIndex(initialIndex)
     positionedInitialCard.current = true
-  }, [archive.data])
+  }, [archive.data, focusRoutineId])
 
-  if (archive.isPending || auth.isPending) return <Screen><AppHeader/><Loading/></Screen>
-  const loadError = auth.error || archive.error
-  if (loadError) return <Screen><AppHeader/><ErrorState message={loadError.message} onRetry={() => { auth.refetch(); archive.refetch() }}/></Screen>
+  if (archive.isPending) return <Screen><AppHeader/><Loading variant="routine" label="루틴을 정리하는 중"/></Screen>
+  if (archive.error) return <Screen><AppHeader/><ErrorState message={archive.error.message} onRetry={() => archive.refetch()}/></Screen>
 
   const routines = archive.data
   const createDescriptions = [
@@ -104,7 +108,7 @@ export function RoutineListPage() {
   return <Screen className="bg-white">
     <AppHeader/>
     <div className="px-5 pt-5">
-      <div className="min-w-0"><p className="text-[11px] font-semibold tracking-[.14em] text-[#71809a]">MY ROUTINE ARCHIVE</p><h1 className="mt-2 text-[clamp(34px,9vw,40px)] font-semibold leading-[1.08] tracking-[-.052em] text-[#111722]">{auth.data?.displayName} 님의<br/>루틴</h1><p className="mt-3 text-[13px] font-medium leading-5 tracking-[-.018em] text-[#7a808a]">{routines.length ? `저장된 루틴 ${routines.length}개를 옆으로 넘겨보세요.` : '카드를 넘겨 첫 루틴을 만들어보세요.'}</p></div>
+      <div className="min-w-0"><p className="text-[10px] font-semibold tracking-[.15em] text-[#71809a]">ROUTINES</p><h1 className="mt-1.5 text-[30px] font-semibold leading-[1.14] tracking-[-.045em] text-[#111722]">내 루틴</h1><p className="mt-2.5 max-w-[340px] text-[12px] font-medium leading-5 tracking-[-.012em] text-[#7a808a]">{routines.length ? `저장한 루틴 ${routines.length}개를 넘기며 현재와 이전 조합을 확인하세요.` : '제품과 순서를 정해 첫 루틴을 시작해보세요.'}</p></div>
     </div>
 
     <section className="relative mt-6" aria-label="나의 루틴 카드">
@@ -171,7 +175,7 @@ export function RoutineListPage() {
           event.stopPropagation()
           suppressClick.current = false
         }}
-        className={`hide-scrollbar flex select-none snap-x snap-mandatory gap-4 overflow-x-auto overscroll-x-contain px-[calc((100%_-_272px)/2)] pb-12 pt-8 [perspective:1200px] [-webkit-overflow-scrolling:touch] [touch-action:pan-x_pan-y] outline-none ${dragging ? 'cursor-grabbing snap-none' : 'cursor-grab'}`}
+        className={`hide-scrollbar flex select-none snap-x snap-mandatory gap-3.5 overflow-x-auto overscroll-x-contain px-[calc((100%_-_260px)/2)] pb-12 pt-8 [perspective:1200px] [-webkit-overflow-scrolling:touch] [touch-action:pan-x_pan-y] outline-none ${dragging ? 'cursor-grabbing snap-none' : 'cursor-grab'}`}
       >
         {cards.map((card, index) => {
           const distance = Math.abs(index - activeIndex)
@@ -180,10 +184,10 @@ export function RoutineListPage() {
             : distance === 1
               ? 'z-0 opacity-65 [transform:translateZ(-52px)_scale(.91)] [filter:saturate(.72)]'
               : 'z-0 opacity-40 [transform:translateZ(-86px)_scale(.86)] [filter:saturate(.55)]'
-          return <div key={card.key} data-routine-card aria-current={index === activeIndex ? 'true' : undefined} className={`relative flex h-[378px] w-[272px] shrink-0 snap-center items-center justify-center [scroll-snap-stop:always] transition-[transform,opacity,filter] duration-500 ease-out will-change-transform motion-reduce:transform-none motion-reduce:opacity-100 motion-reduce:filter-none ${depth}`}>
+          return <div key={card.key} data-routine-card aria-current={index === activeIndex ? 'true' : undefined} className={`relative flex h-[368px] w-[260px] shrink-0 snap-center items-center justify-center [scroll-snap-stop:always] transition-[transform,opacity,filter] duration-500 ease-out will-change-transform motion-reduce:transform-none motion-reduce:opacity-100 motion-reduce:filter-none ${depth}`}>
             {card.kind === 'routine'
               ? <RoutineCarouselCard routine={card.routine} image={card.image} tone={card.tone} expanded={expandedId === card.routine.id} onExpand={() => index === activeIndex ? setExpandedId(card.routine.id) : showCard(index)} onCollapse={() => setExpandedId(null)}/>
-              : <CreateRoutineCard image={card.image} description={card.description}/>}
+              : <CreateRoutineCard image={card.image} description={card.description} active={index === activeIndex} onSelect={() => showCard(index)}/>}
           </div>
         })}
       </div>
@@ -194,9 +198,13 @@ export function RoutineListPage() {
   </Screen>
 }
 
-function CreateRoutineCard({ image, description }: { image: string; description: string }) {
-  return <Link to="/routine/new" aria-label="새 루틴 만들기" className="group relative h-[354px] w-full shrink-0 overflow-hidden rounded-[26px] text-left shadow-[0_12px_34px_rgba(28,38,56,.14)] transition active:scale-[.99]">
-    <img src={image} alt="" aria-hidden className="absolute inset-0 size-full scale-105 object-cover opacity-45 saturate-50 transition duration-500 group-hover:scale-100"/>
+function CreateRoutineCard({ image, description, active, onSelect }: { image: string; description: string; active: boolean; onSelect: () => void }) {
+  return <Link to="/routine/new" aria-label={active ? '새 루틴 만들기' : '이 카드를 가운데로 이동'} onClick={event => {
+    if (active) return
+    event.preventDefault()
+    onSelect()
+  }} className="group relative h-[344px] w-full shrink-0 overflow-hidden rounded-[26px] text-left shadow-[0_12px_34px_rgba(28,38,56,.14)] transition active:scale-[.99]">
+    <img src={image} alt="" aria-hidden className="absolute inset-0 size-full scale-105 object-cover opacity-[.55] saturate-50"/>
     <div aria-hidden className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,.88)_0%,rgba(255,255,255,.62)_45%,rgba(241,247,239,.96)_100%)]"/>
     <div className="relative flex h-full flex-col p-6">
       <span className="w-fit rounded-full border border-black/5 bg-white/78 px-3 py-1.5 text-[11px] font-semibold tracking-[.02em] text-black/50 backdrop-blur">EMPTY ROUTINE</span>
@@ -208,6 +216,7 @@ function CreateRoutineCard({ image, description }: { image: string; description:
 
 function RoutineCarouselCard({ routine, image, tone, expanded, onExpand, onCollapse }: { routine: Routine; image: string; tone: string; expanded: boolean; onExpand: () => void; onCollapse: () => void }) {
   const faceStyle = { backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' } as const
+  const frontFaceStyle = { ...faceStyle, transform: 'rotateY(0deg) translateZ(1px)', WebkitTransform: 'rotateY(0deg) translateZ(1px)' } as const
   const generatedInsight = useQuery({
     queryKey: ['routine-insight-v4', routine.id],
     queryFn: () => api.generateRoutineInsight(routine.id),
@@ -216,9 +225,9 @@ function RoutineCarouselCard({ routine, image, tone, expanded, onExpand, onColla
     staleTime: Number.POSITIVE_INFINITY,
   })
   const insight = generatedInsight.data || routine.insight
-  return <div className="relative h-[354px] w-full [perspective:1200px]">
+  return <div className="relative h-[344px] w-full [perspective:1200px]">
     <div className={`relative size-full transition-transform duration-500 [transform-style:preserve-3d] motion-reduce:transition-none ${expanded ? '[transform:rotateY(180deg)]' : ''}`}>
-      <button type="button" onClick={onExpand} tabIndex={expanded ? -1 : 0} aria-expanded={expanded} aria-label={`${routine.name} 루틴이 도와주는 것 보기`} className={`absolute inset-0 overflow-hidden rounded-[26px] text-left shadow-[0_14px_38px_rgba(26,36,55,.18)] transition active:scale-[.99] ${expanded ? 'pointer-events-none' : ''}`} style={faceStyle}>
+      <button type="button" onClick={onExpand} tabIndex={expanded ? -1 : 0} aria-expanded={expanded} aria-label={`${routine.name} 루틴이 도와주는 것 보기`} className={`absolute inset-0 overflow-hidden rounded-[26px] text-left shadow-[0_14px_38px_rgba(26,36,55,.18)] transition active:scale-[.99] ${expanded ? 'pointer-events-none' : ''}`} style={frontFaceStyle}>
         <img src={image} alt="" aria-hidden className="absolute inset-0 size-full object-cover"/>
         <div aria-hidden className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,.82)_0%,rgba(255,255,255,.12)_46%,rgba(16,25,40,.18)_100%)]"/>
         <div className="absolute inset-x-5 top-5 flex items-center justify-between gap-2">{routine.status === 'CURRENT' ? <span className="rounded-full border border-white/55 bg-white/62 px-3 py-1.5 text-[11px] font-semibold tracking-[.015em] text-[#283346] backdrop-blur-md">현재 사용 중</span> : <span aria-hidden/>}<span className="text-[10px] font-semibold tracking-[-.01em] text-black/45">눌러 루틴 읽기</span></div>
@@ -229,9 +238,8 @@ function RoutineCarouselCard({ routine, image, tone, expanded, onExpand, onColla
         <RoutineLabPattern/>
         <div aria-hidden className="absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(255,255,255,.72),transparent_37%),linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.22))]"/>
         <div className="relative flex h-full flex-col px-5 pb-5 pt-[18px]">
-          <div className="flex items-center justify-between gap-3 border-b border-[#6c7e99]/15 pb-3.5">
+          <div className="flex items-center border-b border-[#6c7e99]/15 pb-3.5">
             <span className="text-[10px] font-semibold tracking-[-.01em] text-[#65758d]">{dayPartLabel(routine.dayPart)} 루틴 · {routine.items.length}개 제품</span>
-            <button type="button" tabIndex={expanded ? 0 : -1} onClick={event => { event.stopPropagation(); onCollapse() }} className="rounded-full px-2 py-1 text-[10px] font-semibold text-[#748198] transition hover:bg-white/45 hover:text-[#344158] active:scale-[.97]">앞면으로</button>
           </div>
 
           <div className="mt-7">
@@ -277,7 +285,7 @@ export function RoutineDetailPage() {
     staleTime: Number.POSITIVE_INFINITY,
   })
   if (!validRoutineId) return <Screen nav={false}><AppHeader back backTo="/routines"/><ErrorState message="루틴 주소를 확인해주세요."/></Screen>
-  if (routineQuery.isPending || current.isPending) return <Screen nav={false}><AppHeader back backTo="/routines"/><Loading/></Screen>
+  if (routineQuery.isPending || current.isPending) return <Screen nav={false}><AppHeader back backTo="/routines"/><Loading variant="detail" label="루틴 상세를 준비하는 중"/></Screen>
   const loadError = routineQuery.error || (current.error && !isNotFound(current.error) ? current.error : null)
   if (loadError) return <Screen nav={false}><AppHeader back backTo="/routines"/><ErrorState message={loadError.message} onRetry={() => { routineQuery.refetch(); current.refetch() }}/></Screen>
   const routine = routineQuery.data

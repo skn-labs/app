@@ -52,6 +52,7 @@ jobs:
           cp deploy/oci/Dockerfile release/Dockerfile
           cp deploy/oci/compose.yml release/compose.yml
           cp deploy/oci/backup_sqlite.py release/backup_sqlite.py
+          cp deploy/oci/reset-catalog-only.sql release/reset-catalog-only.sql
           cp scripts/import_subagent_catalog.py release/import_subagent_catalog.py
           install -d release/migrations
           cp deploy/oci/migrations/*.sql release/migrations/

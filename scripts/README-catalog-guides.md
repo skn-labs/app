@@ -42,7 +42,7 @@ generatedAt
 
 ```dotenv
 OPENAI_API_KEY=...
-OPENAI_MODEL=gpt-5.6-luna
+OPENAI_MODEL=gpt-5.6-terra
 OPENAI_REASONING_EFFORT=low
 ```
 

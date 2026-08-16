@@ -47,7 +47,8 @@ public class SkincareRepository {
         String value = query == null ? "" : query.trim().toLowerCase(Locale.ROOT);
         String like = "%" + value + "%";
         String prefix = value + "%";
-        // 대표 제품과 브랜드 인지도를 이용한 탐색용 휴리스틱이며 안전성·적합성 점수가 아니다.
+        // 확인된 외부 성과 수를 우선하되 같은 어워드 회차가 연속되지 않도록 작게 간격을 둔다.
+        // 어떤 값도 안전성·효능·개인 적합성 점수가 아니다.
         return jdbc.query("""
                 WITH
                 featured_product(product_id, product_rank) AS (
@@ -82,7 +83,16 @@ public class SkincareRepository {
                                        JOIN user_product rup ON rup.id = eri.user_product_id
                                        WHERE eri.routine_id = es.routine_id AND rup.product_id = p.id
                                    )
-                             )) AS personal_record_count,
+                           )) AS personal_record_count,
+                           (SELECT COUNT(*) FROM product_achievement pa
+                             WHERE pa.product_id = p.id) AS achievement_count,
+                           COALESCE((
+                               SELECT pa.source_url
+                                 FROM product_achievement pa
+                                WHERE pa.product_id = p.id
+                                ORDER BY pa.display_order, pa.id
+                                LIMIT 1
+                           ), 'product:' || p.id) AS latest_achievement_event,
                            COALESCE(fp.product_rank, 10000) AS featured_rank,
                            COALESCE(bp.brand_rank, 1000) AS brand_popularity_rank,
                            CASE
@@ -104,11 +114,21 @@ public class SkincareRepository {
                            ROW_NUMBER() OVER (
                                PARTITION BY brand
                                ORDER BY featured_rank, public_verified DESC, id
-                           ) AS brand_product_rank
+                           ) AS brand_product_rank,
+                           ROW_NUMBER() OVER (
+                               PARTITION BY latest_achievement_event
+                               ORDER BY achievement_count DESC, featured_rank, public_verified DESC, id
+                           ) AS achievement_event_position
                       FROM catalog
                 )
                 SELECT * FROM ranked
                  ORDER BY query_relevance DESC,
+                          CASE
+                              WHEN achievement_event_position = 1 THEN achievement_count
+                              WHEN achievement_event_position = 2 THEN achievement_count - 3
+                              ELSE achievement_count - 5
+                          END DESC,
+                          achievement_count DESC,
                           featured_rank,
                           CASE WHEN featured_rank < 10000 THEN 0
                                ELSE brand_popularity_rank + ((brand_product_rank - 1) * 12)
@@ -918,6 +938,7 @@ public class SkincareRepository {
                 rs.getString("name"), rs.getString("category"),
                 rs.getString("volume"), rs.getString("version_label"), rs.getInt("public_verified") == 1,
                 guide, parseSourceFacts(rs.getString("source_facts_json")),
+                parseProductAchievements(rs.getString("achievements_json")),
                 rs.getInt("personal_record_count"), rs.getInt("owned") == 1, rs.getString("image_url")
         );
     }
@@ -1172,6 +1193,14 @@ public class SkincareRepository {
     }
 
     private List<ProductFact> parseSourceFacts(String json) {
+        try {
+            return objectMapper.readValue(json, new TypeReference<>() {});
+        } catch (Exception ignored) {
+            return List.of();
+        }
+    }
+
+    private List<ProductAchievement> parseProductAchievements(String json) {
         try {
             return objectMapper.readValue(json, new TypeReference<>() {});
         } catch (Exception ignored) {

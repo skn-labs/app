@@ -2,7 +2,6 @@ package app.skn.auth;
 
 import app.skn.common.ApiException;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -11,12 +10,15 @@ import java.util.Optional;
 
 @Component
 public class CurrentUser {
-    public static final String SESSION_USER_ID = "SKN_USER_ID";
+    private static final String REQUEST_USER_ID = CurrentUser.class.getName() + ".USER_ID";
+    private static final String REQUEST_AUTH_CHECKED = CurrentUser.class.getName() + ".AUTH_CHECKED";
 
     private final ObjectProvider<HttpServletRequest> requestProvider;
+    private final AccessTokenService accessTokens;
 
-    public CurrentUser(ObjectProvider<HttpServletRequest> requestProvider) {
+    public CurrentUser(ObjectProvider<HttpServletRequest> requestProvider, AccessTokenService accessTokens) {
         this.requestProvider = requestProvider;
+        this.accessTokens = accessTokens;
     }
 
     public long id() {
@@ -27,9 +29,13 @@ public class CurrentUser {
     public Optional<Long> optionalId() {
         HttpServletRequest request = requestProvider.getIfAvailable();
         if (request == null) return Optional.empty();
-        HttpSession session = request.getSession(false);
-        if (session == null) return Optional.empty();
-        Object value = session.getAttribute(SESSION_USER_ID);
-        return value instanceof Number number ? Optional.of(number.longValue()) : Optional.empty();
+        Object cached = request.getAttribute(REQUEST_USER_ID);
+        if (cached instanceof Number number) return Optional.of(number.longValue());
+        if (Boolean.TRUE.equals(request.getAttribute(REQUEST_AUTH_CHECKED))) return Optional.empty();
+
+        Optional<Long> resolved = accessTokens.resolveUserId(request);
+        request.setAttribute(REQUEST_AUTH_CHECKED, true);
+        resolved.ifPresent(userId -> request.setAttribute(REQUEST_USER_ID, userId));
+        return resolved;
     }
 }

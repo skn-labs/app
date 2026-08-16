@@ -1,5 +1,6 @@
 package app.skn;
 
+import app.skn.auth.AccessTokenService;
 import app.skn.data.SchemaScript;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,7 +9,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.http.HttpHeaders;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.mock.web.MockHttpSession;
+import jakarta.servlet.http.Cookie;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.JsonNode;
@@ -43,8 +44,8 @@ class CoreFlowIntegrationTest {
 
     @Test
     void demoShowsConnectedExperience() throws Exception {
-        MockHttpSession session = demoSession();
-        mvc.perform(get("/api/v1/home").session(session))
+        Cookie session = demoToken();
+        mvc.perform(get("/api/v1/home").cookie(session))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.displayName").value("코덕님"))
                 .andExpect(jsonPath("$.currentExperience.status").value("ACTIVE"))
@@ -53,9 +54,9 @@ class CoreFlowIntegrationTest {
 
     @Test
     void activeRoutineExperienceReturnsAccumulatedRecordSummary() throws Exception {
-        MockHttpSession session = signUpSession("record_summary_user");
+        Cookie session = signUpToken("record_summary_user");
         long userProductId = addProduct(session, 1);
-        String experienceBody = mvc.perform(post("/api/v1/me/experiences").session(session)
+        String experienceBody = mvc.perform(post("/api/v1/me/experiences").cookie(session)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"userProductId":%d,"mode":"ROUTINE","dayPart":"EVENING","clientRequestId":"summary-session"}
@@ -64,26 +65,26 @@ class CoreFlowIntegrationTest {
                 .andReturn().getResponse().getContentAsString();
         long experienceId = json.readTree(experienceBody).path("id").asLong();
 
-        mvc.perform(post("/api/v1/me/experiences/{id}/records", experienceId).session(session)
+        mvc.perform(post("/api/v1/me/experiences/{id}/records", experienceId).cookie(session)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"sentiment":"LIKED","note":"아침에는 편했어요","tags":[],"discomfort":"NOT_REPORTED","clientRequestId":"summary-record-1"}
                                 """))
                 .andExpect(status().isCreated());
-        mvc.perform(post("/api/v1/me/experiences/{id}/records", experienceId).session(session)
+        mvc.perform(post("/api/v1/me/experiences/{id}/records", experienceId).cookie(session)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"sentiment":"DISAPPOINTED","note":"저녁에는 답답했어요","tags":["답답함"],"discomfort":"REPORTED","clientRequestId":"summary-record-2"}
                                 """))
                 .andExpect(status().isCreated());
-        mvc.perform(post("/api/v1/me/experiences/{id}/records", experienceId).session(session)
+        mvc.perform(post("/api/v1/me/experiences/{id}/records", experienceId).cookie(session)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"sentiment":"LIKED","note":"다음 날은 괜찮았어요","tags":[],"discomfort":"UNKNOWN","clientRequestId":"summary-record-3"}
                                 """))
                 .andExpect(status().isCreated());
 
-        mvc.perform(get("/api/v1/home").session(session))
+        mvc.perform(get("/api/v1/home").cookie(session))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.currentExperience.recordSummary.totalCount").value(3))
                 .andExpect(jsonPath("$.currentExperience.recordSummary.likedCount").value(2))
@@ -99,8 +100,8 @@ class CoreFlowIntegrationTest {
         insertCatalogProduct(409, "토리든", "다이브인 저분자 히알루론산 세럼", "세럼");
         insertCatalogProduct(829, "에스트라", "아토베리어365 크림", "수분크림");
 
-        MockHttpSession session = demoSession();
-        String firstBody = mvc.perform(get("/api/v1/products").session(session).param("limit", "3"))
+        Cookie session = demoToken();
+        String firstBody = mvc.perform(get("/api/v1/products").cookie(session).param("limit", "3"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items.length()").value(3))
                 .andExpect(jsonPath("$.items[0].brand").value("라운드랩"))
@@ -111,7 +112,7 @@ class CoreFlowIntegrationTest {
                 .andReturn().getResponse().getContentAsString();
         JsonNode first = json.readTree(firstBody);
 
-        String secondBody = mvc.perform(get("/api/v1/products").session(session)
+        String secondBody = mvc.perform(get("/api/v1/products").cookie(session)
                         .param("limit", "3")
                         .param("cursor", first.path("nextCursor").asText()))
                 .andExpect(status().isOk())
@@ -124,14 +125,90 @@ class CoreFlowIntegrationTest {
         first.path("items").forEach(item -> firstIds.add(item.path("id").asLong()));
         second.path("items").forEach(item -> secondIds.add(item.path("id").asLong()));
         assertThat(firstIds).doesNotContainAnyElementsOf(secondIds);
-        mvc.perform(get("/api/v1/products").session(session).param("cursor", "broken"))
+        mvc.perform(get("/api/v1/products").cookie(session).param("cursor", "broken"))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.code").value("INVALID_PRODUCT_CURSOR"));
     }
 
     @Test
+    @Transactional
+    void productCatalogOrdersEqualSearchMatchesByAchievementCount() throws Exception {
+        insertCatalogProduct(3001, "테스트브랜드", "성과정렬 제품 A", "세럼");
+        insertCatalogProduct(3002, "테스트브랜드", "성과정렬 제품 B", "세럼");
+        jdbc.update("""
+                INSERT INTO product_achievement(
+                    product_id, achievement_type, period_label, title, detail,
+                    source_label, source_url, checked_at, display_order
+                ) VALUES
+                    (3001, 'RANKING', '2025', '테스트 어워드 2위', '세럼 부문',
+                     '테스트 주관사', 'https://example.com/awards/a', '2026-08-17T00:00:00Z', 10),
+                    (3002, 'RANKING', '2026 상반기', '테스트 어워드 1위', '세럼 부문',
+                     '테스트 주관사', 'https://example.com/awards/b', '2026-08-17T00:00:00Z', 1),
+                    (3002, 'AWARD', '2025', '테스트 에디터 선정', '세럼 부문',
+                     '테스트 주관사', 'https://example.com/awards/c', '2026-08-17T00:00:00Z', 10)
+                """);
+
+        mvc.perform(get("/api/v1/products").cookie(demoToken())
+                        .param("query", "성과정렬").param("limit", "2"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].id").value(3002))
+                .andExpect(jsonPath("$.items[1].id").value(3001));
+    }
+
+    @Test
+    @Transactional
+    void productCatalogSpacesRepeatedAchievementEventsWithoutLosingCountPriority() throws Exception {
+        insertCatalogProduct(3011, "테스트브랜드", "성과분산 제품 A", "세럼");
+        insertCatalogProduct(3012, "테스트브랜드", "성과분산 제품 B", "세럼");
+        insertCatalogProduct(3013, "테스트브랜드", "성과분산 제품 C", "세럼");
+        jdbc.update("""
+                WITH RECURSIVE achievement_number(value) AS (
+                    VALUES (1) UNION ALL SELECT value + 1 FROM achievement_number WHERE value < 6
+                )
+                INSERT INTO product_achievement(
+                    product_id, achievement_type, period_label, title, detail,
+                    source_label, source_url, checked_at, display_order
+                )
+                SELECT 3011, 'AWARD', '2026', '분산 A ' || value, '세럼 부문',
+                       '테스트 주관사', 'https://example.com/awards/shared', '2026-08-17T00:00:00Z', value
+                  FROM achievement_number
+                """);
+        jdbc.update("""
+                WITH RECURSIVE achievement_number(value) AS (
+                    VALUES (1) UNION ALL SELECT value + 1 FROM achievement_number WHERE value < 5
+                )
+                INSERT INTO product_achievement(
+                    product_id, achievement_type, period_label, title, detail,
+                    source_label, source_url, checked_at, display_order
+                )
+                SELECT 3012, 'AWARD', '2026', '분산 B ' || value, '세럼 부문',
+                       '테스트 주관사', 'https://example.com/awards/shared', '2026-08-17T00:00:00Z', value
+                  FROM achievement_number
+                """);
+        jdbc.update("""
+                WITH RECURSIVE achievement_number(value) AS (
+                    VALUES (1) UNION ALL SELECT value + 1 FROM achievement_number WHERE value < 3
+                )
+                INSERT INTO product_achievement(
+                    product_id, achievement_type, period_label, title, detail,
+                    source_label, source_url, checked_at, display_order
+                )
+                SELECT 3013, 'AWARD', '2025', '분산 C ' || value, '세럼 부문',
+                       '다른 테스트 주관사', 'https://example.com/awards/other', '2026-08-17T00:00:00Z', value
+                  FROM achievement_number
+                """);
+
+        mvc.perform(get("/api/v1/products").cookie(demoToken())
+                        .param("query", "성과분산").param("limit", "3"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].id").value(3011))
+                .andExpect(jsonPath("$.items[1].id").value(3013))
+                .andExpect(jsonPath("$.items[2].id").value(3012));
+    }
+
+    @Test
     void userProductsAreReturnedNewestFirst() throws Exception {
-        String body = mvc.perform(get("/api/v1/me/products").session(demoSession()))
+        String body = mvc.perform(get("/api/v1/me/products").cookie(demoToken()))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
         JsonNode items = json.readTree(body);
@@ -153,7 +230,7 @@ class CoreFlowIntegrationTest {
         Integer guideCount = jdbc.queryForObject("SELECT COUNT(*) FROM product_catalog_content", Integer.class);
         assertThat(guideCount).isEqualTo(productCount);
 
-        mvc.perform(get("/api/v1/products/2").session(demoSession()))
+        mvc.perform(get("/api/v1/products/2").cookie(demoToken()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.guide.summary").value("판테놀을 중심으로 편안한 사용감을 내세운 세럼 제품이에요."))
                 .andExpect(jsonPath("$.guide.routineStep").value("토너 다음 단계"))
@@ -166,7 +243,8 @@ class CoreFlowIntegrationTest {
                 .andExpect(jsonPath("$.guide.observationPoints").doesNotExist())
                 .andExpect(jsonPath("$.guide.origin").value("EDITORIAL"))
                 .andExpect(jsonPath("$.verified").value(false))
-                .andExpect(jsonPath("$.facts").isEmpty());
+                .andExpect(jsonPath("$.facts").isEmpty())
+                .andExpect(jsonPath("$.achievements").isEmpty());
 
         Integer oldEditorialCopy = jdbc.queryForObject("""
                 SELECT COUNT(*) FROM product_catalog_content
@@ -236,7 +314,7 @@ class CoreFlowIntegrationTest {
                           '브랜드 공식 페이지', 'https://example.com/products/11', '2026-08-11T00:00:00Z')
                 """);
 
-        mvc.perform(get("/api/v1/products/11").session(demoSession()))
+        mvc.perform(get("/api/v1/products/11").cookie(demoToken()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.facts.length()").value(1))
                 .andExpect(jsonPath("$.facts[0].type").value("DIRECTIONS"))
@@ -248,22 +326,44 @@ class CoreFlowIntegrationTest {
     }
 
     @Test
+    @Transactional
+    void datedProductAchievementIsReturnedSeparatelyFromProductFacts() throws Exception {
+        jdbc.update("""
+                INSERT OR IGNORE INTO product_achievement(
+                    product_id, achievement_type, period_label, title, detail,
+                    source_label, source_url, checked_at, display_order
+                ) VALUES (11, 'AWARD', '2025', '테스트 뷰티 어워드', '토너 부문',
+                          '테스트 주관사', 'https://example.com/awards/2025',
+                          '2026-08-17T00:00:00Z', 10)
+                """);
+
+        mvc.perform(get("/api/v1/products/11").cookie(demoToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.achievements.length()").value(1))
+                .andExpect(jsonPath("$.achievements[0].type").value("AWARD"))
+                .andExpect(jsonPath("$.achievements[0].periodLabel").value("2025"))
+                .andExpect(jsonPath("$.achievements[0].title").value("테스트 뷰티 어워드"))
+                .andExpect(jsonPath("$.achievements[0].sourceLabel").value("테스트 주관사"))
+                .andExpect(jsonPath("$.achievements[0].checkedAt").value("2026-08-17T00:00:00Z"));
+    }
+
+    @Test
     void newAccountIsEmptyAndCannotReadDemoProducts() throws Exception {
-        MockHttpSession session = signUpSession("empty_user");
-        mvc.perform(get("/api/v1/auth/me").session(session))
+        Cookie session = signUpToken("empty_user");
+        mvc.perform(get("/api/v1/auth/me").cookie(session))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.onboardingCompleted").value(false));
-        mvc.perform(get("/api/v1/home").session(session))
+        mvc.perform(get("/api/v1/home").cookie(session))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.productCount").value(0))
                 .andExpect(jsonPath("$.recordCount").value(0));
-        mvc.perform(get("/api/v1/me/products/1").session(session))
+        mvc.perform(get("/api/v1/me/products/1").cookie(session))
                 .andExpect(status().isNotFound());
     }
 
     @Test
     void onboardingStoresPrototypeTwoProfileAndMarksAccountComplete() throws Exception {
-        MockHttpSession session = signUpSession("onboarding_user");
+        Cookie session = signUpToken("onboarding_user");
         String request = """
                 {"profile":{"ageRange":"20S","gender":"FEMALE","skinType":"UNSURE",
                   "skinCondition":3,"concerns":["건조함","민감함"],
@@ -273,7 +373,7 @@ class CoreFlowIntegrationTest {
                  "clientRequestId":"prototype-two-onboarding"}
                 """;
 
-        mvc.perform(post("/api/v1/auth/onboarding").session(session)
+        mvc.perform(post("/api/v1/auth/onboarding").cookie(session)
                         .contentType(MediaType.APPLICATION_JSON).content(request))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.user.onboardingCompleted").value(true))
@@ -281,18 +381,18 @@ class CoreFlowIntegrationTest {
                 .andExpect(jsonPath("$.profile.skinCondition").value(3))
                 .andExpect(jsonPath("$.profile.concerns.length()").value(2));
 
-        mvc.perform(get("/api/v1/me/skin-profile").session(session))
+        mvc.perform(get("/api/v1/me/skin-profile").cookie(session))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.gender").value("FEMALE"))
                 .andExpect(jsonPath("$.trialFrequency").value("EVERY_FEW_MONTHS"));
 
-        mvc.perform(get("/api/v1/me/preferences").session(session))
+        mvc.perform(get("/api/v1/me/preferences").cookie(session))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.likes[0]").value("가벼운"))
                 .andExpect(jsonPath("$.avoids[0]").value("향료"))
                 .andExpect(jsonPath("$.note").value("에센셜 오일은 피하고 싶어요"));
 
-        mvc.perform(get("/api/v1/me/notifications").session(session))
+        mvc.perform(get("/api/v1/me/notifications").cookie(session))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.unreadCount").value(1))
                 .andExpect(jsonPath("$.items[0].type").value("PROFILE_READY"));
@@ -300,7 +400,7 @@ class CoreFlowIntegrationTest {
 
     @Test
     void onboardingRejectsIncompletePrototypeTwoProfile() throws Exception {
-        MockHttpSession session = signUpSession("profile_limits_user");
+        Cookie session = signUpToken("profile_limits_user");
         String request = """
                 {"profile":{"ageRange":"20S","gender":"FEMALE","skinType":"UNSURE",
                   "skinCondition":7,"concerns":[],"textures":[],"avoids":[],
@@ -308,7 +408,7 @@ class CoreFlowIntegrationTest {
                  "clientRequestId":"profile-limits"}
                 """;
 
-        mvc.perform(post("/api/v1/auth/onboarding").session(session)
+        mvc.perform(post("/api/v1/auth/onboarding").cookie(session)
                         .contentType(MediaType.APPLICATION_JSON).content(request))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
@@ -319,8 +419,8 @@ class CoreFlowIntegrationTest {
 
     @Test
     void skinProfileCanBeReplacedByItsOwner() throws Exception {
-        MockHttpSession session = signUpSession("profile_edit_user");
-        mvc.perform(put("/api/v1/me/skin-profile").session(session)
+        Cookie session = signUpToken("profile_edit_user");
+        mvc.perform(put("/api/v1/me/skin-profile").cookie(session)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"ageRange":"30S","gender":"MALE","skinType":"DRY",
@@ -330,7 +430,7 @@ class CoreFlowIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.ageRange").value("30S"))
                 .andExpect(jsonPath("$.skinType").value("DRY"));
-        mvc.perform(get("/api/v1/me/notifications").session(session))
+        mvc.perform(get("/api/v1/me/notifications").cookie(session))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].type").value("PROFILE_UPDATED"))
                 .andExpect(jsonPath("$.items[0].action.type").value("PROFILE"));
@@ -338,16 +438,16 @@ class CoreFlowIntegrationTest {
 
     @Test
     void preferencesArePrivateToTheirOwner() throws Exception {
-        MockHttpSession owner = signUpSession("pref_owner");
-        mvc.perform(put("/api/v1/me/preferences").session(owner)
+        Cookie owner = signUpToken("pref_owner");
+        mvc.perform(put("/api/v1/me/preferences").cookie(owner)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"likes":["촉촉한"],"avoids":[],"note":""}
                                 """))
                 .andExpect(status().isOk());
 
-        MockHttpSession other = signUpSession("pref_other");
-        mvc.perform(get("/api/v1/me/preferences").session(other))
+        Cookie other = signUpToken("pref_other");
+        mvc.perform(get("/api/v1/me/preferences").cookie(other))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.likes.length()").value(0));
 
@@ -357,25 +457,30 @@ class CoreFlowIntegrationTest {
 
     @Test
     void conversationsArePrivateToTheirOwner() throws Exception {
-        MockHttpSession demo = demoSession();
-        String body = mvc.perform(post("/api/v1/ai/conversations").session(demo)
+        Cookie demo = demoToken();
+        String body = mvc.perform(post("/api/v1/ai/conversations").cookie(demo)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"mode":"GENERAL","initialPrompt":"내 기록을 요약해줘","clientRequestId":"test-private-conversation"}
                                 """))
                 .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
         long conversationId = json.readTree(body).path("id").asLong();
-        MockHttpSession other = signUpSession("private_user");
-        mvc.perform(get("/api/v1/ai/conversations/{id}", conversationId).session(other))
+        Cookie other = signUpToken("private_user");
+        mvc.perform(get("/api/v1/ai/conversations/{id}", conversationId).cookie(other))
                 .andExpect(status().isNotFound());
     }
 
     @Test
     void usernameAndPasswordCanBeUsedToSignUpAndLogIn() throws Exception {
-        MockHttpSession signUp = signUpSession("login_user");
-        mvc.perform(post("/api/v1/auth/logout").session(signUp)
+        Cookie signUp = signUpToken("login_user");
+        mvc.perform(post("/api/v1/auth/logout").cookie(signUp)
                         .contentType(MediaType.APPLICATION_JSON).content("{}"))
-                .andExpect(status().isNoContent());
+                .andExpect(status().isNoContent())
+                .andExpect(header().string(HttpHeaders.SET_COOKIE,
+                        org.hamcrest.Matchers.containsString("Max-Age=0")));
+
+        mvc.perform(get("/api/v1/auth/me").cookie(signUp))
+                .andExpect(status().isUnauthorized());
 
         mvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -392,7 +497,48 @@ class CoreFlowIntegrationTest {
     }
 
     @Test
-    void quickLoginListsTwentySeedsAndNewSignupsThenStartsTheirSession() throws Exception {
+    void accessTokenIsOpaqueHttpOnlyAndExpiresAfterThirtyDays() throws Exception {
+        var result = mvc.perform(post("/api/v1/auth/signup")
+                        .header("X-Forwarded-Proto", "https")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"username\":\"token_policy_user\",\"password\":\"passw0rd!\"}"))
+                .andExpect(status().isCreated())
+                .andExpect(header().string(HttpHeaders.CACHE_CONTROL, "no-store"))
+                .andExpect(header().string(HttpHeaders.SET_COOKIE,
+                        org.hamcrest.Matchers.allOf(
+                                org.hamcrest.Matchers.containsString(AccessTokenService.COOKIE_NAME + "="),
+                                org.hamcrest.Matchers.containsString("Max-Age=2592000"),
+                                org.hamcrest.Matchers.containsString("HttpOnly"),
+                                org.hamcrest.Matchers.containsString("Secure"),
+                                org.hamcrest.Matchers.containsString("SameSite=Lax"),
+                                org.hamcrest.Matchers.containsString("Path=/"))))
+                .andReturn();
+
+        Cookie token = result.getResponse().getCookie(AccessTokenService.COOKIE_NAME);
+        assertThat(token).isNotNull();
+        assertThat(token.getValue()).hasSize(43);
+        String storedHash = jdbc.queryForObject("""
+                SELECT token_hash
+                  FROM auth_access_token token
+                  JOIN app_user user ON user.id = token.user_id
+                 WHERE user.username = 'token_policy_user'
+                """, String.class);
+        assertThat(storedHash).hasSize(64).isNotEqualTo(token.getValue());
+
+        mvc.perform(get("/api/v1/auth/me").cookie(token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.username").value("token_policy_user"));
+
+        jdbc.update("UPDATE auth_access_token SET expires_at = 0 WHERE token_hash = ?", storedHash);
+        mvc.perform(get("/api/v1/auth/me").cookie(token))
+                .andExpect(status().isUnauthorized());
+
+        mvc.perform(get("/api/v1/auth/me").cookie(new Cookie("JSESSIONID", "legacy-session")))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void quickLoginListsTwentySeedsAndNewSignupsThenIssuesTheirToken() throws Exception {
         mvc.perform(get("/api/v1/auth/quick-accounts"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].username").value("test01"))
@@ -406,12 +552,12 @@ class CoreFlowIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[?(@.username == 'panel_user')]").exists());
 
-        MockHttpSession quickSession = (MockHttpSession) mvc.perform(post("/api/v1/auth/quick-login/test01")
+        Cookie quickToken = mvc.perform(post("/api/v1/auth/quick-login/test01")
                         .contentType(MediaType.APPLICATION_JSON).content("{}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.username").value("test01"))
-                .andReturn().getRequest().getSession(false);
-        mvc.perform(get("/api/v1/home").session(quickSession))
+                .andReturn().getResponse().getCookie(AccessTokenService.COOKIE_NAME);
+        mvc.perform(get("/api/v1/home").cookie(quickToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.productCount").value(0))
                 .andExpect(jsonPath("$.recordCount").value(0));
@@ -419,8 +565,8 @@ class CoreFlowIntegrationTest {
 
     @Test
     void regularUserCannotResetDemoData() throws Exception {
-        MockHttpSession session = signUpSession("reset_user");
-        mvc.perform(post("/api/v1/demo/reset?scenario=default").session(session)
+        Cookie session = signUpToken("reset_user");
+        mvc.perform(post("/api/v1/demo/reset?scenario=default").cookie(session)
                         .contentType(MediaType.APPLICATION_JSON).content("{}"))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("DEMO_ONLY"));
@@ -428,9 +574,9 @@ class CoreFlowIntegrationTest {
 
     @Test
     void accountDeletionRemovesCredentialsAndPersonalData() throws Exception {
-        MockHttpSession session = signUpSession("delete_user");
+        Cookie session = signUpToken("delete_user");
         addProduct(session, 1);
-        mvc.perform(delete("/api/v1/auth/me").session(session))
+        mvc.perform(delete("/api/v1/auth/me").cookie(session))
                 .andExpect(status().isNoContent());
         mvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -440,14 +586,14 @@ class CoreFlowIntegrationTest {
 
     @Test
     void productExperienceCanBeStartedRecordedAndCompleted() throws Exception {
-        MockHttpSession session = signUpSession("flow_user");
-        String ownedBody = mvc.perform(post("/api/v1/me/products").session(session)
+        Cookie session = signUpToken("flow_user");
+        String ownedBody = mvc.perform(post("/api/v1/me/products").cookie(session)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"productId\":1}"))
                 .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
         long userProductId = json.readTree(ownedBody).path("id").asLong();
 
-        String sessionBody = mvc.perform(post("/api/v1/me/experiences").session(session)
+        String sessionBody = mvc.perform(post("/api/v1/me/experiences").cookie(session)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"userProductId":%d,"mode":"PRODUCT","dayPart":"EVENING","clientRequestId":"test-start-flow"}
@@ -457,7 +603,7 @@ class CoreFlowIntegrationTest {
                 .andReturn().getResponse().getContentAsString();
         long experienceId = json.readTree(sessionBody).path("id").asLong();
 
-        mvc.perform(post("/api/v1/me/experiences/{id}/records", experienceId).session(session)
+        mvc.perform(post("/api/v1/me/experiences/{id}/records", experienceId).cookie(session)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"sentiment":"LIKED","note":"가볍고 산뜻했어요","tags":["가벼움"],"discomfort":"NOT_REPORTED","clientRequestId":"test-record-flow"}
@@ -465,26 +611,26 @@ class CoreFlowIntegrationTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.record.note").value("가볍고 산뜻했어요"));
 
-        mvc.perform(post("/api/v1/me/experiences/{id}/complete", experienceId).session(session)
+        mvc.perform(post("/api/v1/me/experiences/{id}/complete", experienceId).cookie(session)
                         .contentType(MediaType.APPLICATION_JSON).content("{}"))
                 .andExpect(status().isOk());
-        mvc.perform(post("/api/v1/me/experiences/{id}/records", experienceId).session(session)
+        mvc.perform(post("/api/v1/me/experiences/{id}/records", experienceId).cookie(session)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"sentiment":"LIKED","note":"닫힌 뒤 기록","tags":[],"discomfort":"NOT_REPORTED","clientRequestId":"test-record-after-close"}
                                 """))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("EXPERIENCE_CLOSED"));
-        mvc.perform(get("/api/v1/home").session(session))
+        mvc.perform(get("/api/v1/home").cookie(session))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.primaryAction").value("START_EXPERIENCE"));
     }
 
     @Test
     void notificationStateIsPrivateAndIndependentFromExperienceDueState() throws Exception {
-        MockHttpSession owner = signUpSession("notification_owner");
+        Cookie owner = signUpToken("notification_owner");
         long userProductId = addProduct(owner, 1);
-        String experienceBody = mvc.perform(post("/api/v1/me/experiences").session(owner)
+        String experienceBody = mvc.perform(post("/api/v1/me/experiences").cookie(owner)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"userProductId":%d,"mode":"PRODUCT","dayPart":"EVENING","clientRequestId":"notification-lifecycle"}
@@ -501,7 +647,7 @@ class CoreFlowIntegrationTest {
                 """, experienceId);
         jdbc.update("UPDATE experience_session SET review_due_at = datetime('now', '-1 day') WHERE id = ?", experienceId);
 
-        String inboxBody = mvc.perform(get("/api/v1/me/notifications").session(owner))
+        String inboxBody = mvc.perform(get("/api/v1/me/notifications").cookie(owner))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.unreadCount").value(2))
                 .andExpect(jsonPath("$.items.length()").value(2))
@@ -516,39 +662,39 @@ class CoreFlowIntegrationTest {
         assertThat(checkInId).isPositive();
         assertThat(reviewId).isPositive();
 
-        mvc.perform(post("/api/v1/me/notifications/{id}/read", checkInId).session(owner)
+        mvc.perform(post("/api/v1/me/notifications/{id}/read", checkInId).cookie(owner)
                         .contentType(MediaType.APPLICATION_JSON).content("{}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.read").value(true))
                 .andExpect(jsonPath("$.completed").value(false));
-        mvc.perform(get("/api/v1/me/experiences/{id}", experienceId).session(owner))
+        mvc.perform(get("/api/v1/me/experiences/{id}", experienceId).cookie(owner))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("ACTIVE"))
                 .andExpect(jsonPath("$.reviewDue").value(true));
 
-        mvc.perform(post("/api/v1/me/notifications/{id}/snooze", reviewId).session(owner)
+        mvc.perform(post("/api/v1/me/notifications/{id}/snooze", reviewId).cookie(owner)
                         .contentType(MediaType.APPLICATION_JSON).content("{\"durationHours\":24}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.snoozedUntil").isString())
                 .andExpect(jsonPath("$.completed").value(false));
-        mvc.perform(get("/api/v1/me/notifications").session(owner))
+        mvc.perform(get("/api/v1/me/notifications").cookie(owner))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.unreadCount").value(0))
                 .andExpect(jsonPath("$.items.length()").value(1));
 
-        MockHttpSession other = signUpSession("notification_other");
-        mvc.perform(post("/api/v1/me/notifications/{id}/read", checkInId).session(other)
+        Cookie other = signUpToken("notification_other");
+        mvc.perform(post("/api/v1/me/notifications/{id}/read", checkInId).cookie(other)
                         .contentType(MediaType.APPLICATION_JSON).content("{}"))
                 .andExpect(status().isNotFound());
 
         jdbc.update("UPDATE notification SET snoozed_until = NULL WHERE id = ?", reviewId);
-        mvc.perform(post("/api/v1/me/experiences/{id}/records", experienceId).session(owner)
+        mvc.perform(post("/api/v1/me/experiences/{id}/records", experienceId).cookie(owner)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"sentiment":"LIKED","note":"7일 사용 맥락을 돌아봤어요","tags":[],"discomfort":"NOT_REPORTED","clientRequestId":"notification-review-record"}
                                 """))
                 .andExpect(status().isCreated());
-        mvc.perform(get("/api/v1/me/notifications").session(owner))
+        mvc.perform(get("/api/v1/me/notifications").cookie(owner))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.unreadCount").value(0))
                 .andExpect(jsonPath("$.items[0].id").value(reviewId))
@@ -557,8 +703,8 @@ class CoreFlowIntegrationTest {
 
     @Test
     void customProductIsOwnerScopedAndProjectsShelfState() throws Exception {
-        MockHttpSession owner = signUpSession("custom_product_owner");
-        String customBody = mvc.perform(post("/api/v1/me/products").session(owner)
+        Cookie owner = signUpToken("custom_product_owner");
+        String customBody = mvc.perform(post("/api/v1/me/products").cookie(owner)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"customBrand":"직접 입력 브랜드","customName":"목록에 없는 세럼","customCategory":"세럼"}
@@ -570,7 +716,7 @@ class CoreFlowIntegrationTest {
                 .andReturn().getResponse().getContentAsString();
         long userProductId = json.readTree(customBody).path("id").asLong();
 
-        mvc.perform(put("/api/v1/me/routines/current").session(owner)
+        mvc.perform(put("/api/v1/me/routines/current").cookie(owner)
                         .header("Idempotency-Key", "custom-product-routine")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -579,20 +725,20 @@ class CoreFlowIntegrationTest {
                                 ]}
                                 """.formatted(userProductId)))
                 .andExpect(status().isOk());
-        mvc.perform(get("/api/v1/me/products/{id}", userProductId).session(owner))
+        mvc.perform(get("/api/v1/me/products/{id}", userProductId).cookie(owner))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.customName").value("목록에 없는 세럼"))
                 .andExpect(jsonPath("$.inCurrentRoutine").value(true));
 
-        MockHttpSession other = signUpSession("custom_product_other");
-        mvc.perform(get("/api/v1/me/products/{id}", userProductId).session(other))
+        Cookie other = signUpToken("custom_product_other");
+        mvc.perform(get("/api/v1/me/products/{id}", userProductId).cookie(other))
                 .andExpect(status().isNotFound());
     }
 
     @Test
     void everyAssistantTurnContainsDynamicSuggestionsEvenWhenAiFallsBack() throws Exception {
-        MockHttpSession session = signUpSession("chat_user");
-        String body = mvc.perform(post("/api/v1/ai/conversations").session(session)
+        Cookie session = signUpToken("chat_user");
+        String body = mvc.perform(post("/api/v1/ai/conversations").cookie(session)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"mode":"GENERAL","initialPrompt":"내 최근 기록을 알려줘","clientRequestId":"test-chat-create"}
@@ -611,8 +757,8 @@ class CoreFlowIntegrationTest {
 
     @Test
     void productAndPatternModesReturnDomainAnswersWhenAiProviderIsUnavailable() throws Exception {
-        MockHttpSession session = demoSession();
-        String productBody = mvc.perform(post("/api/v1/ai/conversations").session(session)
+        Cookie session = demoToken();
+        String productBody = mvc.perform(post("/api/v1/ai/conversations").cookie(session)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"mode":"PRODUCT","productId":1,"initialPrompt":"이 제품 어때?","clientRequestId":"test-product-domain-fallback"}
@@ -625,7 +771,7 @@ class CoreFlowIntegrationTest {
                 .contains("지금 확인한 제품은")
                 .doesNotContain("AI 연결이 잠시 원활하지 않아요");
 
-        String patternBody = mvc.perform(post("/api/v1/ai/conversations").session(session)
+        String patternBody = mvc.perform(post("/api/v1/ai/conversations").cookie(session)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"mode":"PATTERN","initialPrompt":"내 기록에서 반복되는 패턴을 보여줘","clientRequestId":"test-pattern-domain-fallback"}
@@ -640,8 +786,8 @@ class CoreFlowIntegrationTest {
 
     @Test
     void assistantWebSourcesAreReturnedWithTheirValidatedPriorityTier() throws Exception {
-        MockHttpSession session = signUpSession("citation_user");
-        String body = mvc.perform(post("/api/v1/ai/conversations").session(session)
+        Cookie session = signUpToken("citation_user");
+        String body = mvc.perform(post("/api/v1/ai/conversations").cookie(session)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"mode":"GENERAL","initialPrompt":"제품 정보를 확인해줘","clientRequestId":"test-citation-create"}
@@ -655,7 +801,7 @@ class CoreFlowIntegrationTest {
                 VALUES (?, 1, '브랜드 공식 제품 안내', 'https://example.com/official-product', 'P1')
                 """, assistantMessageId);
 
-        mvc.perform(get("/api/v1/ai/conversations/{id}", conversationId).session(session))
+        mvc.perform(get("/api/v1/ai/conversations/{id}", conversationId).cookie(session))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.messages[1].webSources[0].ref").value("S-1"))
                 .andExpect(jsonPath("$.messages[1].webSources[0].title").value("브랜드 공식 제품 안내"))
@@ -665,8 +811,8 @@ class CoreFlowIntegrationTest {
 
     @Test
     void generalDiscomfortPromptStartsInRescueMode() throws Exception {
-        MockHttpSession session = demoSession();
-        mvc.perform(post("/api/v1/ai/conversations").session(session)
+        Cookie session = demoToken();
+        mvc.perform(post("/api/v1/ai/conversations").cookie(session)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"mode":"GENERAL","initialPrompt":"새 제품을 썼더니 피부가 따갑고 붉어졌어","clientRequestId":"test-auto-rescue-create"}
@@ -679,8 +825,8 @@ class CoreFlowIntegrationTest {
 
     @Test
     void discomfortMessageTurnsAnExistingAiConversationIntoRescue() throws Exception {
-        MockHttpSession session = demoSession();
-        String created = mvc.perform(post("/api/v1/ai/conversations").session(session)
+        Cookie session = demoToken();
+        String created = mvc.perform(post("/api/v1/ai/conversations").cookie(session)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"mode":"GENERAL","initialPrompt":"내 최근 기록을 요약해줘","clientRequestId":"test-auto-rescue-thread"}
@@ -690,7 +836,7 @@ class CoreFlowIntegrationTest {
                 .andReturn().getResponse().getContentAsString();
         long conversationId = json.readTree(created).path("id").asLong();
 
-        mvc.perform(post("/api/v1/ai/conversations/{id}/messages", conversationId).session(session)
+        mvc.perform(post("/api/v1/ai/conversations/{id}/messages", conversationId).cookie(session)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"text":"지금 피부가 화끈거리고 따가워","clientRequestId":"test-auto-rescue-message"}
@@ -702,8 +848,8 @@ class CoreFlowIntegrationTest {
 
     @Test
     void recommendationConversationUsesItsOwnCatalogBoundedMode() throws Exception {
-        MockHttpSession session = demoSession();
-        mvc.perform(post("/api/v1/ai/conversations").session(session)
+        Cookie session = demoToken();
+        mvc.perform(post("/api/v1/ai/conversations").cookie(session)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"mode":"RECOMMEND","initialPrompt":"내 기록으로 다음 제품 후보를 보여줘","clientRequestId":"test-recommend-create"}
@@ -715,8 +861,8 @@ class CoreFlowIntegrationTest {
 
     @Test
     void explicitRecommendationIntentStartsInRecommendationModeAndStillNamesAProductOnAiFailure() throws Exception {
-        MockHttpSession session = demoSession();
-        mvc.perform(post("/api/v1/ai/conversations").session(session)
+        Cookie session = demoToken();
+        mvc.perform(post("/api/v1/ai/conversations").cookie(session)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"mode":"GENERAL","initialPrompt":"그냥 하나 추천해줘. 지금 즉시","clientRequestId":"test-auto-recommend-create"}
@@ -729,8 +875,8 @@ class CoreFlowIntegrationTest {
 
     @Test
     void explicitRecommendationIntentTurnsAnExistingGeneralThreadIntoRecommendationMode() throws Exception {
-        MockHttpSession session = demoSession();
-        String created = mvc.perform(post("/api/v1/ai/conversations").session(session)
+        Cookie session = demoToken();
+        String created = mvc.perform(post("/api/v1/ai/conversations").cookie(session)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"mode":"GENERAL","initialPrompt":"내 최근 기록을 요약해줘","clientRequestId":"test-recommend-thread"}
@@ -739,7 +885,7 @@ class CoreFlowIntegrationTest {
                 .andReturn().getResponse().getContentAsString();
         long conversationId = json.readTree(created).path("id").asLong();
 
-        mvc.perform(post("/api/v1/ai/conversations/{id}/messages", conversationId).session(session)
+        mvc.perform(post("/api/v1/ai/conversations/{id}/messages", conversationId).cookie(session)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"text":"기준 말고 제품 하나 골라줘","clientRequestId":"test-auto-recommend-message"}
@@ -751,8 +897,8 @@ class CoreFlowIntegrationTest {
 
     @Test
     void recommendationUsesTheExistingConversationToNarrowTheCatalogCandidates() throws Exception {
-        MockHttpSession session = demoSession();
-        String created = mvc.perform(post("/api/v1/ai/conversations").session(session)
+        Cookie session = demoToken();
+        String created = mvc.perform(post("/api/v1/ai/conversations").cookie(session)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"mode":"GENERAL","initialPrompt":"밖에 오래 있는 날 바르는 게 귀찮아","clientRequestId":"test-suncare-thread"}
@@ -761,7 +907,7 @@ class CoreFlowIntegrationTest {
                 .andReturn().getResponse().getContentAsString();
         long conversationId = json.readTree(created).path("id").asLong();
 
-        String recommended = mvc.perform(post("/api/v1/ai/conversations/{id}/messages", conversationId).session(session)
+        String recommended = mvc.perform(post("/api/v1/ai/conversations/{id}/messages", conversationId).cookie(session)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"text":"그냥 하나 추천해줘","clientRequestId":"test-suncare-recommend"}
@@ -773,35 +919,35 @@ class CoreFlowIntegrationTest {
         String productRef = messages.get(messages.size() - 1).path("evidenceRefs").get(0).asText();
         long productId = Long.parseLong(productRef.substring(2));
 
-        mvc.perform(get("/api/v1/products/{id}", productId).session(session))
+        mvc.perform(get("/api/v1/products/{id}", productId).cookie(session))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.category").value(org.hamcrest.Matchers.containsString("선")));
     }
 
     @Test
     void rescueDoesNotCreateAPlanUntilRecordedChangesAreConfirmed() throws Exception {
-        MockHttpSession session = demoSession();
-        String created = mvc.perform(post("/api/v1/ai/conversations").session(session)
+        Cookie session = demoToken();
+        String created = mvc.perform(post("/api/v1/ai/conversations").cookie(session)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"mode":"RESCUE","experienceId":3,"initialPrompt":"따갑고 답답했어","clientRequestId":"test-rescue-confirm-start"}
                                 """))
                 .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
         long conversationId = json.readTree(created).path("id").asLong();
-        mvc.perform(post("/api/v1/ai/conversations/{id}/messages", conversationId).session(session)
+        mvc.perform(post("/api/v1/ai/conversations/{id}/messages", conversationId).cookie(session)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"text\":\"심하거나 빠르게 악화되진 않아요\",\"clientRequestId\":\"test-rescue-confirm-safe\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.messages[3].status").value("FALLBACK"))
                 .andExpect(jsonPath("$.messages[3].content").value(org.hamcrest.Matchers.not(
                         org.hamcrest.Matchers.containsString("AI 연결이 잠시 원활하지 않아요"))));
-        mvc.perform(post("/api/v1/ai/conversations/{id}/messages", conversationId).session(session)
+        mvc.perform(post("/api/v1/ai/conversations/{id}/messages", conversationId).cookie(session)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"text\":\"클렌저도 따로 바꿨어\",\"clientRequestId\":\"test-rescue-correction\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.rescuePlan").doesNotExist())
                 .andExpect(jsonPath("$.messages[5].content").value(org.hamcrest.Matchers.containsString("저장된 루틴과 달라서")));
-        mvc.perform(post("/api/v1/ai/conversations/{id}/messages", conversationId).session(session)
+        mvc.perform(post("/api/v1/ai/conversations/{id}/messages", conversationId).cookie(session)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"text\":\"저장된 변경만으로 계속할게요\",\"clientRequestId\":\"test-rescue-confirm-changes\"}"))
                 .andExpect(status().isOk())
@@ -812,14 +958,14 @@ class CoreFlowIntegrationTest {
 
     @Test
     void dueRoutineReviewCompletesExperienceAndBecomesComparisonBaseline() throws Exception {
-        MockHttpSession session = signUpSession("review_user");
-        String ownedBody = mvc.perform(post("/api/v1/me/products").session(session)
+        Cookie session = signUpToken("review_user");
+        String ownedBody = mvc.perform(post("/api/v1/me/products").cookie(session)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"productId\":1}"))
                 .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
         long userProductId = json.readTree(ownedBody).path("id").asLong();
 
-        String experienceBody = mvc.perform(post("/api/v1/me/experiences").session(session)
+        String experienceBody = mvc.perform(post("/api/v1/me/experiences").cookie(session)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"userProductId":%d,"mode":"ROUTINE","dayPart":"EVENING","clientRequestId":"test-due-routine"}
@@ -830,33 +976,33 @@ class CoreFlowIntegrationTest {
         long routineId = experience.path("routineId").asLong();
         jdbc.update("UPDATE experience_session SET review_due_at = datetime('now', '-1 day') WHERE id = ?", experienceId);
 
-        mvc.perform(post("/api/v1/me/experiences/{id}/records", experienceId).session(session)
+        mvc.perform(post("/api/v1/me/experiences/{id}/records", experienceId).cookie(session)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"sentiment":"LIKED","note":"일주일 동안 편하게 썼어요","tags":["편안함"],"discomfort":"NOT_REPORTED","clientRequestId":"test-due-record"}
                                 """))
                 .andExpect(status().isCreated());
 
-        mvc.perform(get("/api/v1/home").session(session))
+        mvc.perform(get("/api/v1/home").cookie(session))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.currentExperience").doesNotExist())
                 .andExpect(jsonPath("$.primaryAction").value("START_EXPERIENCE"));
-        mvc.perform(get("/api/v1/me/routines/baseline").session(session))
+        mvc.perform(get("/api/v1/me/routines/baseline").cookie(session))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(routineId));
-        mvc.perform(get("/api/v1/products/1").session(session))
+        mvc.perform(get("/api/v1/products/1").cookie(session))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.personalRecordCount").value(1));
     }
 
     @Test
     void repeatedTaggedExperiencesCreateAPersonalPatternForANewUser() throws Exception {
-        MockHttpSession session = signUpSession("pattern_user");
-        String ownedBody = mvc.perform(post("/api/v1/me/products").session(session)
+        Cookie session = signUpToken("pattern_user");
+        String ownedBody = mvc.perform(post("/api/v1/me/products").cookie(session)
                         .contentType(MediaType.APPLICATION_JSON).content("{\"productId\":1}"))
                 .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
         long userProductId = json.readTree(ownedBody).path("id").asLong();
-        String experienceBody = mvc.perform(post("/api/v1/me/experiences").session(session)
+        String experienceBody = mvc.perform(post("/api/v1/me/experiences").cookie(session)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"userProductId":%d,"mode":"PRODUCT","dayPart":"EVENING","clientRequestId":"test-pattern-session"}
@@ -864,14 +1010,14 @@ class CoreFlowIntegrationTest {
                 .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
         long experienceId = json.readTree(experienceBody).path("id").asLong();
 
-        mvc.perform(post("/api/v1/me/experiences/{id}/records", experienceId).session(session)
+        mvc.perform(post("/api/v1/me/experiences/{id}/records", experienceId).cookie(session)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"sentiment":"LIKED","note":"첫 사용","tags":["가벼움"],"discomfort":"NOT_REPORTED","clientRequestId":"test-pattern-record-1"}
                                 """))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.linkedPatternId").doesNotExist());
-        mvc.perform(post("/api/v1/me/experiences/{id}/records", experienceId).session(session)
+        mvc.perform(post("/api/v1/me/experiences/{id}/records", experienceId).cookie(session)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"sentiment":"LIKED","note":"두 번째 사용","tags":["가벼움"],"discomfort":"NOT_REPORTED","clientRequestId":"test-pattern-record-2"}
@@ -879,7 +1025,7 @@ class CoreFlowIntegrationTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.linkedPatternId").isNumber());
 
-        mvc.perform(get("/api/v1/me/patterns").session(session))
+        mvc.perform(get("/api/v1/me/patterns").cookie(session))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].supportingCount").value(2))
                 .andExpect(jsonPath("$[0].title").value("가벼움이 좋았다고 남긴 기록이 반복됐어요"));
@@ -887,11 +1033,11 @@ class CoreFlowIntegrationTest {
 
     @Test
     void routineStoresTimeSlotFrequencyAndOrderPerProduct() throws Exception {
-        MockHttpSession session = signUpSession("routine_user");
+        Cookie session = signUpToken("routine_user");
         long first = addProduct(session, 1);
         long second = addProduct(session, 6);
 
-        String createdBody = mvc.perform(put("/api/v1/me/routines/current").session(session)
+        String createdBody = mvc.perform(put("/api/v1/me/routines/current").cookie(session)
                         .header("Idempotency-Key", "test-routine-settings")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -914,12 +1060,12 @@ class CoreFlowIntegrationTest {
         long routineId = created.path("routineId").asLong();
         long experienceId = created.path("id").asLong();
 
-        mvc.perform(get("/api/v1/me/routines/{id}", routineId).session(session))
+        mvc.perform(get("/api/v1/me/routines/{id}", routineId).cookie(session))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(routineId))
                 .andExpect(jsonPath("$.items.length()").value(2));
 
-        mvc.perform(post("/api/v1/me/routines/{id}/name-suggestion", routineId).session(session)
+        mvc.perform(post("/api/v1/me/routines/{id}/name-suggestion", routineId).cookie(session)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
                 .andExpect(status().isOk())
@@ -933,53 +1079,53 @@ class CoreFlowIntegrationTest {
                 """, routineId, "가벼운 사용감을 편하게 느낀 흐름을 이어가는 아침과 저녁 조합이에요.");
         jdbc.update("INSERT INTO routine_insight_keyword(routine_id, position, keyword) VALUES (?, 0, '가벼운 마무리')", routineId);
         jdbc.update("INSERT INTO routine_insight_keyword(routine_id, position, keyword) VALUES (?, 1, '아침 저녁')", routineId);
-        mvc.perform(get("/api/v1/me/routines/{id}", routineId).session(session))
+        mvc.perform(get("/api/v1/me/routines/{id}", routineId).cookie(session))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.insight.text")
                         .value("가벼운 사용감을 편하게 느낀 흐름을 이어가는 아침과 저녁 조합이에요."))
                 .andExpect(jsonPath("$.insight.keywords[0]").value("가벼운 마무리"))
                 .andExpect(jsonPath("$.insight.keywords[1]").value("아침 저녁"));
-        mvc.perform(post("/api/v1/me/routines/{id}/insight", routineId).session(session)
+        mvc.perform(post("/api/v1/me/routines/{id}/insight", routineId).cookie(session)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.text")
                         .value("가벼운 사용감을 편하게 느낀 흐름을 이어가는 아침과 저녁 조합이에요."));
 
-        mvc.perform(put("/api/v1/me/routines/{id}/name", routineId).session(session)
+        mvc.perform(put("/api/v1/me/routines/{id}/name", routineId).cookie(session)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"name":"아침 저녁 균형 루틴"}
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("아침 저녁 균형 루틴"));
-        mvc.perform(get("/api/v1/me/experiences/{id}", experienceId).session(session))
+        mvc.perform(get("/api/v1/me/experiences/{id}", experienceId).cookie(session))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.title").value("아침 저녁 균형 루틴"));
 
-        MockHttpSession other = signUpSession("routine_other");
-        mvc.perform(get("/api/v1/me/routines/{id}", routineId).session(other))
+        Cookie other = signUpToken("routine_other");
+        mvc.perform(get("/api/v1/me/routines/{id}", routineId).cookie(other))
                 .andExpect(status().isNotFound());
-        mvc.perform(post("/api/v1/me/routines/{id}/name-suggestion", routineId).session(other)
+        mvc.perform(post("/api/v1/me/routines/{id}/name-suggestion", routineId).cookie(other)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
                 .andExpect(status().isNotFound());
-        mvc.perform(post("/api/v1/me/routines/{id}/insight", routineId).session(other)
+        mvc.perform(post("/api/v1/me/routines/{id}/insight", routineId).cookie(other)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
                 .andExpect(status().isNotFound());
 
-        mvc.perform(get("/api/v1/me/experience-records").session(session))
+        mvc.perform(get("/api/v1/me/experience-records").cookie(session))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(0));
     }
 
     @Test
     void routineArchiveKeepsEverySavedVersionVisibleAndOwnerScoped() throws Exception {
-        MockHttpSession owner = signUpSession("routine_archive_owner");
+        Cookie owner = signUpToken("routine_archive_owner");
         long userProductId = addProduct(owner, 1);
 
-        String firstBody = mvc.perform(put("/api/v1/me/routines/current").session(owner)
+        String firstBody = mvc.perform(put("/api/v1/me/routines/current").cookie(owner)
                         .header("Idempotency-Key", "routine-archive-first")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -991,7 +1137,7 @@ class CoreFlowIntegrationTest {
                 .andReturn().getResponse().getContentAsString();
         long firstRoutineId = json.readTree(firstBody).path("routineId").asLong();
 
-        String secondBody = mvc.perform(put("/api/v1/me/routines/current").session(owner)
+        String secondBody = mvc.perform(put("/api/v1/me/routines/current").cookie(owner)
                         .header("Idempotency-Key", "routine-archive-second")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -1003,7 +1149,7 @@ class CoreFlowIntegrationTest {
                 .andReturn().getResponse().getContentAsString();
         long secondRoutineId = json.readTree(secondBody).path("routineId").asLong();
 
-        mvc.perform(get("/api/v1/me/routines").session(owner))
+        mvc.perform(get("/api/v1/me/routines").cookie(owner))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(2))
                 .andExpect(jsonPath("$[0].id").value(secondRoutineId))
@@ -1011,15 +1157,15 @@ class CoreFlowIntegrationTest {
                 .andExpect(jsonPath("$[1].id").value(firstRoutineId))
                 .andExpect(jsonPath("$[1].status").value("PAST"));
 
-        MockHttpSession other = signUpSession("routine_archive_other");
-        mvc.perform(get("/api/v1/me/routines").session(other))
+        Cookie other = signUpToken("routine_archive_other");
+        mvc.perform(get("/api/v1/me/routines").cookie(other))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(0));
     }
 
     @Test
     void brandLogoIsProjectedWithoutInventingALegalManufacturer() throws Exception {
-        MockHttpSession session = demoSession();
+        Cookie session = demoToken();
         String logoUrl = "/manufacturer-logos/nature-republic.png";
 
         assertThat(jdbc.queryForList("""
@@ -1027,7 +1173,7 @@ class CoreFlowIntegrationTest {
                  WHERE brand IN ('CNP', 'CNP차앤박', '차앤박')
                 """, String.class)).containsExactly("/manufacturer-logos/cnp.png");
 
-        mvc.perform(get("/api/v1/products/2").session(session))
+        mvc.perform(get("/api/v1/products/2").cookie(session))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.brand").value("바이옴"))
                 .andExpect(jsonPath("$.brandLogoUrl").doesNotExist());
@@ -1044,23 +1190,23 @@ class CoreFlowIntegrationTest {
                 VALUES (1, '직접 입력 브랜드', '나만의 크림', '크림') RETURNING id
                 """, Long.class);
         try {
-            mvc.perform(get("/api/v1/products/1").session(session))
+            mvc.perform(get("/api/v1/products/1").cookie(session))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.brand").value("뉴트리랩"))
                     .andExpect(jsonPath("$.brandLogoUrl").value(logoUrl));
 
-            mvc.perform(get("/api/v1/me/products/1").session(session))
+            mvc.perform(get("/api/v1/me/products/1").cookie(session))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.brandLogoUrl").value(logoUrl))
                     .andExpect(jsonPath("$.product.brandLogoUrl").value(logoUrl));
 
-            mvc.perform(get("/api/v1/me/products/{id}", customUserProductId).session(session))
+            mvc.perform(get("/api/v1/me/products/{id}", customUserProductId).cookie(session))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.customBrand").value("직접 입력 브랜드"))
                     .andExpect(jsonPath("$.brandLogoUrl").value(logoUrl))
                     .andExpect(jsonPath("$.product").doesNotExist());
 
-            String routineBody = mvc.perform(get("/api/v1/me/routines/current").session(session))
+            String routineBody = mvc.perform(get("/api/v1/me/routines/current").cookie(session))
                     .andExpect(status().isOk())
                     .andReturn().getResponse().getContentAsString();
             JsonNode nutrilabItem = json.readTree(routineBody).path("items").valueStream()
@@ -1073,23 +1219,23 @@ class CoreFlowIntegrationTest {
         }
     }
 
-    private MockHttpSession demoSession() throws Exception {
-        return (MockHttpSession) mvc.perform(post("/api/v1/auth/demo")
+    private Cookie demoToken() throws Exception {
+        return mvc.perform(post("/api/v1/auth/demo")
                         .contentType(MediaType.APPLICATION_JSON).content("{}"))
-                .andExpect(status().isOk()).andReturn().getRequest().getSession();
+                .andExpect(status().isOk()).andReturn().getResponse().getCookie(AccessTokenService.COOKIE_NAME);
     }
 
-    private MockHttpSession signUpSession(String username) throws Exception {
-        return (MockHttpSession) mvc.perform(post("/api/v1/auth/signup")
+    private Cookie signUpToken(String username) throws Exception {
+        return mvc.perform(post("/api/v1/auth/signup")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"username":"%s","password":"passw0rd!"}
                                 """.formatted(username)))
-                .andExpect(status().isCreated()).andReturn().getRequest().getSession();
+                .andExpect(status().isCreated()).andReturn().getResponse().getCookie(AccessTokenService.COOKIE_NAME);
     }
 
-    private long addProduct(MockHttpSession session, long productId) throws Exception {
-        String body = mvc.perform(post("/api/v1/me/products").session(session)
+    private long addProduct(Cookie session, long productId) throws Exception {
+        String body = mvc.perform(post("/api/v1/me/products").cookie(session)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"productId\":" + productId + "}"))
                 .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();

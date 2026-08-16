@@ -9,7 +9,7 @@ import org.springframework.web.servlet.HandlerInterceptor;
 
 /**
  * OpenAI를 트리거하는 POST 요청에만 레이트리밋을 적용한다.
- * 식별은 인증된 사용자 기준이고, 세션에서 userId를 못 얻는 경우에 한해 IP로 대체한다.
+ * 식별은 인증된 사용자 기준이고, 액세스 토큰에서 userId를 못 얻는 경우에 한해 IP로 대체한다.
  */
 @Component
 public class RateLimitInterceptor implements HandlerInterceptor {

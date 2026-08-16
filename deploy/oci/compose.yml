@@ -9,9 +9,11 @@ services:
     environment:
       PORT: '8080'
       SKN_DB_PATH: /app/data/skn.db
-      OPENAI_MODEL: gpt-5.6-luna
-      # 해커톤 심사 환경에서 데스크톱 빠른 로그인 계정 20개를 노출한다.
-      TEST_HARNESS_ENABLED: 'true'
+      AUTH_COOKIE_SECURE: 'true'
+      OPENAI_MODEL: gpt-5.6-terra
+      # 운영 DB는 schema.sql의 데모 사용자 시드를 재실행하지 않는다.
+      SPRING_SQL_INIT_MODE: never
+      TEST_HARNESS_ENABLED: 'false'
     volumes:
       - ${SKN_DATA_DIR:?SKN_DATA_DIR is required}:/app/data
     networks:

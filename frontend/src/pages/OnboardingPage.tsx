@@ -4,6 +4,7 @@ import { Check, ChevronLeft, ChevronRight, LoaderCircle } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import type { Auth, SkinProfile } from '../lib/types'
 import { api } from '../lib/api'
+import { consumeOnboardingWelcome, hasPendingOnboardingWelcome } from '../lib/onboardingWelcome'
 import { AssetMotion } from '../components/ui'
 import { PrototypeHomeIndicator, PrototypePhone, PrototypeStatusBar, PrototypeTopMark } from '../components/PrototypeChrome'
 
@@ -92,6 +93,7 @@ export function OnboardingPage({ auth }: { auth: Auth }) {
   const [profile, setProfile] = useState<DraftProfile>(draft.profile)
   const [completed, setCompleted] = useState<{ user: Auth; profile: SkinProfile } | null>(null)
   const [direction, setDirection] = useState<'forward' | 'back'>('forward')
+  const [welcomeVisible, setWelcomeVisible] = useState(() => hasPendingOnboardingWelcome(auth.userId))
   const heading = useRef<HTMLHeadingElement>(null)
 
   useEffect(() => {
@@ -123,6 +125,11 @@ export function OnboardingPage({ auth }: { auth: Auth }) {
   useEffect(() => {
     heading.current?.focus({ preventScroll: true })
   }, [step])
+
+  if (welcomeVisible) return <OnboardingWelcome onDone={() => {
+    consumeOnboardingWelcome(auth.userId)
+    setWelcomeVisible(false)
+  }}/>
 
   if (completed) return <CompleteStep profile={completed.profile} onDone={() => {
     queryClient.setQueryData(['auth'], completed.user)
@@ -165,6 +172,66 @@ export function OnboardingPage({ auth }: { auth: Auth }) {
       </div>
     </div>
     <PrototypeHomeIndicator/>
+  </PrototypePhone>
+}
+
+function OnboardingWelcome({ onDone }: { onDone: () => void }) {
+  const done = useRef(onDone)
+  const exitStarted = useRef(false)
+  const [exiting, setExiting] = useState(false)
+  done.current = onDone
+
+  const beginExit = () => {
+    if (exitStarted.current) return
+    exitStarted.current = true
+    setExiting(true)
+  }
+
+  useEffect(() => {
+    if (!exiting) return
+    const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    const timer = window.setTimeout(() => done.current(), reducedMotion ? 60 : 620)
+    return () => window.clearTimeout(timer)
+  }, [exiting])
+
+  return <PrototypePhone>
+    <section aria-labelledby="onboarding-welcome-title" className={`onboarding-welcome relative flex min-h-0 flex-1 flex-col overflow-hidden bg-white px-7 text-[#111722] ${exiting ? 'is-exiting' : ''}`}>
+      <button type="button" onClick={beginExit} disabled={exiting} aria-labelledby="onboarding-welcome-title" className="absolute inset-0 z-30 cursor-pointer bg-transparent focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#71849f] disabled:cursor-default"/>
+      <svg aria-hidden="true" viewBox="0 0 390 844" preserveAspectRatio="xMidYMid slice" className="pointer-events-none absolute inset-0 size-full text-[#b9c9dd]">
+        <circle cx="350" cy="70" r="82" fill="none" stroke="currentColor" strokeWidth="1" opacity=".42"/>
+        <circle cx="350" cy="70" r="57" fill="none" stroke="currentColor" strokeWidth=".7" strokeDasharray="4 10" opacity=".48"/>
+        <path d="M-58 690c102-82 170 20 258-46 67-51 118-86 232-51" fill="none" stroke="currentColor" strokeWidth="1.1" opacity=".46"/>
+        <path d="M-45 716c102-67 176 18 263-43 63-45 117-70 213-42" fill="none" stroke="currentColor" strokeWidth=".7" strokeDasharray="5 10" opacity=".42"/>
+        <g fill="currentColor"><circle cx="46" cy="155" r="3" opacity=".24"/><circle cx="63" cy="138" r="1.5" opacity=".35"/><circle cx="326" cy="517" r="4" opacity=".18"/><circle cx="344" cy="535" r="2" opacity=".28"/></g>
+      </svg>
+
+      <header className="safe-top onboarding-welcome-mark relative flex h-[62px] shrink-0 items-center justify-between">
+        <img src="/skn-assets/skn-mark.png" alt="SKN" className="h-[25px] w-auto object-contain"/>
+        <span className="text-[9px] font-semibold tracking-[.16em] text-[#7b8ca5]">WELCOME</span>
+      </header>
+
+      <div className="relative flex min-h-0 flex-1 flex-col items-center justify-center">
+        <div className="onboarding-welcome-visual relative grid h-[clamp(245px,42svh,330px)] w-full shrink-0 place-items-center">
+          <span aria-hidden className="absolute size-[clamp(224px,64vw,282px)] rounded-full bg-[radial-gradient(circle,rgba(222,232,248,.62)_0%,rgba(244,238,246,.34)_46%,rgba(255,255,255,0)_72%)] blur-xl"/>
+          <svg aria-hidden="true" viewBox="0 0 300 300" className="onboarding-welcome-orbit absolute size-[clamp(238px,68vw,300px)] text-[#9eb1ca]">
+            <circle cx="150" cy="150" r="139" fill="none" stroke="currentColor" strokeWidth=".8" strokeDasharray="3 9" opacity=".52"/>
+            <circle cx="150" cy="11" r="3" fill="#8198b6"/>
+            <circle cx="270" cy="220" r="2" fill="#b4a5ba"/>
+          </svg>
+          <AssetMotion name="petri-motion" poster="/skn-assets/petri-motion.png" loop alt="투명한 세럼이 담긴 페트리 접시" className="size-[clamp(218px,61vw,272px)] rounded-full"/>
+        </div>
+
+        <div className="onboarding-welcome-copy w-full pb-3 text-left">
+          <p className="text-[10px] font-semibold tracking-[.13em] text-[#71849f]">YOUR SKINCARE LAB</p>
+          <h1 id="onboarding-welcome-title" className="mt-3 text-[30px] font-semibold leading-[1.16] tracking-[-.052em] [text-wrap:balance]">당신을 위한 스킨케어는<br/>당신이 써본 순간에서<br/>시작돼요</h1>
+          <p className="mt-3 max-w-[310px] text-[13px] font-medium leading-[1.68] tracking-[-.022em] text-[#748095]">좋았던 사용감도, 아쉬웠던 순간도 함께 기억해 다음 제품과 루틴을 더 나답게 찾아가요</p>
+        </div>
+      </div>
+
+      <div className="safe-bottom relative shrink-0 pb-6 pt-5 text-center">
+        <p className="text-[11px] font-medium tracking-[-.01em] text-[#9aa3b0]">화면을 눌러 시작해보세요</p>
+      </div>
+    </section>
   </PrototypePhone>
 }
 
@@ -280,31 +347,26 @@ function chipLabel(option: ChipOption) {
 }
 
 function CompleteStep({ profile, onDone }: { profile: SkinProfile; onDone: () => void }) {
-  const shownAt = useRef(Date.now())
-  const exitScheduled = useRef(false)
-  const timers = useRef<number[]>([])
+  const done = useRef(onDone)
+  const exitStarted = useRef(false)
   const [exiting, setExiting] = useState(false)
-  const scheduleExit = (skipHold = false) => {
-    if (exitScheduled.current) return
-    exitScheduled.current = true
-    const elapsed = Date.now() - shownAt.current
-    const delay = skipHold ? 0 : Math.max(700, 2600 - elapsed)
-    timers.current.push(window.setTimeout(() => setExiting(true), delay))
+  done.current = onDone
+
+  const beginExit = () => {
+    if (exitStarted.current) return
+    exitStarted.current = true
+    setExiting(true)
   }
 
   useEffect(() => {
-    const activeTimers = timers.current
-    activeTimers.push(window.setTimeout(() => scheduleExit(true), 6000))
-    return () => activeTimers.forEach(timer => window.clearTimeout(timer))
-  }, [])
-
-  useEffect(() => {
     if (!exiting) return
-    timers.current.push(window.setTimeout(onDone, 600))
-  }, [exiting, onDone])
+    const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    const timer = window.setTimeout(() => done.current(), reducedMotion ? 60 : 600)
+    return () => window.clearTimeout(timer)
+  }, [exiting])
 
   const summary = [labelFor(AGE_RANGES, profile.ageRange), labelFor(GENDERS, profile.gender), labelFor(SKIN_TYPES, profile.skinType)].join(' · ')
-  return <PrototypePhone><button type="button" onClick={() => scheduleExit(true)} aria-label="완료 화면을 닫고 메인으로 이동" className={`flex min-h-0 flex-1 flex-col text-[#0a0a0a] transition-opacity duration-[600ms] ease-out ${exiting ? 'opacity-0' : 'opacity-100'}`}><PrototypeStatusBar/><PrototypeTopMark/><div className="safe-bottom flex min-h-0 flex-1 flex-col px-7"><div className="pt-14 text-center"><h1 className="text-2xl font-semibold leading-[1.4] tracking-[-.02em]">나만의 피부 프로필이<br/>완성됐어요.</h1><p className="mt-3 text-sm text-[#8e8e93]">{summary}</p></div><div className="flex flex-1 items-center justify-center"><AssetMotion name="check-motion" poster="/skn-assets/check-motion.png" alt="프로필 설정 완료" className="size-[240px]" onEnded={() => scheduleExit(false)}/></div><p className="pb-6 text-center text-xs text-[#c7c7cc]">화면을 누르면 바로 시작할 수 있어요</p></div><PrototypeHomeIndicator/></button></PrototypePhone>
+  return <PrototypePhone><button type="button" onClick={beginExit} aria-label="완료 화면을 닫고 메인으로 이동" className={`flex min-h-0 flex-1 flex-col text-[#0a0a0a] transition-opacity duration-[600ms] ease-out ${exiting ? 'pointer-events-none opacity-0' : 'opacity-100'}`}><PrototypeStatusBar/><PrototypeTopMark/><div className="safe-bottom flex min-h-0 flex-1 flex-col px-7"><div className="pt-14 text-center"><h1 className="text-2xl font-semibold leading-[1.4] tracking-[-.02em]">당신을 위한 스킨케어를<br/>시작할 준비가 됐어요</h1><p className="mt-3 text-sm text-[#8e8e93]">{summary}</p></div><div className="flex flex-1 items-center justify-center"><AssetMotion name="check-motion" poster="/skn-assets/check-motion.png" alt="프로필 설정 완료" className="size-[240px]"/></div><p className="pb-6 text-center text-xs font-medium text-[#9da3ad]">화면을 눌러 내 연구를 시작해보세요</p></div><PrototypeHomeIndicator/></button></PrototypePhone>
 }
 
 function labelFor<T extends string>(options: readonly (readonly [T, string])[], value: T) {

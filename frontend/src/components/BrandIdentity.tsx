@@ -38,11 +38,11 @@ export function BrandIdentity({ name, logoUrl, size = 'sm', className, nameClass
   useEffect(() => setLogoFailed(false), [logoUrl])
 
   return <span className={twMerge('inline-flex min-w-0 items-center gap-1.5', className)}>
-    <span aria-hidden="true" className={twMerge('grid shrink-0 place-items-center overflow-hidden border border-black/[.06] bg-white shadow-[0_1px_4px_rgba(33,43,61,.06)]', needsDarkBackdrop && 'border-white/10 bg-[#30343a]', logoSizes[size])}>
+    <span aria-hidden="true" className={twMerge('grid shrink-0 place-items-center overflow-hidden', needsDarkBackdrop && 'border border-white/10 bg-[#30343a]', logoSizes[size])}>
       {logoUrl && !logoFailed
-        ? <img src={logoUrl} alt="" loading="lazy" onError={() => setLogoFailed(true)} className="h-full w-full object-contain"/>
+        ? <img src={logoUrl} alt="" loading="lazy" onError={() => setLogoFailed(true)} className={twMerge('h-full w-full object-contain', !needsDarkBackdrop && 'mix-blend-multiply')}/>
         : <span className="grid h-full w-full place-items-center rounded-[inherit] bg-[#edf3fd] text-[9px] font-bold leading-none text-[#607493]">{label.slice(0, 1)}</span>}
     </span>
-    <span className={twMerge('min-w-0 truncate font-medium leading-none text-[#6e7785]', textSizes[size], nameClassName)}>{label}</span>
+    <span className={twMerge('min-w-0 truncate font-medium leading-tight text-[#6e7785]', textSizes[size], nameClassName)}>{label}</span>
   </span>
 }

@@ -90,7 +90,7 @@ P4는 식별·사용 맥락 보조로만 쓰고 안전·효능·원인 판단에
 
 ## 모델·비용·실패 정책
 
-- 기본 모델: `gpt-5.6-luna`
+- 기본 모델: `gpt-5.6-terra`
 - reasoning effort: `low`
 - 최대 출력: 1,800 tokens. 검색·추론 뒤 구조화 JSON이 잘리지 않게 확보한 예산이며, 사용자에게 보이는 답변 길이는 schema와 프롬프트로 별도 제한한다.
 - web search: Responses API `web_search`, 제품·추천·Rescue 판단 단계는 `tool_choice: required`

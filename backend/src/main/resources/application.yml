@@ -26,11 +26,6 @@ spring:
 
 server:
   port: ${PORT:8080}
-  servlet:
-    session:
-      cookie:
-        http-only: true
-        same-site: lax
   error:
     include-message: never
 
@@ -45,6 +40,9 @@ management:
         enabled: true
 
 app:
+  auth:
+    # 운영은 true로 고정한다. 로컬 HTTP는 false여야 브라우저가 쿠키를 보낼 수 있다.
+    secure-cookie: ${AUTH_COOKIE_SECURE:false}
   test-harness:
     enabled: ${TEST_HARNESS_ENABLED:false}
   rate-limit:
@@ -57,7 +55,7 @@ app:
     max-tracked-keys: ${RATE_LIMIT_MAX_TRACKED_KEYS:50000}
   openai:
     api-key: ${OPENAI_API_KEY:}
-    model: ${OPENAI_MODEL:gpt-5.6-luna}
+    model: ${OPENAI_MODEL:gpt-5.6-terra}
     reasoning-effort: ${OPENAI_REASONING_EFFORT:low}
     connect-timeout: 3s
     read-timeout: 25s

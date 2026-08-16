@@ -7,6 +7,14 @@ Table app_user {
   created_at text [not null]
 }
 
+Table auth_access_token {
+  token_hash text [pk, note: '32-byte opaque token의 SHA-256 hash; 원문 저장 금지']
+  user_id integer [not null, ref: > app_user.id]
+  expires_at integer [not null, note: '절대 만료 Unix epoch seconds; 발급 후 30일']
+  created_at text [not null]
+  note: '리프레시 토큰 없는 단일 액세스 토큰. 로그아웃·계정 삭제 시 폐기'
+}
+
 Table user_onboarding {
   user_id integer [pk, ref: > app_user.id]
   entry_choice text [not null, note: 'PRODUCT | ROUTINE | EXPLORE']
@@ -83,6 +91,25 @@ Table product_source_fact {
   indexes {
     (product_id, fact_type, fact_text, source_url) [unique]
     (product_id, id)
+  }
+}
+
+Table product_achievement {
+  id integer [pk, increment]
+  product_id integer [not null, ref: > product.id]
+  achievement_type text [not null, note: 'AWARD | RANKING | MILESTONE']
+  period_label text [not null, note: '성과가 발생한 시점 또는 기간']
+  title text [not null]
+  detail text [not null]
+  source_label text [not null]
+  source_url text [not null]
+  checked_at text [not null]
+  display_order integer [not null, default: 0]
+  created_at text [not null]
+
+  indexes {
+    (product_id, achievement_type, title, period_label, source_url) [unique]
+    (product_id, display_order, id)
   }
 }
 

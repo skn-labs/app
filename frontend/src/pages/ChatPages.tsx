@@ -10,7 +10,7 @@ import { api } from '../lib/api'
 import type { Conversation, ExperienceRecord, Pattern, Product, Routine, WebSource } from '../lib/types'
 import { BrandIdentity } from '../components/BrandIdentity'
 import { ExperienceStatusGroup } from '../components/ExperienceStatusBadge'
-import { AiBadge, AppHeader, AssetMotion, Button, Card, ErrorState, ProductGlyph, Screen } from '../components/ui'
+import { AiBadge, AppHeader, AssetMotion, Button, Card, ErrorState, Loading, ProductGlyph, Screen, Skeleton } from '../components/ui'
 import { startChatPath } from '../lib/chat'
 
 const INITIAL_PROMPTS = [
@@ -30,7 +30,7 @@ export function AiLandingPage() {
     <div className="hide-scrollbar flex-1 overflow-y-auto px-5 pb-6">
       <div className="flex min-h-full flex-col items-center justify-center pb-2 text-center">
         <AiLandingVisual/>
-        <h1 className="page-title -mt-1 max-w-[330px] leading-[1.22]">SKN AI와 함께<br/>내 기록에서 다음을 찾아봐요</h1>
+        <h1 className="-mt-1 w-full text-[clamp(22px,6.5vw,27px)] font-[550] leading-[1.22] tracking-[-.032em] text-[#171816]"><span className="block whitespace-nowrap">SKN AI와 함께</span><span className="block whitespace-nowrap">내 기록에서 다음을 찾아봐요</span></h1>
         <p className="supporting-copy mx-auto mt-3 max-w-[330px]">제품 정보와 내가 남긴 기록을 함께 살펴봐요.<br/>적합성을 단정하지 않고, 다음에 확인할 점을 정리해요.</p>
         <StarterSuggestions suggestions={INITIAL_PROMPTS.map(item => item.label)} onSelect={selectStarter}/>
       </div>
@@ -114,7 +114,7 @@ export function ChatPage() {
   const apply = useMutation({ mutationFn: () => api.applyRescue(conversationId), onSuccess: value => { queryClient.invalidateQueries(); navigate(`/experiences/${value.id}`) } })
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' }) }, [conversation.data?.messages.length, send.isPending])
   if (!validConversationId) return <Screen nav={false}><AiHeader onBack={() => navigate('/ai')}/><ErrorState message="대화 주소를 확인해주세요."/></Screen>
-  if (conversation.isPending) return <Screen nav={false} className="flex h-full min-h-0 flex-col overflow-hidden bg-[#fbfcff]"><AiHeader onBack={() => navigate('/ai')}/><div className="grid flex-1 place-items-center"><AiMotion size="loading"/><span className="mt-3 text-xs text-[#7f858c]">대화를 불러오는 중…</span></div></Screen>
+  if (conversation.isPending) return <Screen nav={false} className="flex h-full min-h-0 flex-col overflow-hidden bg-[#fbfcff]"><AiHeader onBack={() => navigate('/ai')}/><Loading variant="chat" label="대화를 불러오는 중" className="flex-1"/></Screen>
   if (conversation.isError) return <Screen nav={false}><AiHeader onBack={() => navigate('/ai')}/><ErrorState message={conversation.error.message} onRetry={() => conversation.refetch()}/></Screen>
   const data = conversation.data
   const submit = (value: string) => { const message = value.trim(); if (message && !send.isPending) { const request = { text: message, requestId: crypto.randomUUID() }; setText(''); setPendingMessage(request); send.mutate(request) } }
@@ -186,7 +186,7 @@ function AiHistory({ conversations, loading, error, onRetry, onClose }: { conver
     return () => { window.removeEventListener('keydown', closeOnEscape); previousFocus?.focus({ preventScroll: true }) }
   }, [])
   const startNew = () => { onClose(); navigate('/ai') }
-  return <div className="fixed inset-0 z-50 flex justify-center bg-[#111827]/30 backdrop-blur-[3px]" onPointerDown={onClose}>
+  return <div className="skn-sheet-backdrop fixed inset-0 z-50 flex justify-center bg-[#111827]/30 backdrop-blur-[3px]" onPointerDown={onClose}>
     <div className="flex h-full w-full max-w-[430px] justify-end overflow-hidden">
       <aside ref={dialog} role="dialog" aria-modal="true" aria-labelledby="history-title" tabIndex={-1} className="safe-bottom flex h-full w-[89%] max-w-[360px] animate-slide-in flex-col overflow-hidden rounded-l-[28px] border-l border-white/80 bg-[#fbfcfe] shadow-[-22px_0_64px_rgba(22,30,45,.18)] outline-none" onPointerDown={event => event.stopPropagation()}>
         <header className="safe-top shrink-0 border-b border-[#e9edf3] bg-white/95">
@@ -204,7 +204,7 @@ function AiHistory({ conversations, loading, error, onRetry, onClose }: { conver
         </div>
 
         <div className="hide-scrollbar flex-1 overflow-y-auto px-5 pb-7 pt-5" aria-live="polite">
-          {loading ? <div className="grid min-h-56 place-items-center"><AiMotion size="tiny"/></div>
+          {loading ? <div className="space-y-2.5" role="status" aria-label="대화 기록을 불러오는 중">{[0, 1, 2, 3].map(index => <div key={index} className="flex items-center gap-3 rounded-[20px] border border-[#e6eaf0] px-3.5 py-3.5"><Skeleton className="size-10 shrink-0 rounded-[14px]"/><div className="min-w-0 flex-1"><div className="flex items-center justify-between gap-3"><Skeleton className={index % 2 ? 'h-3.5 w-28 rounded-full' : 'h-3.5 w-36 rounded-full'}/><Skeleton className="h-2.5 w-10 rounded-full"/></div><Skeleton className="mt-2 h-3 w-4/5 rounded-full"/></div></div>)}</div>
             : error ? <div className="rounded-[22px] border border-[#f1d9d9] bg-[#fff8f8] px-5 py-8 text-center"><p className="text-xs leading-5 text-danger">{error}</p><button type="button" onClick={onRetry} className="mt-4 inline-flex h-10 items-center gap-1.5 rounded-full border border-[#efcece] bg-white px-4 text-xs font-semibold text-[#9c4545] transition active:scale-95"><RefreshCw size={14}/>다시 불러오기</button></div>
               : conversations.length ? <section aria-label={`저장된 AI 대화 ${conversations.length}개`}>
                 <p className="mb-3 text-[11px] font-semibold tracking-[.06em] text-[#8a93a2]">최근 대화 {conversations.length}</p>
@@ -285,7 +285,7 @@ function ProductSearchResult({ product, onSelect }: { product: Product; onSelect
 }
 
 function ProductResultsSkeleton() {
-  return <div className="space-y-2.5" aria-label="제품 검색 결과 불러오는 중">{[1, 2, 3].map(item => <div key={item} className="flex animate-pulse items-center gap-3 rounded-[20px] border border-[#edf0f3] p-3"><div className="h-14 w-12 rounded-2xl bg-[#f0f2f5]"/><div className="flex-1"><div className="h-2.5 w-20 rounded bg-[#eceff2]"/><div className="mt-2 h-3.5 w-4/5 rounded bg-[#e7eaee]"/><div className="mt-2 h-2.5 w-28 rounded bg-[#f0f2f5]"/></div></div>)}</div>
+  return <div className="space-y-2.5" role="status" aria-label="제품 검색 결과 불러오는 중">{[1, 2, 3].map(item => <div key={item} className="flex items-center gap-3 rounded-[20px] border border-[#edf0f3] p-3"><Skeleton className="h-14 w-12 rounded-2xl"/><div className="flex-1"><Skeleton className="h-2.5 w-20 rounded-full"/><Skeleton className="mt-2 h-3.5 w-4/5 rounded-full"/><Skeleton className="mt-2 h-2.5 w-28 rounded-full"/></div></div>)}</div>
 }
 
 function messageTime(value: string) {
@@ -331,8 +331,8 @@ function ProductContextCard({ product }: { product: Product }) {
 }
 
 function ProductContextSkeleton() {
-  return <section className="mb-5 flex animate-pulse items-center gap-4 rounded-[22px] border border-[#d9ddff] bg-[#f8f8ff] p-4" aria-label="선택한 제품 불러오는 중">
-    <div className="size-[72px] shrink-0 rounded-2xl bg-[#e9eafb]"/><div className="min-w-0 flex-1"><div className="h-5 w-20 rounded-full bg-[#e2e4f7]"/><div className="mt-3 h-3 w-24 rounded bg-[#e3e4e1]"/><div className="mt-2 h-4 w-full rounded bg-[#dedfef]"/><div className="mt-2 h-3 w-16 rounded bg-[#e3e4e1]"/></div>
+  return <section className="mb-5 flex items-center gap-4 rounded-[22px] border border-[#d9ddff] bg-[#f8f8ff] p-4" role="status" aria-label="선택한 제품 불러오는 중">
+    <Skeleton className="size-[72px] shrink-0 rounded-2xl"/><div className="min-w-0 flex-1"><Skeleton className="h-5 w-20 rounded-full"/><Skeleton className="mt-3 h-3 w-24 rounded-full"/><Skeleton className="mt-2 h-4 w-full rounded-full"/><Skeleton className="mt-2 h-3 w-16 rounded-full"/></div>
   </section>
 }
 
@@ -395,7 +395,7 @@ function RecommendedProductLinks({ refs }: { refs: string[] }) {
     .filter(Number.isFinite))].slice(0, 3)
   const products = useQueries({ queries: productIds.map(id => ({ queryKey: ['product', id], queryFn: () => api.product(id) })) })
   if (!productIds.length) return null
-  if (products.some(result => result.isPending)) return <div className="-mx-5 mt-4" aria-label="추천 제품 불러오는 중"><div className="hide-scrollbar flex gap-3 overflow-hidden px-5">{productIds.map(id => <div key={id} className="h-[232px] w-[184px] shrink-0 animate-pulse rounded-[24px] border border-[#e2eaf4] bg-[#f1f6fc]"/>)}</div></div>
+  if (products.some(result => result.isPending)) return <div className="-mx-5 mt-4" role="status" aria-label="추천 제품 불러오는 중"><div className="hide-scrollbar flex gap-3 overflow-hidden px-5">{productIds.map(id => <Skeleton key={id} className="h-[232px] w-[184px] shrink-0 rounded-[24px]"/>)}</div></div>
   const loaded = products.flatMap(result => result.data ? [result.data] : [])
   if (!loaded.length) return null
   return <section className="-mx-5 mt-5" aria-label="AI 답변에 나온 제품">
@@ -434,12 +434,12 @@ function EvidenceSheet({ refs, webSources, onClose }: { refs: string[]; webSourc
     return () => { window.removeEventListener('keydown', closeOnEscape); previousFocus?.focus({ preventScroll: true }) }
   }, [])
 
-  return <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/35 px-0 backdrop-blur-[2px]" onPointerDown={onClose}>
-    <section ref={dialog} role="dialog" aria-modal="true" aria-labelledby="evidence-title" tabIndex={-1} className="safe-bottom flex max-h-[82dvh] w-full max-w-[430px] animate-rise flex-col overflow-hidden rounded-t-[30px] bg-paper shadow-[0_-18px_60px_rgba(23,24,22,.18)] outline-none" onPointerDown={event => event.stopPropagation()}>
+  return <div className="skn-sheet-backdrop fixed inset-0 z-50 flex items-end justify-center bg-black/35 px-0 backdrop-blur-[2px]" onPointerDown={onClose}>
+    <section ref={dialog} role="dialog" aria-modal="true" aria-labelledby="evidence-title" tabIndex={-1} className="skn-sheet-surface safe-bottom flex max-h-[82dvh] w-full max-w-[430px] flex-col overflow-hidden rounded-t-[30px] bg-paper shadow-[0_-18px_60px_rgba(23,24,22,.18)] outline-none" onPointerDown={event => event.stopPropagation()}>
       <div className="shrink-0 px-5 pb-4 pt-3"><div className="mx-auto mb-4 h-1 w-10 rounded-full bg-[#d9dcd6]"/><div className="flex items-start justify-between gap-4"><div><p className="text-xs font-semibold text-accent">ANSWER SOURCES</p><h2 id="evidence-title" className="mt-1 text-2xl font-semibold tracking-[-.035em]">이 답변에 쓴 근거</h2><p className="mt-2 text-xs leading-5 text-muted">웹에서 확인한 자료와 내 기록을 분리해서 보여줘요.</p></div><button type="button" onClick={onClose} aria-label="근거 닫기" className="grid size-10 shrink-0 place-items-center rounded-full bg-white text-muted shadow-sm"><X size={19}/></button></div></div>
       <div className="overflow-y-auto border-t border-line px-5 py-5">
         {webSources.length > 0 && <section><p className="mb-3 text-xs font-semibold text-muted">웹에서 확인한 자료</p><div className="space-y-3">{webSources.map(source => <WebSourceCard key={source.ref} source={source}/>)}</div></section>}
-        {loading ? <div className="grid min-h-44 place-items-center"><span className="size-6 animate-spin rounded-full border-2 border-line border-t-accent"/></div> : evidence.length > 0 && <section className={webSources.length ? 'mt-6' : ''}><p className="mb-3 text-xs font-semibold text-muted">내 데이터</p><div className="space-y-3">{evidence.map(item => <EvidenceCard key={item.ref} item={item}/>)}</div></section>}
+        {loading ? <div className="min-h-44 space-y-3 py-3" role="status" aria-label="답변 근거를 불러오는 중"><Skeleton className="h-20 rounded-[20px]"/><Skeleton className="h-20 rounded-[20px]"/></div> : evidence.length > 0 && <section className={webSources.length ? 'mt-6' : ''}><p className="mb-3 text-xs font-semibold text-muted">내 데이터</p><div className="space-y-3">{evidence.map(item => <EvidenceCard key={item.ref} item={item}/>)}</div></section>}
         <div className="mt-5 rounded-2xl bg-soft p-4 text-xs leading-5 text-muted"><b className="text-ink">근거를 읽는 법</b><br/>P1은 제품 공식정보, P2는 공공기관, P3는 연구 자료, P4는 보조 자료예요. 연결된 자료는 적합성이나 원인을 증명하지 않아요.</div>
       </div>
     </section>

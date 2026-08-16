@@ -4,10 +4,11 @@ import { ArrowRight, ChevronRight, Search } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { api } from '../lib/api'
 import { startChatPath } from '../lib/chat'
+import { getHomeGreeting, type HomeGreetingTone } from '../lib/homeGreeting'
 import type { Home, Pattern } from '../lib/types'
 import { ActionIcon } from '../components/ActionIcon'
 import { ExperienceActionIcon } from '../components/ExperienceActionIcon'
-import { AppHeader, BottomSheet, ErrorState, Loading, Screen } from '../components/ui'
+import { AppHeader, AssetMotion, BottomSheet, ErrorState, Loading, Screen } from '../components/ui'
 import { ProductAddSheet } from '../components/ProductAddSheet'
 import heroWave from '../assets/figma/hero-wave.webp'
 const insightGraphPresets = [
@@ -25,15 +26,16 @@ export function HomePage() {
   const [selectedInsight, setSelectedInsight] = useState<Pattern | null>(null)
   const home = useQuery({ queryKey: ['home'], queryFn: api.home })
 
-  if (home.isPending) return <Screen><AppHeader/><Loading/></Screen>
+  if (home.isPending) return <Screen><AppHeader/><Loading variant="home" label="홈을 준비하는 중"/></Screen>
   if (home.error) return <Screen><AppHeader/><ErrorState message={home.error.message} onRetry={() => home.refetch()}/></Screen>
   const data = home.data
   const experience = data.currentExperience
+  const greeting = getHomeGreeting(data)
 
   return <Screen className="bg-white">
     <AppHeader/>
     <div className="px-5 pb-6">
-      <div className="mt-3"><h1 className="display-title break-words">{data.displayName} 님</h1><p className="mt-2 text-sm leading-6 text-black/50">오늘의 사용 경험을 가볍게 이어가요.</p></div>
+      <div className="mt-3"><h1 className="break-words text-[30px] font-semibold leading-[1.14] tracking-[-.045em] text-[#111722]">{data.displayName} 님</h1><p className={`mt-2.5 text-[12px] font-medium leading-5 tracking-[-.012em] ${homeGreetingTone(greeting.tone)}`}>{greeting.message}</p></div>
 
       <div className="mt-7">
         {experience ? <ActiveExperienceCard experience={experience} onOpen={() => navigate(`/experiences/${experience.id}`)} onRecord={() => navigate(`/experiences/${experience.id}/record`)}/>
@@ -42,7 +44,7 @@ export function HomePage() {
 
       <section className="mt-5" aria-label="AI와 화장품 탐색">
         <button type="button" onClick={() => navigate('/ai')} className="group flex min-h-[74px] w-full items-center gap-3.5 overflow-hidden rounded-[20px] bg-[#050505] px-4 py-3.5 text-left text-white shadow-[0_8px_22px_rgba(0,0,0,.14)] transition hover:bg-black active:scale-[.99]">
-          <span className="grid size-11 shrink-0 place-items-center overflow-hidden rounded-[15px] bg-white/[.08]"><img src="/skn-assets/ai-drop.png" alt="" className="size-12 max-w-none object-contain"/></span>
+          <span className="grid size-11 shrink-0 place-items-center overflow-hidden rounded-[15px] bg-white/[.08]"><AssetMotion name="ai-drop-motion" poster="/skn-assets/ai-drop-motion-poster.png" loop className="size-12 rounded-[14px]"/></span>
           <span className="min-w-0 flex-1"><strong className="block text-[14px] font-semibold leading-5 tracking-[-.025em]">피부에 대해 궁금한 게 있나요?</strong><span className="mt-1 block text-[11px] leading-4 text-[#cdd0d6]">SKN AI에게 편하게 물어보세요.</span></span>
           <ChevronRight size={18} strokeWidth={1.8} className="shrink-0 text-white/70 transition group-hover:translate-x-0.5"/>
         </button>
@@ -77,6 +79,14 @@ export function HomePage() {
     />
     <InsightEvidenceSheet pattern={selectedInsight} onClose={() => setSelectedInsight(null)}/>
   </Screen>
+}
+
+function homeGreetingTone(tone: HomeGreetingTone) {
+  if (tone === 'welcome') return 'text-[#62789a]'
+  if (tone === 'action') return 'text-[#68778e]'
+  if (tone === 'saved') return 'text-[#667661]'
+  if (tone === 'review') return 'text-[#826b61]'
+  return 'text-[#7a808a]'
 }
 
 function InsightRail({ patterns, onOpen }: { patterns: Pattern[]; onOpen: (pattern: Pattern) => void }) {
@@ -126,7 +136,7 @@ function ActiveExperienceCard({ experience, onOpen, onRecord }: { experience: No
   const day = Math.max(1, Math.min(7, experience.day))
   const subjectLabel = experience.subjectType === 'ROUTINE' ? '지금 연구 중인 루틴' : '지금 연구 중인 제품'
   const routineKeywords = (experience.routine?.insight?.keywords || []).slice(0, 3)
-  return <section className="relative left-1/2 aspect-[378/228] w-[104.42%] -translate-x-1/2" aria-label={`${subjectLabel}, 7일 중 ${day}일`}>
+  return <section className="relative left-1/2 aspect-[378/244] w-[104.42%] -translate-x-1/2" aria-label={`${subjectLabel}, 7일 중 ${day}일`}>
     <img src="/skn-assets/routine-research-card.svg" alt="" aria-hidden className="absolute inset-0 size-full"/>
     <div className="absolute inset-[8px] flex flex-col px-[clamp(16px,5vw,22px)] pb-[clamp(18px,5vw,22px)] pt-[clamp(14px,4.4vw,19px)]">
       <div className="flex items-center justify-between gap-3">
@@ -134,7 +144,7 @@ function ActiveExperienceCard({ experience, onOpen, onRecord }: { experience: No
         <p role="progressbar" aria-label={`7일 중 ${day}일`} aria-valuemin={1} aria-valuemax={7} aria-valuenow={day} className="shrink-0 rounded-full border border-white/85 bg-white/72 px-2.5 py-1 text-[10px] font-semibold leading-none tracking-[.035em] text-[#4b5f80] shadow-[0_2px_8px_rgba(56,83,129,.08)] backdrop-blur-sm tabular-nums">DAY {day} / 7</p>
       </div>
       <div className="shrink-0 pt-[clamp(8px,2.8vw,12px)]">
-        <h2 className="line-clamp-1 max-w-[290px] text-[clamp(20px,5.6vw,24px)] font-semibold leading-[1.16] tracking-[-.04em] text-[#101725]">{experience.title}</h2>
+        <h2 className="line-clamp-1 max-w-[290px] text-[clamp(18px,5.1vw,21px)] font-semibold leading-[1.2] tracking-[-.035em] text-[#101725]">{experience.title}</h2>
         {experience.subjectType === 'ROUTINE'
           ? routineKeywords.length > 0 && <div className="mt-2 flex max-h-6 flex-wrap gap-1.5 overflow-hidden">{routineKeywords.map(keyword => <span key={keyword} className="max-w-[108px] truncate rounded-full border border-white/80 bg-white/56 px-2.5 py-1 text-[9px] font-semibold leading-none tracking-[-.01em] text-[#566b8c] backdrop-blur-sm">{keyword}</span>)}</div>
           : <p className="mt-1 line-clamp-1 text-xs font-medium leading-5 tracking-[-.015em] text-[#52647f]">{experience.subtitle}</p>}
@@ -148,22 +158,30 @@ function ActiveExperienceCard({ experience, onOpen, onRecord }: { experience: No
 }
 
 function EmptyExperienceCard({ productCount }: { productCount: number }) {
-  return <section className="relative min-h-[300px] overflow-hidden rounded-[28px] border border-[#dce5f3] shadow-[0_12px_34px_rgba(44,71,122,.11)]">
+  const title = productCount ? <>내 제품으로<br/>첫 루틴을 시작해보세요</> : <>사용할수록<br/>나만의 기준이 선명해져요</>
+  const description = productCount
+    ? '가지고 있는 제품을 순서대로 엮고 사용감을 남기면, 다음 선택에 쓸 나만의 근거가 쌓여요'
+    : '첫 화장품을 담고 느낌을 남기면, 흩어진 경험이 다음 제품과 루틴을 고르는 근거로 이어져요'
+  return <section className="relative min-h-[306px] overflow-hidden rounded-[28px] border border-[#dce5f3] shadow-[0_12px_34px_rgba(44,71,122,.11)]">
     <img src={heroWave} alt="" aria-hidden className="absolute inset-0 size-full scale-110 object-cover object-bottom"/>
     <div aria-hidden className="absolute inset-0 bg-[linear-gradient(145deg,rgba(255,255,255,.97)_0%,rgba(244,249,255,.8)_48%,rgba(204,224,255,.2)_100%)]"/>
-    <div aria-hidden className="absolute -right-7 top-12 size-44 rounded-full border border-white/70 bg-white/22 shadow-[inset_0_0_34px_rgba(255,255,255,.8),0_14px_34px_rgba(106,143,202,.12)] backdrop-blur-[3px]"/>
-    <img src="/skn-assets/onboarding-orb.png" alt="" aria-hidden className="absolute right-2 top-16 size-28 object-contain opacity-80"/>
-    <div className="relative flex min-h-[300px] flex-col p-5">
-      <span className="w-fit rounded-full bg-white/72 px-3 py-2 text-xs font-medium text-[#52678c] backdrop-blur">START YOUR SKN</span>
-      <div className="my-auto max-w-[285px]"><h2 className="text-[28px] font-medium leading-[1.16] tracking-[-.045em]">첫 기록부터<br/>나만의 기준이 생겨요.</h2><p className="mt-3 max-w-[265px] text-sm leading-6 text-black/52">{productCount ? '가지고 있는 화장품으로 실제 사용 조합을 만들고, 사용한 순간을 기록해보세요.' : '화장품 하나를 담으면 제품·루틴·경험이 연결되는 나만의 아카이브가 시작돼요.'}</p></div>
-      <Link to={productCount ? '/routine/edit' : '/explore'} className="flex h-[54px] w-full items-center justify-center gap-1.5 rounded-full bg-black text-[13px] font-semibold leading-none tracking-[-.015em] text-white shadow-[0_9px_24px_rgba(0,0,0,.18)] transition active:scale-[.98]">{productCount ? '새 경험 시작하기' : '첫 화장품 담기'}<ArrowRight size={17}/></Link>
+    <div aria-hidden className="absolute -right-16 -top-20 size-56 rounded-full bg-white/70 blur-3xl"/>
+    <div className="relative z-10 flex min-h-[306px] flex-col p-5">
+      <div className="flex h-14 items-center justify-between gap-4">
+        <span className="inline-flex h-7 items-center rounded-full border border-white/80 bg-white/72 px-3 text-[10px] font-semibold tracking-[.075em] text-[#52678c] shadow-[0_3px_12px_rgba(69,96,143,.06)] backdrop-blur">START HERE</span>
+        <span aria-hidden className="grid size-14 shrink-0 place-items-center rounded-full border border-white/85 bg-white/52 shadow-[inset_0_0_20px_rgba(255,255,255,.9),0_8px_20px_rgba(94,126,179,.10)]">
+          <AssetMotion name="ai-drop-motion" poster="/skn-assets/onboarding-orb.png" loop className="size-12 rounded-full mix-blend-multiply opacity-80"/>
+        </span>
+      </div>
+      <div className="mt-4 max-w-[300px]"><h2 className="text-[25px] font-semibold leading-[1.16] tracking-[-.047em] [text-wrap:balance]">{title}</h2><p className="mt-2.5 max-w-[285px] text-[12px] font-medium leading-[1.65] tracking-[-.018em] text-[#687386]">{description}</p></div>
+      <Link to="/routine/new" className="mt-auto flex h-[49px] w-full items-center justify-center gap-1.5 rounded-full bg-[#111722] text-[12px] font-semibold leading-none tracking-[-.012em] text-white shadow-[0_9px_24px_rgba(0,0,0,.18)] transition hover:bg-black active:scale-[.98]">첫 루틴 만들기<ArrowRight size={16}/></Link>
     </div>
   </section>
 }
 
 function InsightCard({ pattern, peek, onOpen }: { pattern: Pattern; peek: boolean; onOpen: () => void }) {
   const graph = insightGraph(pattern)
-  return <button type="button" onClick={onOpen} aria-label={`${pattern.title}, 근거와 함께 보기`} className={`relative min-h-[152px] snap-center overflow-hidden rounded-[24px] border border-[#dce5f3] bg-[#f5f8ff] px-5 py-4 text-left shadow-[0_8px_26px_rgba(49,73,115,.07)] transition hover:border-[#cfdbea] active:scale-[.99] ${peek ? 'w-[94%] shrink-0' : 'w-full'}`}>
+  return <button type="button" onClick={onOpen} aria-label={`${pattern.title}, 근거와 함께 보기`} className={`relative min-h-[136px] snap-center overflow-hidden rounded-[24px] border border-[#dce5f3] bg-[#f5f8ff] px-5 py-4 text-left shadow-[0_8px_26px_rgba(49,73,115,.07)] transition hover:border-[#cfdbea] active:scale-[.99] ${peek ? 'w-[94%] shrink-0' : 'w-full'}`}>
     <svg viewBox="0 0 350 136" preserveAspectRatio="none" aria-hidden="true" className="pointer-events-none absolute inset-0 size-full">
       <path d={`${graph} L350 136 L108 136 Z`} fill="rgba(216,231,255,.56)"/>
       <path d={graph} fill="none" stroke="#c9dcff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke"/>
@@ -183,7 +201,7 @@ function EmptyInsightCard({ recordCount, href }: { recordCount: number; href: st
       ? '아직 비교할 비슷한 경험이 1개뿐이에요. 하나 더 쌓이면 반복된 흐름을 보여드려요.'
       : '아직 서로 비슷한 경험이 충분하지 않아요. 같은 제품이나 루틴의 사용 기록을 조금 더 남겨보세요.'
   return <div className="mt-4">
-    <Link to={href} className="relative block min-h-[152px] overflow-hidden rounded-[24px] border border-[#dce5f3] bg-[#f5f8ff] px-5 py-4 shadow-[0_8px_26px_rgba(49,73,115,.07)] transition hover:border-[#cfdbea] active:scale-[.99]">
+    <Link to={href} className="relative block min-h-[136px] overflow-hidden rounded-[24px] border border-[#dce5f3] bg-[#f5f8ff] px-5 py-4 shadow-[0_8px_26px_rgba(49,73,115,.07)] transition hover:border-[#cfdbea] active:scale-[.99]">
       <svg viewBox="0 0 350 136" preserveAspectRatio="none" aria-hidden="true" className="pointer-events-none absolute inset-0 size-full">
         <path d="M112 122 L158 109 L202 110" fill="none" stroke="#b9d0f6" strokeWidth="3" strokeLinecap="round" vectorEffect="non-scaling-stroke"/>
         <path d="M202 110 L248 84 L294 78 L350 46" fill="none" stroke="#cddbf1" strokeWidth="2" strokeDasharray="6 7" strokeLinecap="round" vectorEffect="non-scaling-stroke"/>

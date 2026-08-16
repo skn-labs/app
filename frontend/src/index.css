@@ -28,6 +28,10 @@
 }
 
 :root {
+  --skn-motion-fast: 140ms;
+  --skn-motion-standard: 220ms;
+  --skn-motion-deliberate: 300ms;
+  --skn-motion-ease-out: cubic-bezier(.22, 1, .36, 1);
   color: #171816;
   background: #fff;
   font-family: "Wanted Sans Variable", "Wanted Sans", -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
@@ -58,6 +62,24 @@ button:enabled, a[href] { cursor: pointer; }
   outline: 2px solid #5365f5;
   outline-offset: 2px;
 }
+/* 포커스 링은 키보드 탐색 버튼·링크에만. 폼 컨트롤은 자체 포커스 스타일(테두리/링)에 맡기고 아웃라인 제거 */
+:focus:not(:focus-visible) { outline: none; }
+input:focus, textarea:focus, select:focus,
+input:focus-visible, textarea:focus-visible, select:focus-visible { outline: none; }
+*, *::before, *::after { -webkit-tap-highlight-color: transparent; }
+/* 네이티브 인풋 스타일 정리 (iOS 내부 그림자·검색 X·숫자 스피너·자동완성 노랑) */
+input:not([type="checkbox"]):not([type="radio"]), textarea { -webkit-appearance: none; appearance: none; }
+input[type="search"]::-webkit-search-cancel-button,
+input[type="search"]::-webkit-search-decoration { -webkit-appearance: none; }
+input[type="number"] { -moz-appearance: textfield; }
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:focus, textarea:-webkit-autofill {
+  -webkit-text-fill-color: #171816;
+  transition: background-color 9999999s ease-in-out 0s;
+}
+img, svg, video { -webkit-user-drag: none; user-select: none; }
+html, body { overscroll-behavior-y: none; }
 ::selection { background: #dce8ff; color: #171816; }
 input::placeholder, textarea::placeholder { color: #a5a8a2; opacity: 1; }
 button, a, input, textarea, select { transition-timing-function: cubic-bezier(.2, .75, .2, 1); }
@@ -411,16 +433,13 @@ video:not([controls])::-webkit-media-controls { display: none !important; }
 
 @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes slide-in { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: translateX(0); } }
-@keyframes notification-page-in {
-  from {
-    transform: translate3d(100%, 0, 0);
-    box-shadow: -24px 0 56px rgba(20, 30, 48, .18);
-  }
-  to {
-    transform: translate3d(0, 0, 0);
-    box-shadow: 0 0 0 rgba(20, 30, 48, 0);
-  }
-}
+@keyframes skn-route-tab-in { from { opacity: .68; } to { opacity: 1; } }
+@keyframes skn-route-forward-in { from { opacity: .62; transform: translate3d(14px, 0, 0); } to { opacity: 1; transform: none; } }
+@keyframes skn-route-back-in { from { opacity: .7; transform: translate3d(-10px, 0, 0); } to { opacity: 1; transform: none; } }
+@keyframes skn-route-replace-in { from { opacity: .76; } to { opacity: 1; } }
+@keyframes skn-sheet-backdrop-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes skn-sheet-surface-in { from { opacity: .82; transform: translate3d(0, 28px, 0); } to { opacity: 1; transform: none; } }
+@keyframes skn-fullscreen-overlay-in { from { opacity: .58; } to { opacity: 1; } }
 @keyframes onboard-forward { from { opacity: 0; transform: translateX(14px); } to { opacity: 1; transform: translateX(0); } }
 @keyframes onboard-back { from { opacity: 0; transform: translateX(-14px); } to { opacity: 1; transform: translateX(0); } }
 @keyframes onboard-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
@@ -429,6 +448,12 @@ video:not([controls])::-webkit-media-controls { display: none !important; }
 @keyframes onboard-rise { from { opacity: 0; transform: translateY(9px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes onboard-pulse { 0%, 100% { opacity: .72; transform: scale(1); } 50% { opacity: 1; transform: scale(1.05); } }
 @keyframes onboard-scan { 0% { transform: translateY(-105%); } 60%, 100% { transform: translateY(105%); } }
+@keyframes onboarding-welcome-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes onboarding-welcome-out { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(1.015); } }
+@keyframes onboarding-welcome-mark { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes onboarding-welcome-visual { from { opacity: 0; transform: translateY(14px) scale(.92); filter: blur(8px); } to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); } }
+@keyframes onboarding-welcome-copy { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes onboarding-welcome-orbit { to { transform: rotate(360deg); } }
 @keyframes ai-landing-wave-flow {
   0% { transform: translate3d(0, 0, 0); }
   50% { transform: translate3d(-25%, -2px, 0); }
@@ -465,9 +490,42 @@ video:not([controls])::-webkit-media-controls { display: none !important; }
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
 }
+@keyframes skn-skeleton-sheen {
+  0% { transform: translate3d(-115%, 0, 0); }
+  58%, 100% { transform: translate3d(115%, 0, 0); }
+}
+@keyframes skn-skeleton-frame-in {
+  from { opacity: 0; transform: translateY(3px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.skn-skeleton {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(145deg, #f1f3f6 0%, #e9edf2 54%, #f0f2f5 100%);
+  box-shadow: inset 0 0 0 1px rgba(91, 106, 128, .025);
+}
+.skn-skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 25%, rgba(255, 255, 255, .72) 47%, rgba(255, 255, 255, .3) 58%, transparent 76%);
+  transform: translate3d(-115%, 0, 0);
+  animation: skn-skeleton-sheen 1.75s cubic-bezier(.4, 0, .2, 1) infinite;
+  will-change: transform;
+}
+.skn-skeleton-frame {
+  animation: skn-skeleton-frame-in .3s cubic-bezier(.22, 1, .36, 1) .08s both;
+}
 .animate-rise { animation: rise .28s ease-out both; }
 .animate-slide-in { animation: slide-in .24s cubic-bezier(.2,.75,.2,1) both; }
-.animate-notification-page-in { animation: notification-page-in .4s cubic-bezier(.22, 1, .36, 1) both; }
+.skn-route-tab { animation: skn-route-tab-in var(--skn-motion-fast) ease-out; }
+/* Route shell에 transform의 최종 프레임을 유지하면 하위 fixed UI의 기준점이 뷰포트에서 이탈한다. */
+.skn-route-forward { animation: skn-route-forward-in var(--skn-motion-standard) var(--skn-motion-ease-out); }
+.skn-route-back { animation: skn-route-back-in var(--skn-motion-standard) var(--skn-motion-ease-out); }
+.skn-route-replace { animation: skn-route-replace-in var(--skn-motion-fast) ease-out; }
+.skn-sheet-backdrop { animation: skn-sheet-backdrop-in var(--skn-motion-fast) ease-out both; }
+.skn-sheet-surface { animation: skn-sheet-surface-in var(--skn-motion-deliberate) var(--skn-motion-ease-out) both; }
+.skn-fullscreen-overlay { animation: skn-fullscreen-overlay-in var(--skn-motion-standard) ease-out both; }
 .animate-onboard-forward { animation: onboard-forward .3s cubic-bezier(.2,.75,.2,1) both; }
 .animate-onboard-rise { animation: onboard-rise .44s cubic-bezier(.2,.75,.2,1) both; }
 .animate-onboard-back { animation: onboard-back .3s cubic-bezier(.2,.75,.2,1) both; }
@@ -478,6 +536,12 @@ video:not([controls])::-webkit-media-controls { display: none !important; }
 .onboard-scan { transform-box: fill-box; transform-origin: center; animation: onboard-scan 2.4s ease-in-out infinite; }
 .onboard-delay-1 { animation-delay: .18s; }
 .onboard-delay-2 { animation-delay: .36s; }
+.onboarding-welcome { animation: onboarding-welcome-in .5s ease-out both; }
+.onboarding-welcome.is-exiting { animation: onboarding-welcome-out .62s cubic-bezier(.4,0,.2,1) both; pointer-events: none; }
+.onboarding-welcome-mark { animation: onboarding-welcome-mark .65s cubic-bezier(.22,1,.36,1) .12s both; }
+.onboarding-welcome-visual { animation: onboarding-welcome-visual .9s cubic-bezier(.22,1,.36,1) .2s both; }
+.onboarding-welcome-copy { animation: onboarding-welcome-copy .75s cubic-bezier(.22,1,.36,1) .52s both; }
+.onboarding-welcome-orbit { transform-origin: center; animation: onboarding-welcome-orbit 14s linear infinite; }
 .ai-landing-visual {
   position: relative;
   isolation: isolate;
@@ -576,6 +640,7 @@ video:not([controls])::-webkit-media-controls { display: none !important; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .animate-rise, .animate-slide-in, .animate-notification-page-in, .animate-onboard-forward, .animate-onboard-back, .animate-onboard-rise, .onboard-float, .onboard-draw, .onboard-pop, .onboard-pulse, .onboard-scan, .ai-landing-wave-track, .ai-landing-halo, .ai-landing-orb, .routine-name-orbit, .routine-name-path, .routine-naming-mark.is-ready .routine-name-check, .routine-name-reveal, .routine-name-actions { animation: none !important; }
+  .animate-rise, .animate-slide-in, .animate-onboard-forward, .animate-onboard-back, .animate-onboard-rise, .onboard-float, .onboard-draw, .onboard-pop, .onboard-pulse, .onboard-scan, .onboarding-welcome, .onboarding-welcome-mark, .onboarding-welcome-visual, .onboarding-welcome-copy, .onboarding-welcome-orbit, .ai-landing-wave-track, .ai-landing-halo, .ai-landing-orb, .routine-name-orbit, .routine-name-path, .routine-naming-mark.is-ready .routine-name-check, .routine-name-reveal, .routine-name-actions, .skn-skeleton::after, .skn-skeleton-frame { animation: none !important; }
+  .skn-route-tab, .skn-route-forward, .skn-route-back, .skn-route-replace, .skn-sheet-backdrop, .skn-sheet-surface, .skn-fullscreen-overlay { animation: skn-route-replace-in 120ms ease-out both !important; }
   .onboard-draw { stroke-dashoffset: 0; }
 }

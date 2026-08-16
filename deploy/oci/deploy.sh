@@ -59,6 +59,7 @@ if [[ "$catalog_shard_count" -ne 3 ]]; then
   exit 65
 fi
 
+new_database=false
 if [[ ! -s "$data_dir/skn.db" ]]; then
   python3 - "$data_dir/skn.db" "$release_dir/schema.sql" <<'PY'
 import sqlite3
@@ -72,6 +73,7 @@ try:
 finally:
     connection.close()
 PY
+  new_database=true
 fi
 
 if [[ -s "$data_dir/skn.db" ]]; then
@@ -81,6 +83,16 @@ if [[ -s "$data_dir/skn.db" ]]; then
 fi
 
 new_schema_hash=$(sha256sum "$release_dir/schema.sql" | awk '{print $1}')
+
+# 새 DB에서는 어워드 migration이 전체 카탈로그를 참조할 수 있도록 제품을 먼저 넣는다.
+# 기존 DB는 과거와 동일하게 schema migration을 먼저 적용해 importer 호환성을 보장한다.
+if [[ "$new_database" == true ]]; then
+  python3 "$release_dir/import_subagent_catalog.py" \
+    --db "$data_dir/skn.db" \
+    --input-dir "$release_dir/catalog" \
+    --skip-backup
+fi
+
 applied_migration_count=$(python3 - "$data_dir/skn.db" "$release_dir/migrations" "$new_schema_hash" <<'PY'
 import sqlite3
 import sys
@@ -151,10 +163,12 @@ PY
   fi
 fi
 
-python3 "$release_dir/import_subagent_catalog.py" \
-  --db "$data_dir/skn.db" \
-  --input-dir "$release_dir/catalog" \
-  --skip-backup
+if [[ "$new_database" != true ]]; then
+  python3 "$release_dir/import_subagent_catalog.py" \
+    --db "$data_dir/skn.db" \
+    --input-dir "$release_dir/catalog" \
+    --skip-backup
+fi
 
 image_name="skn-api:$release_sha"
 previous_image=$(docker inspect --format '{{.Config.Image}}' skn-api 2>/dev/null || true)
