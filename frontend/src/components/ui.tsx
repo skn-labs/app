@@ -76,7 +76,7 @@ export function Button({ className, variant = 'primary', type = 'button', ...pro
     ghost: 'bg-transparent text-ink hover:bg-soft',
     danger: 'bg-[#fff0f0] text-danger hover:bg-[#ffe8e8]',
   }
-  return <button type={type} className={twMerge('flex min-h-12 items-center justify-center gap-2 rounded-full px-5 text-sm font-medium leading-none tracking-[-.01em] transition active:scale-[.985] disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100', variants[variant], className)} {...props}/>
+  return <button type={type} className={twMerge('flex min-h-12 items-center justify-center gap-2 rounded-full px-5 text-sm font-semibold leading-none tracking-[-.015em] transition active:scale-[.985] disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100', variants[variant], className)} {...props}/>
 }
 
 export function Card({ children, className = '' }: PropsWithChildren<{ className?: string }>) {
