@@ -18,6 +18,7 @@ import javax.sql.DataSource;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -108,17 +109,30 @@ class CoreFlowIntegrationTest {
     }
 
     @Test
-    void productionFrontendOriginCanUseQuickLogin() throws Exception {
+    void embeddedFrontendOriginCanUseQuickLogin() throws Exception {
         mvc.perform(post("/api/v1/auth/quick-login/test01")
-                        .header(HttpHeaders.ORIGIN, "https://skn-labs.vercel.app")
+                        .header(HttpHeaders.ORIGIN, "https://app.huddlekit.com")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
                 .andExpect(status().isOk())
                 .andExpect(header().string(
                         HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN,
-                        "https://skn-labs.vercel.app"
+                        "https://app.huddlekit.com"
                 ))
                 .andExpect(jsonPath("$.username").value("test01"));
+    }
+
+    @Test
+    void embeddedFrontendOriginCanCompleteCorsPreflight() throws Exception {
+        mvc.perform(options("/api/v1/auth/quick-login/test01")
+                        .header(HttpHeaders.ORIGIN, "https://app.huddlekit.com")
+                        .header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "POST")
+                        .header(HttpHeaders.ACCESS_CONTROL_REQUEST_HEADERS, "content-type"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(
+                        HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN,
+                        "https://app.huddlekit.com"
+                ));
     }
 
     @Test
