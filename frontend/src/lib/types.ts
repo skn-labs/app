@@ -59,7 +59,7 @@ export type RoutineInsight = { text: string; keywords: string[]; generatedAt: st
 
 export type Routine = {
   id: number; name: string; dayPart: 'MORNING' | 'EVENING' | 'ANYTIME';
-  status: string; startedAt: string; items: RoutineItem[]; insight?: RoutineInsight;
+  status: 'CURRENT' | 'BASELINE' | 'PAST'; startedAt: string; items: RoutineItem[]; insight?: RoutineInsight;
 }
 
 export type RoutineNameSuggestion = { name: string; aiGenerated: boolean; insight?: RoutineInsight }

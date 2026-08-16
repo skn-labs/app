@@ -31,6 +31,13 @@ const SKIN_TYPES = [
   ['DRY', '건성'], ['OILY', '지성'], ['COMBINATION', '복합성'],
   ['NORMAL', '중성'], ['UNSURE', '잘 모르겠어요'],
 ] as const
+const SKIN_TYPE_DETAIL: Record<string, string> = {
+  DRY: '자주 당기고 각질이 생겨요',
+  OILY: '유분과 번들거림이 있어요',
+  COMBINATION: '부위마다 달라요 · T존 유분',
+  NORMAL: '대체로 균형 잡혀 있어요',
+  UNSURE: '괜찮아요, 기록하면 AI가 찾아드려요',
+}
 const CONCERN_GROUPS = [
   { title: '수분·유분', options: ['건조함', '당김', '유분기', '번들거림'] },
   { title: '트러블·자극', options: ['여드름', '좁쌀 트러블', '홍조', '민감함'] },
@@ -143,7 +150,7 @@ export function OnboardingPage({ auth }: { auth: Auth }) {
       <div key={current.key} className={`hide-scrollbar mt-4 min-h-0 flex-1 overflow-y-auto pb-5 ${direction === 'forward' ? 'animate-onboard-forward' : 'animate-onboard-back'}`}>
         {current.key === 'ageRange' && <AgeWheel value={profile.ageRange} onChange={value => patch({ ageRange: value })}/>}
         {current.key === 'gender' && <GenderPicker value={profile.gender} onChange={value => patch({ gender: value })}/>}
-        {current.key === 'skinType' && <OptionList options={SKIN_TYPES} value={profile.skinType} onChange={value => patch({ skinType: value })}/>}
+        {current.key === 'skinType' && <SkinTypePicker value={profile.skinType} onChange={value => patch({ skinType: value })}/>}
         {current.key === 'skinCondition' && <ConditionScale value={profile.skinCondition} onChange={value => patch({ skinCondition: value })}/>}
         {current.key === 'concerns' && <ChipGroups groups={CONCERN_GROUPS} selected={profile.concerns} onToggle={value => toggle('concerns', value)}/>}
         {current.key === 'textures' && <ChipGroups groups={TEXTURE_GROUPS} selected={profile.textures} onToggle={value => toggle('textures', value)}/>}
@@ -207,7 +214,27 @@ function GenderPicker({ value, onChange }: { value: DraftProfile['gender']; onCh
 }
 
 function OptionList<T extends string>({ options, value, onChange }: { options: readonly (readonly [T, string])[]; value: T | null; onChange: (value: T) => void }) {
-  return <div role="radiogroup" aria-label="선택 항목" className="flex flex-col gap-2.5">{options.map(([code, label]) => { const selected = value === code; return <button type="button" role="radio" aria-checked={selected} key={code} onClick={() => onChange(code)} className={`interactive-card flex min-h-[58px] w-full items-center justify-between rounded-[18px] border px-5 text-left text-base font-medium ${selected ? 'border-[#0a0a0a] bg-white text-[#0a0a0a] shadow-[0_7px_20px_rgba(0,0,0,.07)]' : 'border-transparent bg-[#f2f4ef] text-[#3a3a3c]'}`}><span>{label}</span><span aria-hidden="true" className={`grid size-6 place-items-center rounded-full border transition-all ${selected ? 'border-[#0a0a0a] bg-[#0a0a0a] text-white' : 'border-[#c7c7cc] bg-white text-transparent'}`}><Check size={13} strokeWidth={3}/></span></button>})}</div>
+  return <div role="radiogroup" aria-label="선택 항목" className="flex flex-col gap-2.5">{options.map(([code, label], index) => { const selected = value === code; return <button type="button" role="radio" aria-checked={selected} key={code} onClick={() => onChange(code)} style={{ animationDelay: `${index * 45}ms` }} className={`animate-onboard-rise interactive-card flex min-h-[58px] w-full items-center justify-between rounded-[18px] border px-5 text-left text-base font-medium ${selected ? 'border-[#0a0a0a] bg-white text-[#0a0a0a] shadow-[0_7px_20px_rgba(0,0,0,.07)]' : 'border-[#ebebeb] bg-[#f6f6f7] text-[#3a3a3c]'}`}><span>{label}</span><span aria-hidden="true" className={`grid size-6 place-items-center rounded-full border transition-all ${selected ? 'border-[#0a0a0a] bg-[#0a0a0a] text-white' : 'border-[#c7c7cc] bg-white text-transparent'}`}><Check size={13} strokeWidth={3}/></span></button>})}</div>
+}
+
+function SkinTypePicker({ value, onChange }: { value: DraftProfile['skinType']; onChange: (value: SkinProfile['skinType']) => void }) {
+  return <div role="radiogroup" aria-label="피부 타입" className="flex flex-col gap-2.5">
+    {SKIN_TYPES.map(([code, label], index) => {
+      const selected = value === code
+      const unsure = code === 'UNSURE'
+      return <button type="button" role="radio" aria-checked={selected} key={code} onClick={() => onChange(code)} style={{ animationDelay: `${index * 45}ms` }}
+        className={`animate-onboard-rise interactive-card flex min-h-[64px] w-full items-center justify-between gap-3 rounded-[18px] border px-5 py-3 text-left transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 ${unsure ? 'mt-1' : ''} ${
+          selected ? 'border-[#0a0a0a] bg-white shadow-[0_7px_20px_rgba(0,0,0,.07)]'
+            : unsure ? 'border-dashed border-[#d7d7d3] bg-white'
+              : 'border-[#ebebeb] bg-[#f6f6f7]'}`}>
+        <span className="flex min-w-0 flex-col">
+          <span className={`text-base font-semibold ${selected ? 'text-[#0a0a0a]' : unsure ? 'text-[#636366]' : 'text-[#3a3a3c]'}`}>{label}</span>
+          <span className={`mt-0.5 truncate text-xs ${selected ? 'text-[#73766f]' : 'text-[#9a9d94]'}`}>{SKIN_TYPE_DETAIL[code]}</span>
+        </span>
+        <span aria-hidden="true" className={`grid size-6 shrink-0 place-items-center rounded-full border transition-all ${selected ? 'border-[#0a0a0a] bg-[#0a0a0a] text-white' : 'border-[#c7c7cc] bg-white text-transparent'}`}><Check size={13} strokeWidth={3}/></span>
+      </button>
+    })}
+  </div>
 }
 
 function ConditionScale({ value, onChange }: { value: number | null; onChange: (value: number) => void }) {
@@ -216,19 +243,31 @@ function ConditionScale({ value, onChange }: { value: number | null; onChange: (
     <span aria-hidden="true" className="absolute left-[22px] right-[22px] top-1/2 h-1 -translate-y-1/2 rounded-full bg-[#e5e5ea]"/>
     <span aria-hidden="true" style={{ transform: `translateY(-50%) scaleX(${progress})`, transformOrigin: 'left center' }} className="absolute left-[22px] right-[22px] top-1/2 h-1 rounded-full bg-[#0a0a0a] transition-transform duration-300"/>
     {[1, 2, 3, 4, 5].map(number => { const selected = value === number; const reached = value !== null && number <= value; return <button type="button" role="radio" aria-checked={selected} aria-label={`${number}점, ${CONDITION_LABELS[number]}`} key={number} onClick={() => onChange(number)} className={`relative z-10 size-11 rounded-full border text-sm transition-all active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 ${selected ? 'scale-110 border-[#0a0a0a] bg-[#0a0a0a] font-semibold text-white shadow-[0_5px_16px_rgba(0,0,0,.18)]' : reached ? 'border-[#0a0a0a] bg-white font-medium text-[#0a0a0a]' : 'border-[#d1d1d6] bg-white text-[#8e8e93]'}`}>{number}</button>})}
-  </div><div aria-live="polite" className={`mt-7 rounded-[16px] border px-4 py-3.5 text-center text-sm font-medium transition-all ${value ? 'border-[#e5e5ea] bg-[#f7f7f8] text-[#3a3a3c]' : 'border-transparent bg-transparent text-[#c7c7cc]'}`}>{value ? CONDITION_LABELS[value] : '가장 가까운 상태를 골라주세요'}</div></div>
+  </div><div aria-live="polite" className="mt-9 min-h-[52px] text-center">{value
+    ? <p key={value} className="animate-onboard-forward text-[19px] font-semibold leading-[1.4] tracking-[-.02em] text-[#0a0a0a]">{CONDITION_LABELS[value]}</p>
+    : <p className="text-sm text-[#c7c7cc]">숫자를 눌러 지금 상태를 알려주세요</p>}</div></div>
 }
 
 type ChipOption = string | { readonly value: string; readonly label: string }
 
 function ChipGroups({ groups, selected, onToggle }: { groups: readonly { title: string; options: readonly ChipOption[] }[]; selected: string[]; onToggle: (value: string) => void }) {
-  return <div className="flex flex-col gap-6">{groups.map(group => {
+  return <div className="flex flex-col">{groups.map((group, groupIndex) => {
     const groupCount = group.options.filter(option => selected.includes(chipValue(option))).length
-    return <section key={group.title}><div className="mb-2.5 flex items-center justify-between"><h2 className="text-sm font-medium text-[#636366]">{group.title}</h2><span className={`rounded-full px-2 py-0.5 text-xs font-medium transition-colors ${groupCount > 0 ? 'bg-[#0a0a0a] text-white' : 'bg-transparent text-transparent'}`}>{groupCount}개</span></div><div className="flex flex-wrap gap-2">{group.options.map(option => {
-      const value = chipValue(option)
-      const selectedOption = selected.includes(value)
-      return <button type="button" aria-pressed={selectedOption} key={`${group.title}-${value}`} onClick={() => onToggle(value)} className={`inline-flex min-h-11 items-center rounded-full border px-4 py-2 text-sm font-medium transition-all duration-200 active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 ${selectedOption ? 'border-[#0a0a0a] bg-[#0a0a0a] text-white shadow-[0_5px_14px_rgba(0,0,0,.08)]' : 'border-transparent bg-[#f2f4ef] text-[#3a3a3c]'}`}>{selectedOption && <Check aria-hidden="true" size={13} strokeWidth={3} className="mr-1.5"/>}{chipLabel(option)}</button>
-    })}</div></section>
+    const flatBase = groups.slice(0, groupIndex).reduce((total, previous) => total + previous.options.length, 0)
+    return <section key={group.title} className={groupIndex > 0 ? 'mt-6 border-t border-[#f0f0ec] pt-6' : ''}>
+      <div className="mb-3 flex items-center gap-2">
+        <h2 className="text-[15px] font-semibold tracking-[-.01em] text-[#1c1c1e]">{group.title}</h2>
+        {groupCount > 0 && <span className="grid size-[18px] place-items-center rounded-full bg-[#0a0a0a] text-[10px] font-bold tabular-nums text-white">{groupCount}</span>}
+      </div>
+      <div className="flex flex-wrap gap-2">{group.options.map((option, optionIndex) => {
+        const value = chipValue(option)
+        const selectedOption = selected.includes(value)
+        return <button type="button" aria-pressed={selectedOption} key={`${group.title}-${value}`} onClick={() => onToggle(value)} style={{ animationDelay: `${Math.min(flatBase + optionIndex, 14) * 28}ms` }} className={`animate-onboard-rise inline-flex min-h-[44px] items-center gap-2 rounded-full border py-2 pl-2.5 pr-4 text-sm font-medium transition-colors duration-150 active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 ${selectedOption ? 'border-[#0a0a0a] bg-[#0a0a0a] text-white' : 'border-[#e7e7e2] bg-white text-[#5a5a5a] hover:border-[#d4d4cd]'}`}>
+          <span aria-hidden="true" className={`grid size-[18px] shrink-0 place-items-center rounded-full transition-all duration-200 ${selectedOption ? 'bg-white text-[#0a0a0a]' : 'border border-[#d6d6d0] text-transparent'}`}><Check size={11} strokeWidth={3.5}/></span>
+          {chipLabel(option)}
+        </button>
+      })}</div>
+    </section>
   })}</div>
 }
 

@@ -1,17 +1,45 @@
 import type { PropsWithChildren } from 'react'
 import { SknMark } from './ui'
 
+/** 데스크톱에서는 실제 앱을 iPhone 프레임 안에, 모바일에서는 화면 전체에 표시한다. */
+export function AppViewport({ children }: PropsWithChildren) {
+  return <div className="skn-app-stage">
+    <img src="/skn-assets/desktop-editorial.webp" alt="" aria-hidden="true" className="skn-desktop-editorial"/>
+    <div aria-hidden="true" className="skn-desktop-wash"/>
+    <aside className="skn-desktop-visit" aria-label="휴대폰에서 SKN 열기">
+      <img src="/skn-assets/skn-wordmark.png" alt="SKN" className="skn-desktop-wordmark"/>
+      <div className="skn-desktop-visit-copy"><strong>휴대폰에서 이어보기</strong><a href="https://skn.today/">skn.today</a></div>
+      <a href="https://skn.today/" aria-label="skn.today 열기" className="skn-desktop-qr"><img src="/skn-assets/skn-today-qr.svg" alt="skn.today QR 코드"/></a>
+    </aside>
+    <div className="skn-device-frame">
+      <div className="skn-device-screen">
+        <div aria-hidden="true" className="skn-device-status">
+          <span>9:41</span>
+          <span className="skn-device-status-icons">
+            <svg viewBox="0 0 18 12"><rect x="1" y="8.5" width="3" height="3.5" rx="1"/><rect x="5.5" y="6" width="3" height="6" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="14.5" width="3" height="12" rx="1"/></svg>
+            <svg viewBox="0 0 18 13"><path d="M1.2 4.6a11.2 11.2 0 0 1 15.6 0M4.1 7.6a7 7 0 0 1 9.8 0M7.2 10.7a2.6 2.6 0 0 1 3.6 0" fill="none" stroke="currentColor" strokeWidth="1.65" strokeLinecap="round"/></svg>
+            <svg viewBox="0 0 28 13"><rect x=".75" y=".75" width="23" height="11.5" rx="3.5" fill="none" stroke="currentColor" strokeWidth="1.5" opacity=".36"/><rect x="3" y="3" width="18.5" height="7" rx="2"/><path d="M25.2 4.25v4.5a2.35 2.35 0 0 0 0-4.5Z" opacity=".42"/></svg>
+          </span>
+        </div>
+        <div className="skn-device-content">{children}</div>
+      </div>
+      <span aria-hidden="true" className="skn-device-island"/>
+      <span aria-hidden="true" className="skn-device-home"/>
+    </div>
+  </div>
+}
+
 /** sktn-prototype_2의 390×844 프레임. 모바일에서는 실제 화면을 가득 채운다. */
 export function PrototypePhone({ children }: PropsWithChildren) {
-  return <div className="fixed inset-0 z-0 flex items-center justify-center bg-[#fff] sm:p-6">
-    <main className="relative flex h-dvh w-full flex-col overflow-hidden bg-white text-[#0a0a0a] sm:h-[min(844px,calc(100dvh-48px))] sm:w-[390px] sm:rounded-[44px] sm:border sm:border-black/[.04] sm:shadow-[0_30px_70px_rgba(25,31,22,.16)]">
+  return <div className="absolute inset-0 z-0 flex bg-white">
+    <main className="relative flex h-full w-full flex-col overflow-hidden bg-white text-[#0a0a0a]">
       {children}
     </main>
   </div>
 }
 
 export function PrototypeStatusBar() {
-  return <div aria-hidden="true" className="hidden shrink-0 items-center justify-between px-7 pb-1 pt-3 text-sm font-medium sm:flex">
+  return <div aria-hidden="true" className="skn-legacy-status hidden shrink-0 items-center justify-between px-7 pb-1 pt-3 text-sm font-medium sm:flex">
     <span>12:06</span>
     <div className="flex items-center gap-1.5">
       <svg width="17" height="11" viewBox="0 0 17 11"><rect y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.5" width="3" height="11" rx="1"/></svg>
@@ -25,5 +53,5 @@ export function PrototypeTopMark() {
 }
 
 export function PrototypeHomeIndicator() {
-  return <div aria-hidden="true" className="hidden shrink-0 justify-center pb-2 pt-1 sm:flex"><i className="block h-[5px] w-[134px] rounded-full bg-[#0a0a0a]"/></div>
+  return <div aria-hidden="true" className="skn-legacy-home hidden shrink-0 justify-center pb-2 pt-1 sm:flex"><i className="block h-[5px] w-[134px] rounded-full bg-[#0a0a0a]"/></div>
 }

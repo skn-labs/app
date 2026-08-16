@@ -96,7 +96,7 @@ export function ExplorePage() {
       <div className="px-5 pb-8 pt-3">
         <PageHeading title="화장품 찾기" description="브랜드나 제품명을 검색해 내 화장품에 담아보세요."/>
 
-        <div className="sticky top-[calc(72px+env(safe-area-inset-top))] z-10 -mx-5 mt-6 bg-white/96 px-5 pb-4 pt-2 backdrop-blur-xl">
+        <div className="sticky top-[calc(44px+var(--skn-safe-area-top))] z-10 -mx-5 mt-6 bg-white/96 px-5 pb-4 pt-2 backdrop-blur-xl">
           <div className="flex gap-2.5">
             <label className="flex h-[56px] min-w-0 flex-1 items-center gap-3 rounded-full bg-[#f1f3f5] pl-5 pr-2 transition-[background-color,box-shadow] focus-within:bg-white focus-within:shadow-[inset_0_0_0_1.5px_#222936,0_6px_20px_rgba(35,41,54,.08)]">
               <Search size={19} strokeWidth={2.1} className="shrink-0 text-[#596575]"/>

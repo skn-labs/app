@@ -3,8 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { api } from './lib/api'
 import { AssetMotion, Loading } from './components/ui'
-import { DesktopQuickLogin } from './components/DesktopQuickLogin'
-import { PrototypePhone } from './components/PrototypeChrome'
+import { AppViewport, PrototypePhone } from './components/PrototypeChrome'
 
 const AuthPage = lazy(() => import('./pages/AuthPage').then(module => ({ default: module.AuthPage })))
 const OnboardingPage = lazy(() => import('./pages/OnboardingPage').then(module => ({ default: module.OnboardingPage })))
@@ -41,11 +40,11 @@ export default function App() {
 
   // 세션 응답이 빨라도 브랜드 모션이 끝나기 전에는 첫 화면을 교체하지 않는다.
   const introCompleted = introMinimumElapsed && (introMotionEnded || introFallbackElapsed)
-  if (!introCompleted || auth.isPending) return <PrototypePhone>
-    <div className="grid min-h-0 flex-1 place-items-center bg-white">
-      <AssetMotion name="skn-wordmark-motion" poster="/skn-assets/skn-wordmark-motion-poster.png" alt="SKN" onEnded={() => setIntroMotionEnded(true)} className="aspect-[3/2] w-[62%] max-w-[280px]"/>
-    </div>
-  </PrototypePhone>
+  if (!introCompleted || auth.isPending) return <AppViewport><PrototypePhone>
+      <div className="grid min-h-0 flex-1 place-items-center bg-white">
+        <AssetMotion name="skn-wordmark-motion" poster="/skn-assets/skn-wordmark-motion-poster.png" alt="SKN" onEnded={() => setIntroMotionEnded(true)} className="aspect-[3/2] w-[62%] max-w-[280px]"/>
+      </div>
+    </PrototypePhone></AppViewport>
 
   const content = auth.isError ? <AuthPage />
     : !auth.data.onboardingCompleted ? <OnboardingPage auth={auth.data}/>
@@ -72,8 +71,7 @@ export default function App() {
     <Route path="*" element={<Navigate to="/" replace/>}/>
   </Routes>
 
-  return <Suspense fallback={<PrototypePhone><Loading label="화면을 준비하는 중"/></PrototypePhone>}>
+  return <AppViewport><Suspense fallback={<PrototypePhone><Loading label="화면을 준비하는 중"/></PrototypePhone>}>
     {content}
-    <DesktopQuickLogin currentUsername={auth.data?.username}/>
-  </Suspense>
+  </Suspense></AppViewport>
 }

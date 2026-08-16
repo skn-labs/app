@@ -139,6 +139,10 @@ public class SkincareService {
         return repository.findCurrentRoutine().orElseThrow(() -> ApiException.notFound("현재 루틴이 없어요."));
     }
 
+    public List<RoutineView> routines() {
+        return repository.findRoutines();
+    }
+
     public RoutineView baselineRoutine() {
         return repository.findBaselineRoutine().orElseThrow(() -> ApiException.notFound("아직 비교 기준 루틴이 없어요."));
     }

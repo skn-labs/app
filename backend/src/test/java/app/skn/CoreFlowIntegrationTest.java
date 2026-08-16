@@ -975,6 +975,49 @@ class CoreFlowIntegrationTest {
     }
 
     @Test
+    void routineArchiveKeepsEverySavedVersionVisibleAndOwnerScoped() throws Exception {
+        MockHttpSession owner = signUpSession("routine_archive_owner");
+        long userProductId = addProduct(owner, 1);
+
+        String firstBody = mvc.perform(put("/api/v1/me/routines/current").session(owner)
+                        .header("Idempotency-Key", "routine-archive-first")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name":"첫 번째 루틴","items":[
+                                  {"userProductId":%d,"timeSlot":"EVENING","frequency":"매일"}
+                                ]}
+                                """.formatted(userProductId)))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        long firstRoutineId = json.readTree(firstBody).path("routineId").asLong();
+
+        String secondBody = mvc.perform(put("/api/v1/me/routines/current").session(owner)
+                        .header("Idempotency-Key", "routine-archive-second")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name":"두 번째 루틴","items":[
+                                  {"userProductId":%d,"timeSlot":"BOTH","frequency":"주 2~3회"}
+                                ]}
+                                """.formatted(userProductId)))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        long secondRoutineId = json.readTree(secondBody).path("routineId").asLong();
+
+        mvc.perform(get("/api/v1/me/routines").session(owner))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].id").value(secondRoutineId))
+                .andExpect(jsonPath("$[0].status").value("CURRENT"))
+                .andExpect(jsonPath("$[1].id").value(firstRoutineId))
+                .andExpect(jsonPath("$[1].status").value("PAST"));
+
+        MockHttpSession other = signUpSession("routine_archive_other");
+        mvc.perform(get("/api/v1/me/routines").session(other))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(0));
+    }
+
+    @Test
     void brandLogoIsProjectedWithoutInventingALegalManufacturer() throws Exception {
         MockHttpSession session = demoSession();
         String logoUrl = "/manufacturer-logos/nature-republic.png";

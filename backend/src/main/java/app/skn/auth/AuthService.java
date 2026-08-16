@@ -21,6 +21,16 @@ import java.util.regex.Pattern;
 @Service
 public class AuthService {
     private static final Pattern USERNAME = Pattern.compile("^[a-z0-9_]{4,24}$");
+    // 데모 닉네임: 형용사(≤3자) + 동물(≤3자) 랜덤 조합
+    private static final String[] NICK_ADJECTIVES = {
+        "말랑한", "몽글한", "포근한", "느긋한", "산뜻한", "보송한", "상큼한", "촉촉한", "나른한", "은은한",
+        "새침한", "깜찍한", "다정한", "차분한", "발랄한", "도톰한", "뽀송한", "잔잔한", "따뜻한", "소복한"
+    };
+    private static final String[] NICK_ANIMALS = {
+        "토끼", "수달", "여우", "고래", "판다", "사슴", "오리", "참새", "하마", "물개",
+        "두더지", "다람쥐", "너구리", "알파카", "고양이", "강아지", "햄스터", "두루미", "청설모", "물범"
+    };
+    private static final java.security.SecureRandom RANDOM = new java.security.SecureRandom();
     private final AuthRepository repository;
     private final TestHarnessProperties testHarness;
     private final BCryptPasswordEncoder passwords = new BCryptPasswordEncoder(11);
@@ -41,6 +51,23 @@ public class AuthService {
         }
         startSession(servletRequest, userId);
         return repository.findUser(userId).orElseThrow();
+    }
+
+    @Transactional
+    public AuthView quickSignUp(HttpServletRequest servletRequest) {
+        String nickname = NICK_ADJECTIVES[RANDOM.nextInt(NICK_ADJECTIVES.length)] + " " + NICK_ANIMALS[RANDOM.nextInt(NICK_ANIMALS.length)];
+        String passwordHash = passwords.encode(Long.toHexString(RANDOM.nextLong()) + Long.toHexString(RANDOM.nextLong()));
+        for (int attempt = 0; attempt < 8; attempt++) {
+            String username = "demo_" + Long.toString(RANDOM.nextInt(1 << 30) + (1L << 30), 36);
+            try {
+                long userId = repository.insert(username, passwordHash, nickname);
+                startSession(servletRequest, userId);
+                return repository.findUser(userId).orElseThrow();
+            } catch (DuplicateKeyException ignored) {
+                // 아이디가 겹치면 다른 값으로 재시도
+            }
+        }
+        throw ApiException.conflict("USERNAME_TAKEN", "잠시 후 다시 시도해주세요.");
     }
 
     public AuthView login(LoginRequest request, HttpServletRequest servletRequest) {

@@ -476,7 +476,7 @@ function resolveEvidence(ref: string, products: Product[], routines: Routine[], 
   }
   if (ref.startsWith('R-')) {
     const routine = routines.find(item => item.id === id)
-    return routine ? { ref, kind: 'ROUTINE', eyebrow: '내가 등록한 루틴', title: routine.name, subtitle: `${routine.items.length}개 제품 · ${routine.status === 'ACTIVE' ? '현재 사용' : '비교 기준'}`, details: routine.items.map((item, index) => `${index + 1}. ${item.productName} · ${timeSlotLabel(item.timeSlot)} · ${item.frequency}`) } : unresolvedEvidence(ref)
+    return routine ? { ref, kind: 'ROUTINE', eyebrow: '내가 등록한 루틴', title: routine.name, subtitle: `${routine.items.length}개 제품 · ${routine.status === 'CURRENT' ? '현재 사용' : '이전 루틴'}`, details: routine.items.map((item, index) => `${index + 1}. ${item.productName} · ${timeSlotLabel(item.timeSlot)} · ${item.frequency}`) } : unresolvedEvidence(ref)
   }
   if (ref.startsWith('E-')) {
     const record = records.find(item => item.id === id)

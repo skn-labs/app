@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { ArrowRight, BookOpen, ChevronRight, MessageCircle, PencilLine } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
@@ -27,7 +27,6 @@ function dayPartLabel(dayPart: Routine['dayPart']) { return dayPart === 'MORNING
 function timeSlotLabel(timeSlot: Routine['items'][number]['timeSlot']) { return timeSlot === 'MORNING' ? '아침' : timeSlot === 'EVENING' ? '저녁' : '아침·저녁' }
 function formatDate(value: string) { const normalized = /Z$|[+-]\d\d:\d\d$/.test(value) ? value : `${value.replace(' ', 'T')}Z`; const date = new Date(normalized); return Number.isNaN(date.getTime()) ? value.slice(0, 10) : new Intl.DateTimeFormat('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' }).format(date) }
 function isNotFound(error: unknown) { return error instanceof ApiError && error.status === 404 }
-function statusLabel(routine: Routine, current?: Routine) { return routine.id === current?.id ? '현재 사용 중' : '이전 루틴' }
 function routineGlance(routine: Routine) {
   const first = routine.items[0]?.category
   const last = routine.items[routine.items.length - 1]?.category
@@ -37,21 +36,33 @@ function routineGlance(routine: Routine) {
 
 export function RoutineListPage() {
   const auth = useQuery({ queryKey: ['auth'], queryFn: api.me })
-  const current = useQuery({ queryKey: ['current-routine'], queryFn: api.currentRoutine, retry: false })
-  const baseline = useQuery({ queryKey: ['baseline-routine'], queryFn: api.baselineRoutine, retry: false })
+  const archive = useQuery({ queryKey: ['routines'], queryFn: api.routines })
   const [expandedId, setExpandedId] = useState<number | null>(null)
   const [activeIndex, setActiveIndex] = useState(0)
   const [dragging, setDragging] = useState(false)
   const carousel = useRef<HTMLDivElement>(null)
+  const positionedInitialCard = useRef(false)
   const drag = useRef<{ pointerId: number; startX: number; scrollLeft: number; startIndex: number; moved: boolean } | null>(null)
   const suppressClick = useRef(false)
 
-  if (current.isPending || baseline.isPending || auth.isPending) return <Screen><AppHeader/><Loading/></Screen>
-  const loadError = auth.error || (current.error && !isNotFound(current.error) ? current.error : null) || (baseline.error && !isNotFound(baseline.error) ? baseline.error : null)
-  if (loadError) return <Screen><AppHeader/><ErrorState message={loadError.message} onRetry={() => { auth.refetch(); current.refetch(); baseline.refetch() }}/></Screen>
+  useLayoutEffect(() => {
+    const element = carousel.current
+    const routines = archive.data
+    if (!element || !routines || positionedInitialCard.current) return
+    const currentRoutineIndex = routines.findIndex(routine => routine.status === 'CURRENT')
+    const initialIndex = routines.length ? (currentRoutineIndex >= 0 ? currentRoutineIndex : 0) + 1 : 0
+    const card = element.querySelectorAll<HTMLElement>('[data-routine-card]')[initialIndex]
+    if (!card) return
+    element.scrollLeft = card.offsetLeft - (element.clientWidth - card.offsetWidth) / 2
+    setActiveIndex(initialIndex)
+    positionedInitialCard.current = true
+  }, [archive.data])
 
-  const loaded = [current.data, baseline.data].filter((value): value is Routine => Boolean(value))
-  const routines = loaded.filter((routine, index) => loaded.findIndex(item => item.id === routine.id) === index)
+  if (archive.isPending || auth.isPending) return <Screen><AppHeader/><Loading/></Screen>
+  const loadError = auth.error || archive.error
+  if (loadError) return <Screen><AppHeader/><ErrorState message={loadError.message} onRetry={() => { auth.refetch(); archive.refetch() }}/></Screen>
+
+  const routines = archive.data
   const createDescriptions = [
     '제품과 순서, 사용하는 시간을 정해 새 조합을 시작해보세요.',
     '아침과 저녁처럼 사용하는 시간이 다르면 별도 루틴으로 남길 수 있어요.',
@@ -98,19 +109,7 @@ export function RoutineListPage() {
 
     <section className="relative mt-6" aria-label="나의 루틴 카드">
       <div
-        ref={element => {
-          carousel.current = element
-          if (element && element.dataset.initialized !== 'true') {
-            element.dataset.initialized = 'true'
-            requestAnimationFrame(() => {
-              const initialIndex = routines.length ? 1 : 0
-              const card = element.querySelectorAll<HTMLElement>('[data-routine-card]')[initialIndex]
-              if (!card) return
-              element.scrollLeft = card.offsetLeft - (element.clientWidth - card.offsetWidth) / 2
-              setActiveIndex(initialIndex)
-            })
-          }
-        }}
+        ref={carousel}
         onDragStart={event => event.preventDefault()}
         tabIndex={0}
         role="region"
@@ -183,7 +182,7 @@ export function RoutineListPage() {
               : 'z-0 opacity-40 [transform:translateZ(-86px)_scale(.86)] [filter:saturate(.55)]'
           return <div key={card.key} data-routine-card aria-current={index === activeIndex ? 'true' : undefined} className={`relative flex h-[378px] w-[272px] shrink-0 snap-center items-center justify-center [scroll-snap-stop:always] transition-[transform,opacity,filter] duration-500 ease-out will-change-transform motion-reduce:transform-none motion-reduce:opacity-100 motion-reduce:filter-none ${depth}`}>
             {card.kind === 'routine'
-              ? <RoutineCarouselCard routine={card.routine} current={current.data} image={card.image} tone={card.tone} expanded={expandedId === card.routine.id} onExpand={() => index === activeIndex ? setExpandedId(card.routine.id) : showCard(index)} onCollapse={() => setExpandedId(null)}/>
+              ? <RoutineCarouselCard routine={card.routine} image={card.image} tone={card.tone} expanded={expandedId === card.routine.id} onExpand={() => index === activeIndex ? setExpandedId(card.routine.id) : showCard(index)} onCollapse={() => setExpandedId(null)}/>
               : <CreateRoutineCard image={card.image} description={card.description}/>}
           </div>
         })}
@@ -207,11 +206,12 @@ function CreateRoutineCard({ image, description }: { image: string; description:
   </Link>
 }
 
-function RoutineCarouselCard({ routine, current, image, tone, expanded, onExpand, onCollapse }: { routine: Routine; current?: Routine; image: string; tone: string; expanded: boolean; onExpand: () => void; onCollapse: () => void }) {
+function RoutineCarouselCard({ routine, image, tone, expanded, onExpand, onCollapse }: { routine: Routine; image: string; tone: string; expanded: boolean; onExpand: () => void; onCollapse: () => void }) {
   const faceStyle = { backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' } as const
   const generatedInsight = useQuery({
     queryKey: ['routine-insight-v4', routine.id],
     queryFn: () => api.generateRoutineInsight(routine.id),
+    enabled: expanded,
     retry: false,
     staleTime: Number.POSITIVE_INFINITY,
   })
@@ -221,17 +221,28 @@ function RoutineCarouselCard({ routine, current, image, tone, expanded, onExpand
       <button type="button" onClick={onExpand} tabIndex={expanded ? -1 : 0} aria-expanded={expanded} aria-label={`${routine.name} 루틴이 도와주는 것 보기`} className={`absolute inset-0 overflow-hidden rounded-[26px] text-left shadow-[0_14px_38px_rgba(26,36,55,.18)] transition active:scale-[.99] ${expanded ? 'pointer-events-none' : ''}`} style={faceStyle}>
         <img src={image} alt="" aria-hidden className="absolute inset-0 size-full object-cover"/>
         <div aria-hidden className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,.82)_0%,rgba(255,255,255,.12)_46%,rgba(16,25,40,.18)_100%)]"/>
-        <div className="absolute inset-x-5 top-5 flex items-center justify-between gap-2"><span className="rounded-full border border-white/55 bg-white/62 px-3 py-1.5 text-[11px] font-semibold tracking-[.015em] text-[#283346] backdrop-blur-md">{statusLabel(routine, current)}</span><span className="text-[10px] font-semibold tracking-[-.01em] text-black/45">눌러 루틴 읽기</span></div>
+        <div className="absolute inset-x-5 top-5 flex items-center justify-between gap-2">{routine.status === 'CURRENT' ? <span className="rounded-full border border-white/55 bg-white/62 px-3 py-1.5 text-[11px] font-semibold tracking-[.015em] text-[#283346] backdrop-blur-md">현재 사용 중</span> : <span aria-hidden/>}<span className="text-[10px] font-semibold tracking-[-.01em] text-black/45">눌러 루틴 읽기</span></div>
         <div className="absolute inset-x-5 bottom-6"><p className="text-[12px] font-semibold tracking-[.02em] text-black/55">{dayPartLabel(routine.dayPart)} · {routine.items.length}개 제품</p><h2 className="mt-2 text-[29px] font-semibold leading-[1.06] tracking-[-.052em] text-[#111722]">{routine.name}</h2><p className="mt-3 text-[12px] font-medium tracking-[-.01em] text-black/58">{formatDate(routine.startedAt)} 시작</p></div>
       </button>
 
-      <article aria-hidden={!expanded} onClick={onCollapse} className={`absolute inset-0 overflow-hidden rounded-[26px] p-5 text-left shadow-[0_14px_38px_rgba(26,36,55,.18)] [transform:rotateY(180deg)] ${expanded ? 'pointer-events-auto' : 'pointer-events-none'}`} style={{ ...faceStyle, background: tone }}>
+      <article aria-hidden={!expanded} onClick={onCollapse} className={`absolute inset-0 overflow-hidden rounded-[26px] text-left shadow-[0_14px_38px_rgba(26,36,55,.18)] [transform:rotateY(180deg)] ${expanded ? 'pointer-events-auto' : 'pointer-events-none'}`} style={{ ...faceStyle, background: tone }}>
         <RoutineLabPattern/>
-        <div className="relative flex h-full flex-col">
-          <div className="flex items-center justify-between gap-3"><span className="rounded-full border border-white/65 bg-white/62 px-3 py-1.5 text-[10px] font-semibold text-[#56647a] shadow-[0_3px_10px_rgba(43,57,81,.05)] backdrop-blur-md">{statusLabel(routine, current)}</span><span className="text-[10px] font-medium text-[#7e8a9c]">눌러 앞면 보기</span></div>
-          {insight && <div className="mt-7 flex flex-wrap gap-1.5">{(insight.keywords || []).map(keyword => <span key={keyword} className="rounded-full border border-white/80 bg-white/58 px-2.5 py-1 text-[9px] font-semibold tracking-[-.01em] text-[#5d6f88] shadow-[0_2px_8px_rgba(53,70,98,.04)] backdrop-blur">{keyword}</span>)}</div>}
-          <p className={`tracking-[-.03em] text-[#1b2536] ${insight ? 'mt-4 line-clamp-3 text-[16px] font-medium leading-[1.58]' : 'mt-8 line-clamp-3 text-[18px] font-semibold leading-[1.42]'}`}>{insight?.text || routineGlance(routine)}</p>
-          <Link to={`/routines/${routine.id}`} tabIndex={expanded ? 0 : -1} onClick={event => event.stopPropagation()} className="mt-auto flex h-11 items-center justify-center rounded-[15px] bg-[#111722] px-4 text-[12px] font-semibold text-white shadow-[0_8px_20px_rgba(17,23,34,.18)] transition hover:bg-black active:scale-[.98]">루틴 상세 보기</Link>
+        <div aria-hidden className="absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(255,255,255,.72),transparent_37%),linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.22))]"/>
+        <div className="relative flex h-full flex-col px-5 pb-5 pt-[18px]">
+          <div className="flex items-center justify-between gap-3 border-b border-[#6c7e99]/15 pb-3.5">
+            <span className="text-[10px] font-semibold tracking-[-.01em] text-[#65758d]">{dayPartLabel(routine.dayPart)} 루틴 · {routine.items.length}개 제품</span>
+            <button type="button" tabIndex={expanded ? 0 : -1} onClick={event => { event.stopPropagation(); onCollapse() }} className="rounded-full px-2 py-1 text-[10px] font-semibold text-[#748198] transition hover:bg-white/45 hover:text-[#344158] active:scale-[.97]">앞면으로</button>
+          </div>
+
+          <div className="mt-7">
+            {insight && <div className="flex flex-wrap gap-1.5">{(insight.keywords || []).map(keyword => <span key={keyword} className="rounded-[9px] bg-white/58 px-2.5 py-1.5 text-[9px] font-semibold tracking-[-.015em] text-[#5b6d87] shadow-[inset_0_0_0_1px_rgba(255,255,255,.72),0_3px_10px_rgba(53,70,98,.035)] backdrop-blur">{keyword}</span>)}</div>}
+            <p className={`tracking-[-.034em] text-[#202b3d] ${insight ? 'mt-4 line-clamp-4 text-[18px] font-semibold leading-[1.52]' : 'line-clamp-4 text-[19px] font-semibold leading-[1.48]'}`}>{insight?.text || routineGlance(routine)}</p>
+          </div>
+
+          <Link to={`/routines/${routine.id}`} tabIndex={expanded ? 0 : -1} onClick={event => event.stopPropagation()} className="group mt-auto flex min-h-[58px] items-center gap-3 rounded-[18px] border border-white/75 bg-white/58 px-3.5 py-2.5 shadow-[0_8px_24px_rgba(51,68,94,.065)] backdrop-blur-md transition hover:-translate-y-0.5 hover:bg-white/72 active:translate-y-0 active:scale-[.985]">
+            <span className="min-w-0 flex-1"><strong className="block text-[12px] font-semibold tracking-[-.018em] text-[#263348]">루틴 상세</strong><span className="mt-0.5 block text-[9px] font-medium tracking-[-.01em] text-[#78869a]">제품 순서와 기록 보기</span></span>
+            <span className="grid size-8 shrink-0 place-items-center rounded-full bg-[#1d293b] text-white shadow-[0_5px_14px_rgba(29,41,59,.18)] transition group-hover:translate-x-0.5"><ChevronRight size={14} strokeWidth={2}/></span>
+          </Link>
         </div>
       </article>
     </div>
@@ -280,31 +291,32 @@ export function RoutineDetailPage() {
     <div className="px-5 pt-5">
       <header aria-labelledby="routine-detail-title">
         <div className="flex min-h-10 items-center justify-between gap-4"><p className="text-[10px] font-semibold tracking-[.16em] text-[#7686a0]">ROUTINE</p>{isCurrent && <Link to="/routine/edit" className="inline-flex min-h-10 items-center gap-1.5 rounded-full border border-[#dce4ef] bg-white px-4 text-[12px] font-semibold text-[#53647e] shadow-[0_3px_12px_rgba(47,64,94,.04)] transition active:scale-[.98]"><PencilLine size={15}/>구성 편집</Link>}</div>
-        <h1 id="routine-detail-title" className="mt-4 max-w-[360px] text-[clamp(34px,9.5vw,41px)] font-semibold leading-[1.1] tracking-[-.055em] text-[#111722]">{routine.name}</h1>
+        <h1 id="routine-detail-title" className="mt-4 max-w-[360px] text-[clamp(28px,7.8vw,34px)] font-semibold leading-[1.16] tracking-[-.045em] text-[#111722]">{routine.name}</h1>
         <p className="mt-4 text-[13px] font-medium tracking-[-.018em] text-[#778294]">{dayPartLabel(routine.dayPart)} · {orderedItems.length}개 제품</p>
       </header>
 
-      {insight && <section aria-labelledby="routine-insight-title" className="relative mt-7 overflow-hidden rounded-[24px] border border-[#dfe7f2] bg-[linear-gradient(145deg,#f4f7fc_0%,#eef3fa_52%,#f7f4f7_100%)] px-5 py-5 shadow-[0_12px_34px_rgba(43,57,82,.07)]">
-        <RoutineLabPattern/>
-        <div className="relative"><p id="routine-insight-title" className="text-[10px] font-semibold tracking-[.13em] text-[#697d9b]">SKN AI · 이 루틴이 도와주는 것</p><div className="mt-3 flex flex-wrap gap-2">{(insight.keywords || []).map(keyword => <span key={keyword} className="rounded-full border border-white/90 bg-white/62 px-3 py-1.5 text-[10px] font-semibold text-[#5b6f8d] shadow-[0_2px_8px_rgba(45,61,88,.04)] backdrop-blur">{keyword}</span>)}</div><p className="mt-4 text-[16px] font-medium leading-[1.68] tracking-[-.028em] text-[#28364c]">{insight.text}</p><p className="mt-3 text-[10px] font-medium leading-4 text-[#8290a4]">내가 남긴 내용과 이번 구성을 바탕으로 정리한 한 문장이에요.</p></div>
-      </section>}
-
       <section className="mt-9" aria-labelledby="routine-order-title">
-        <div className="flex items-end justify-between gap-4"><div><p className="text-[10px] font-semibold tracking-[.14em] text-[#7b8799]">구성</p><h2 id="routine-order-title" className="mt-1.5 text-[24px] font-semibold tracking-[-.042em] text-[#141a25]">사용 순서</h2></div><p className="pb-1 text-[11px] font-medium text-[#9299a4]">위에서부터 사용</p></div>
-        {orderedItems.length ? <ol className="mt-4 overflow-hidden rounded-[22px] border border-[#e1e7f0] bg-white shadow-[0_8px_26px_rgba(38,51,74,.045)]">
+        <div className="flex items-end justify-between gap-4"><div><h2 id="routine-order-title" className="text-[24px] font-semibold tracking-[-.042em] text-[#141a25]">루틴 구성</h2><p className="mt-1.5 text-[11px] font-medium tracking-[-.015em] text-[#8a93a1]">위에서 아래 순서로 사용해요.</p></div><span className="pb-0.5 text-[11px] font-semibold tabular-nums text-[#68778d]">{orderedItems.length}단계</span></div>
+        {orderedItems.length ? <ol className="relative mt-6 space-y-5 before:absolute before:bottom-[45px] before:left-[14px] before:top-[44px] before:w-[2px] before:rounded-full before:bg-[#a6b4c6]">
           {orderedItems.map((item, index) => {
             const product = productsById.get(item.userProductId)?.product
-            return <li key={item.userProductId} className={index ? 'border-t border-[#e8ecf2]' : ''}>
-              <Link to={`/my-products/${item.userProductId}`} aria-label={`${index + 1}번째 제품 ${item.productName} 상세 보기`} className="interactive-card grid min-h-[96px] grid-cols-[24px_56px_minmax(0,1fr)_18px] items-center gap-3 px-3.5 py-3.5">
-                <span className="self-start pt-1 text-[11px] font-semibold tabular-nums text-[#71819a]">{String(index + 1).padStart(2, '0')}</span>
-                <RoutineProductVisual imageUrl={product?.imageUrl} category={item.category} name={item.productName}/>
-                <span className="min-w-0"><strong className="block truncate text-[15px] font-semibold tracking-[-.025em] text-[#171d29]">{item.productName}</strong><span className="mt-1 flex min-w-0 items-center gap-1.5"><BrandIdentity name={item.brand} logoUrl={item.brandLogoUrl} size="xs" className="min-w-0"/><span className="shrink-0 text-[11px] text-[#858d99]">· {item.category}</span></span><span className="mt-2 block text-[11px] font-medium text-[#61728d]">{timeSlotLabel(item.timeSlot)} · {item.frequency}</span></span>
+            return <li key={item.userProductId} className="relative pl-12">
+              <span aria-hidden className="absolute left-0 top-[29px] z-10 grid h-[30px] w-[30px] place-items-center rounded-[10px] border border-[#91a2b8] bg-[#fbfcff] text-[9px] font-semibold tracking-[-.02em] tabular-nums text-[#40516a] shadow-[0_2px_7px_rgba(53,69,94,.08)]">{String(index + 1).padStart(2, '0')}</span>
+              <Link to={`/my-products/${item.userProductId}`} aria-label={`${index + 1}번째 제품 ${item.productName} 상세 보기`} className={`interactive-card grid min-h-[92px] grid-cols-[64px_minmax(0,1fr)_18px] items-center gap-3.5 pb-5 pr-1 transition active:opacity-70 ${index < orderedItems.length - 1 ? 'border-b border-[#e2e7ee] hover:border-[#cbd5e2]' : ''}`}>
+                <RoutineProductVisual imageUrl={product?.imageUrl} category={item.category} name={item.productName} size="lg"/>
+                <span className="min-w-0"><span className="mb-1.5 block text-[10px] font-semibold tracking-[-.01em] text-[#71819a]">{timeSlotLabel(item.timeSlot)} · {item.frequency}</span><strong className="block truncate text-[15px] font-semibold tracking-[-.025em] text-[#171d29]">{item.productName}</strong><span className="mt-1.5 flex min-w-0 items-center gap-1.5"><BrandIdentity name={item.brand} logoUrl={item.brandLogoUrl} size="xs" className="min-w-0"/><span className="shrink-0 text-[11px] text-[#858d99]">· {item.category}</span></span></span>
                 <ChevronRight size={17} className="text-[#8c96a5]"/>
               </Link>
             </li>
           })}
         </ol> : <div className="mt-4 rounded-[20px] border border-dashed border-[#d9dfe8] bg-white px-5 py-7 text-center text-[12px] font-medium text-[#7c8490]">이 루틴에 담긴 제품이 없어요.</div>}
       </section>
+
+      {insight && <section aria-labelledby="routine-insight-title" className="mt-9 border-y border-[#e1e6ed] py-5">
+        <h2 id="routine-insight-title" className="text-[11px] font-semibold tracking-[-.015em] text-[#718097]">이번 루틴에서 살펴볼 점</h2>
+        <p className="mt-3 max-w-[360px] text-[17px] font-semibold leading-[1.58] tracking-[-.032em] text-[#273347] [text-wrap:pretty]">{insight.text}</p>
+        {(insight.keywords || []).length > 0 && <ul className="mt-4 flex flex-wrap gap-x-3 gap-y-1.5" aria-label="루틴 키워드">{insight.keywords.map(keyword => <li key={keyword} className="inline-flex items-center gap-1.5 text-[10px] font-medium tracking-[-.01em] text-[#66758a]"><i aria-hidden className="size-1 rounded-full bg-[#91a2ba]"/>{keyword}</li>)}</ul>}
+      </section>}
 
       <Link to="/records?view=history" className="interactive-card mt-6 flex min-h-[62px] items-center gap-3 border-y border-[#e3e8ef] px-1 text-left">
         <span className="grid size-9 shrink-0 place-items-center text-[#65758e]"><BookOpen size={17} strokeWidth={1.8}/></span>
@@ -318,13 +330,14 @@ export function RoutineDetailPage() {
   </Screen>
 }
 
-function RoutineProductVisual({ imageUrl, category, name, size = 'md', className = '' }: { imageUrl?: string; category: string; name: string; size?: 'sm' | 'md'; className?: string }) {
+function RoutineProductVisual({ imageUrl, category, name, size = 'md', className = '' }: { imageUrl?: string; category: string; name: string; size?: 'sm' | 'md' | 'lg'; className?: string }) {
   const [failed, setFailed] = useState(false)
   const [portraitDetail, setPortraitDetail] = useState(false)
-  const compact = size === 'sm'
-  return <span className={`relative grid shrink-0 place-items-center overflow-hidden border border-black/[.035] bg-[linear-gradient(145deg,#f7f7f4_0%,#efefec_100%)] ${compact ? 'size-11 rounded-[15px]' : 'size-14 rounded-[18px]'} ${className}`}>
+  const frameClass = size === 'sm' ? 'size-11 rounded-[15px]' : size === 'lg' ? 'size-16 rounded-[19px]' : 'size-14 rounded-[18px]'
+  const imageClass = size === 'sm' ? 'size-10' : size === 'lg' ? 'size-[58px]' : 'size-[50px]'
+  return <span className={`relative grid shrink-0 place-items-center overflow-hidden border border-black/[.035] bg-[linear-gradient(145deg,#f7f7f4_0%,#efefec_100%)] ${frameClass} ${className}`}>
     {imageUrl && !failed
-      ? <StaticProductImage src={imageUrl} alt={`${name} 제품`} loading="lazy" decoding="async" referrerPolicy="no-referrer" onLoad={event => setPortraitDetail(event.currentTarget.naturalHeight / event.currentTarget.naturalWidth > 2.2)} onError={() => setFailed(true)} className={`${compact ? 'size-10' : 'size-[50px]'} ${portraitDetail ? 'rounded-[12px] object-cover object-[center_17%]' : 'object-contain mix-blend-multiply'}`}/>
+      ? <StaticProductImage src={imageUrl} alt={`${name} 제품`} loading="lazy" decoding="async" referrerPolicy="no-referrer" onLoad={event => setPortraitDetail(event.currentTarget.naturalHeight / event.currentTarget.naturalWidth > 2.2)} onError={() => setFailed(true)} className={`${imageClass} ${portraitDetail ? 'rounded-[12px] object-cover object-[center_17%]' : 'object-contain mix-blend-multiply'}`}/>
       : <ProductGlyph category={category} size="xs"/>}
   </span>
 }

@@ -29,6 +29,13 @@ export function AuthPage() {
     },
   })
   const demo = useMutation({ mutationFn: api.demo, onSuccess: data => queryClient.setQueryData(['auth'], data) })
+  const quickSignup = useMutation({
+    mutationFn: api.quickSignup,
+    onSuccess: data => {
+      queryClient.setQueryData(['auth'], data)
+      queryClient.invalidateQueries({ queryKey: ['quick-accounts'] })
+    },
+  })
   const error = auth.error instanceof ApiError ? auth.error.message : auth.isError ? '잠시 후 다시 시도해주세요.' : ''
 
   const moveTo = (next: 'welcome' | 'login' | 'signup') => {
@@ -45,7 +52,11 @@ export function AuthPage() {
       <div className="pt-10"><h1 className="text-2xl font-medium leading-[1.35] tracking-[-.035em]">당신의 피부를 연구할<br/>준비가 되었어요.</h1><p className="mt-3 text-sm leading-[1.65] text-[#73766f]">몇 가지 질문으로 당신에게 맞는<br/>케어를 시작할게요.</p></div>
       <div className="relative flex flex-1 items-center justify-center"><div aria-hidden="true" className="absolute size-[210px] rounded-full bg-[radial-gradient(circle,rgba(234,235,255,.65),rgba(255,255,255,0)_70%)] blur-xl"/><img src="/skn-assets/onboarding-orb.png" alt="투명한 세럼 구체" className="onboard-float relative size-[230px] object-contain"/></div>
       <button type="button" onClick={() => moveTo('login')} className="h-[52px] w-full rounded-full bg-[#0a0a0a] text-base font-[600] text-white shadow-[0_8px_22px_rgba(0,0,0,.14)] transition active:scale-[.98]">로그인</button>
-      <p className="pb-2 pt-4 text-center text-xs text-[#8e8e93]">처음이신가요? <button type="button" onClick={() => moveTo('signup')} className="font-medium text-[#3a3a3c] underline underline-offset-2">회원가입</button></p>
+      <button type="button" disabled={quickSignup.isPending} onClick={() => quickSignup.mutate()} className="mt-3 h-[52px] w-full rounded-full border border-[#e5e5ea] bg-white text-sm font-[600] text-[#3a3a3c] transition hover:bg-[#f7f7f8] active:scale-[.98] disabled:cursor-wait disabled:text-[#b0b0b5] disabled:active:scale-100">{quickSignup.isPending ? '새 계정 만드는 중…' : '빠르게 새 계정 만들기'}</button>
+      {quickSignup.isError
+        ? <p role="alert" className="pt-2 text-center text-xs text-danger">계정을 만들지 못했어요. 다시 시도해주세요.</p>
+        : <p className="pt-2 text-center text-[11px] text-[#b0b0b5]">데모용 · 바로 온보딩부터 체험해요</p>}
+      <p className="pb-2 pt-3 text-center text-xs text-[#8e8e93]">처음이신가요? <button type="button" onClick={() => moveTo('signup')} className="font-medium text-[#3a3a3c] underline underline-offset-2">회원가입</button></p>
     </div>
     <PrototypeHomeIndicator/>
   </PrototypePhone>

@@ -35,6 +35,12 @@ public class AuthController {
         return service.signUp(request, servletRequest);
     }
 
+    @PostMapping("/quick-signup")
+    @ResponseStatus(HttpStatus.CREATED)
+    AuthView quickSignUp(HttpServletRequest servletRequest) {
+        return service.quickSignUp(servletRequest);
+    }
+
     @PostMapping("/login")
     AuthView login(@Valid @RequestBody LoginRequest request, HttpServletRequest servletRequest) {
         return service.login(request, servletRequest);

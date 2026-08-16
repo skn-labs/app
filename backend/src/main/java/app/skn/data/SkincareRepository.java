@@ -240,6 +240,18 @@ public class SkincareRepository {
         return findRoutineByStatus("CURRENT");
     }
 
+    public List<RoutineView> findRoutines() {
+        List<RoutineHeader> routines = jdbc.query("""
+                SELECT id, name, day_part, status, started_at
+                  FROM routine
+                 WHERE user_id = ?
+                 ORDER BY CASE WHEN status = 'CURRENT' THEN 0 ELSE 1 END,
+                          datetime(started_at) DESC,
+                          id DESC
+                """, this::mapRoutineHeader, userId());
+        return routines.stream().map(this::hydrateRoutine).toList();
+    }
+
     public Optional<RoutineView> findBaselineRoutine() {
         List<RoutineHeader> routines = jdbc.query("""
                 SELECT r.id, r.name, r.day_part, r.status, r.started_at

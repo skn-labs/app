@@ -125,20 +125,23 @@ function InsightRail({ patterns, onOpen }: { patterns: Pattern[]; onOpen: (patte
 function ActiveExperienceCard({ experience, onOpen, onRecord }: { experience: NonNullable<Home['currentExperience']>; onOpen: () => void; onRecord: () => void }) {
   const day = Math.max(1, Math.min(7, experience.day))
   const subjectLabel = experience.subjectType === 'ROUTINE' ? '지금 연구 중인 루틴' : '지금 연구 중인 제품'
-  return <section className="relative left-1/2 aspect-[378/216] w-[104.42%] -translate-x-1/2" aria-label={`${subjectLabel}, 7일 중 ${day}일`}>
+  const routineKeywords = (experience.routine?.insight?.keywords || []).slice(0, 3)
+  return <section className="relative left-1/2 aspect-[378/228] w-[104.42%] -translate-x-1/2" aria-label={`${subjectLabel}, 7일 중 ${day}일`}>
     <img src="/skn-assets/routine-research-card.svg" alt="" aria-hidden className="absolute inset-0 size-full"/>
-    <div className="absolute inset-[8px] flex flex-col px-[clamp(16px,5vw,22px)] py-[clamp(14px,4.4vw,19px)]">
+    <div className="absolute inset-[8px] flex flex-col px-[clamp(16px,5vw,22px)] pb-[clamp(18px,5vw,22px)] pt-[clamp(14px,4.4vw,19px)]">
       <div className="flex items-center justify-between gap-3">
         <p className="text-[clamp(11px,3vw,12px)] font-semibold leading-none tracking-[-.01em] text-[#4e6387]">{subjectLabel}</p>
         <p role="progressbar" aria-label={`7일 중 ${day}일`} aria-valuemin={1} aria-valuemax={7} aria-valuenow={day} className="shrink-0 rounded-full border border-white/85 bg-white/72 px-2.5 py-1 text-[10px] font-semibold leading-none tracking-[.035em] text-[#4b5f80] shadow-[0_2px_8px_rgba(56,83,129,.08)] backdrop-blur-sm tabular-nums">DAY {day} / 7</p>
       </div>
-      <div className="min-h-0 flex-1 pt-[clamp(8px,2.8vw,12px)]">
+      <div className="shrink-0 pt-[clamp(8px,2.8vw,12px)]">
         <h2 className="line-clamp-1 max-w-[290px] text-[clamp(20px,5.6vw,24px)] font-semibold leading-[1.16] tracking-[-.04em] text-[#101725]">{experience.title}</h2>
-        <p className="mt-1 line-clamp-1 text-xs font-medium leading-5 tracking-[-.015em] text-[#52647f]">{experience.subtitle}</p>
+        {experience.subjectType === 'ROUTINE'
+          ? routineKeywords.length > 0 && <div className="mt-2 flex max-h-6 flex-wrap gap-1.5 overflow-hidden">{routineKeywords.map(keyword => <span key={keyword} className="max-w-[108px] truncate rounded-full border border-white/80 bg-white/56 px-2.5 py-1 text-[9px] font-semibold leading-none tracking-[-.01em] text-[#566b8c] backdrop-blur-sm">{keyword}</span>)}</div>
+          : <p className="mt-1 line-clamp-1 text-xs font-medium leading-5 tracking-[-.015em] text-[#52647f]">{experience.subtitle}</p>}
       </div>
-      <div className="grid grid-cols-2 gap-2.5 px-0.5">
-        <button type="button" onClick={onOpen} className="flex h-[clamp(43px,11.8vw,46px)] min-w-0 items-center justify-center gap-1.5 rounded-[15px] border border-[#cad5e5]/80 bg-white/90 px-2 text-[11.5px] font-[600] leading-none tracking-[-.02em] text-[#27354b] shadow-[0_4px_13px_rgba(43,65,102,.10)] backdrop-blur-md transition hover:border-[#b9c7dc] hover:bg-white active:scale-[.98]"><ActionIcon name="progress" className="size-[18px] shrink-0"/><span className="whitespace-nowrap">진행 상황 보기</span></button>
-        <button type="button" onClick={onRecord} className="flex h-[clamp(43px,11.8vw,46px)] min-w-0 items-center justify-center gap-1.5 rounded-[15px] border border-[#111722] bg-[#111722] px-2 text-[11.5px] font-[600] leading-none tracking-[-.02em] text-white shadow-[0_5px_15px_rgba(17,23,34,.18)] transition hover:bg-black active:scale-[.98]"><ExperienceActionIcon name="feeling" className="size-[18px] shrink-0"/><span className="whitespace-nowrap">기록 남기기</span></button>
+      <div className="mt-auto grid shrink-0 grid-cols-2 gap-2.5 px-0.5 pt-2">
+        <button type="button" onClick={onOpen} className="flex h-[clamp(43px,11.8vw,46px)] min-w-0 items-center justify-center gap-1.5 rounded-[15px] border border-[#cad5e5]/80 bg-white/90 px-2 text-[9px] font-bold leading-none tracking-[-.01em] text-[#27354b] shadow-[0_4px_13px_rgba(43,65,102,.10)] backdrop-blur-md transition hover:border-[#b9c7dc] hover:bg-white active:scale-[.98]"><ActionIcon name="progress" className="size-4 shrink-0"/><span className="whitespace-nowrap">진행 상황 보기</span></button>
+        <button type="button" onClick={onRecord} className="flex h-[clamp(43px,11.8vw,46px)] min-w-0 items-center justify-center gap-1.5 rounded-[15px] border border-[#111722] bg-[#111722] px-2 text-[9px] font-bold leading-none tracking-[-.01em] text-white shadow-[0_5px_15px_rgba(17,23,34,.18)] transition hover:bg-black active:scale-[.98]"><ExperienceActionIcon name="feeling" className="size-4 shrink-0"/><span className="whitespace-nowrap">기록 남기기</span></button>
       </div>
     </div>
   </section>
@@ -160,7 +163,7 @@ function EmptyExperienceCard({ productCount }: { productCount: number }) {
 
 function InsightCard({ pattern, peek, onOpen }: { pattern: Pattern; peek: boolean; onOpen: () => void }) {
   const graph = insightGraph(pattern)
-  return <button type="button" onClick={onOpen} aria-label={`${pattern.title}, 근거와 함께 보기`} className={`relative min-h-[136px] snap-center overflow-hidden rounded-[24px] border border-[#dce5f3] bg-[#f5f8ff] px-5 py-4 text-left shadow-[0_8px_26px_rgba(49,73,115,.07)] transition hover:border-[#cfdbea] active:scale-[.99] ${peek ? 'w-[94%] shrink-0' : 'w-full'}`}>
+  return <button type="button" onClick={onOpen} aria-label={`${pattern.title}, 근거와 함께 보기`} className={`relative min-h-[152px] snap-center overflow-hidden rounded-[24px] border border-[#dce5f3] bg-[#f5f8ff] px-5 py-4 text-left shadow-[0_8px_26px_rgba(49,73,115,.07)] transition hover:border-[#cfdbea] active:scale-[.99] ${peek ? 'w-[94%] shrink-0' : 'w-full'}`}>
     <svg viewBox="0 0 350 136" preserveAspectRatio="none" aria-hidden="true" className="pointer-events-none absolute inset-0 size-full">
       <path d={`${graph} L350 136 L108 136 Z`} fill="rgba(216,231,255,.56)"/>
       <path d={graph} fill="none" stroke="#c9dcff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke"/>
@@ -171,20 +174,23 @@ function InsightCard({ pattern, peek, onOpen }: { pattern: Pattern; peek: boolea
 }
 
 function EmptyInsightCard({ recordCount, href }: { recordCount: number; href: string }) {
+  const actionTitle = recordCount === 0
+    ? <>오늘 사용해봤다면<br/>첫 기록을 남겨보세요</>
+    : <>오늘도 사용해봤다면<br/>새 기록을 남겨보세요</>
   const reason = recordCount === 0
     ? '아직 비교할 경험이 없어요. 첫 경험을 남기면 다음 기록부터 서로 살펴봐요.'
     : recordCount === 1
       ? '아직 비교할 비슷한 경험이 1개뿐이에요. 하나 더 쌓이면 반복된 흐름을 보여드려요.'
       : '아직 서로 비슷한 경험이 충분하지 않아요. 같은 제품이나 루틴의 사용 기록을 조금 더 남겨보세요.'
   return <div className="mt-4">
-    <Link to={href} className="relative block min-h-[136px] overflow-hidden rounded-[24px] border border-[#dce5f3] bg-[#f5f8ff] px-5 py-4 shadow-[0_8px_26px_rgba(49,73,115,.07)] transition hover:border-[#cfdbea] active:scale-[.99]">
+    <Link to={href} className="relative block min-h-[152px] overflow-hidden rounded-[24px] border border-[#dce5f3] bg-[#f5f8ff] px-5 py-4 shadow-[0_8px_26px_rgba(49,73,115,.07)] transition hover:border-[#cfdbea] active:scale-[.99]">
       <svg viewBox="0 0 350 136" preserveAspectRatio="none" aria-hidden="true" className="pointer-events-none absolute inset-0 size-full">
         <path d="M112 122 L158 109 L202 110" fill="none" stroke="#b9d0f6" strokeWidth="3" strokeLinecap="round" vectorEffect="non-scaling-stroke"/>
         <path d="M202 110 L248 84 L294 78 L350 46" fill="none" stroke="#cddbf1" strokeWidth="2" strokeDasharray="6 7" strokeLinecap="round" vectorEffect="non-scaling-stroke"/>
         <circle cx="202" cy="110" r="4" fill="#fff" stroke="#87a6d9" strokeWidth="2" vectorEffect="non-scaling-stroke"/>
       </svg>
       <span className="relative inline-flex h-7 items-center gap-0.5 rounded-full bg-white/80 px-3 text-[10px] font-semibold tracking-[-.01em] text-[#637594] shadow-[inset_0_0_0_1px_rgba(204,218,240,.82)]">새 경험 남기기<ChevronRight size={12}/></span>
-      <span className="relative mt-8 block max-w-[250px] text-[17px] font-semibold leading-[1.38] tracking-[-.025em]">두 번째 경험부터<br/>서로 비교해요</span>
+      <span className="relative mt-8 block max-w-[250px] text-[17px] font-semibold leading-[1.38] tracking-[-.025em]">{actionTitle}</span>
     </Link>
     <p className="mt-2.5 px-1 text-[10px] leading-[1.55] text-[#7c8491]">{reason}</p>
   </div>

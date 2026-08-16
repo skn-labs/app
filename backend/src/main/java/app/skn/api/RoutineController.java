@@ -5,6 +5,8 @@ import app.skn.service.SkincareService;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/v1/me/routines")
 public class RoutineController {
@@ -12,6 +14,11 @@ public class RoutineController {
 
     public RoutineController(SkincareService service) {
         this.service = service;
+    }
+
+    @GetMapping
+    List<RoutineView> routines() {
+        return service.routines();
     }
 
     @GetMapping("/current")

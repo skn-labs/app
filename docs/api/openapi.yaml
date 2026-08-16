@@ -263,6 +263,20 @@ paths:
       responses:
         '200': { description: 내 화장품, content: { application/json: { schema: { $ref: '#/components/schemas/UserProduct' } } } }
         '404': { $ref: '#/components/responses/Problem' }
+  /me/routines:
+    get:
+      tags: [Routines]
+      summary: 저장한 모든 루틴 버전을 조회한다
+      description: 현재 루틴을 먼저 보여주고, 보존된 비교 기준과 과거 루틴을 생성 역순으로 반환한다.
+      operationId: listRoutines
+      responses:
+        '200':
+          description: 루틴 아카이브
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Routine' }
   /me/routines/current:
     get:
       tags: [Routines]
