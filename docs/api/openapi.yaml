@@ -194,7 +194,7 @@ paths:
     get:
       tags: [Catalog]
       summary: 브랜드·제품명·종류로 제품을 커서 검색한다
-      description: 보유 제품을 먼저, 그 안에서 제품 ID 순으로 반환한다. nextCursor는 클라이언트가 해석하지 않고 다음 요청에 그대로 보낸다.
+      description: 검색어가 없으면 관리하는 인기 휴리스틱으로 대표 제품을 먼저 반환하고, 검색 중에는 이름·브랜드·종류의 적합도를 먼저 적용한다. 내 화장품은 이 목록과 별도로 추가 최신순이다. 이 순서는 적합성·안전성·효능 추천을 뜻하지 않는다. nextCursor는 클라이언트가 해석하지 않고 다음 요청에 그대로 보낸다.
       operationId: searchProducts
       parameters:
         - { name: query, in: query, schema: { type: string, maxLength: 100, default: '' } }

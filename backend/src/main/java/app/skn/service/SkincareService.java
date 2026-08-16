@@ -75,25 +75,22 @@ public class SkincareService {
             throw ApiException.invalid("INVALID_PRODUCT_PAGE_SIZE", "한 번에 1개에서 50개까지 불러올 수 있어요.");
         }
 
-        Integer cursorOwned = null;
-        Long cursorId = null;
+        long cursorOffset = 0;
         if (cursor != null && !cursor.isBlank()) {
             String[] parts = cursor.split(":", -1);
             try {
-                if (parts.length != 2) throw new NumberFormatException();
-                cursorOwned = Integer.valueOf(parts[0]);
-                cursorId = Long.valueOf(parts[1]);
-                if ((cursorOwned != 0 && cursorOwned != 1) || cursorId < 1) throw new NumberFormatException();
+                if (parts.length != 2 || !"o".equals(parts[0])) throw new NumberFormatException();
+                cursorOffset = Long.parseLong(parts[1]);
+                if (cursorOffset < 0 || cursorOffset > 1_000_000) throw new NumberFormatException();
             } catch (NumberFormatException error) {
                 throw ApiException.invalid("INVALID_PRODUCT_CURSOR", "제품 목록을 처음부터 다시 불러와주세요.");
             }
         }
 
-        List<ProductView> fetched = repository.findProductsPage(normalizedQuery, cursorOwned, cursorId, limit + 1);
+        List<ProductView> fetched = repository.findProductsPage(normalizedQuery, cursorOffset, limit + 1);
         boolean hasMore = fetched.size() > limit;
         List<ProductView> items = hasMore ? fetched.subList(0, limit) : fetched;
-        ProductView last = items.isEmpty() ? null : items.get(items.size() - 1);
-        String nextCursor = hasMore && last != null ? (last.owned() ? "1:" : "0:") + last.id() : null;
+        String nextCursor = hasMore && !items.isEmpty() ? "o:" + (cursorOffset + items.size()) : null;
         return new ProductPageView(List.copyOf(items), nextCursor, hasMore);
     }
 

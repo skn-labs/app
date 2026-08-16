@@ -40,32 +40,37 @@ public class SkincareRepository {
     }
 
     public List<ProductView> findProducts(String query) {
-        String value = query == null ? "" : query.trim().toLowerCase(Locale.ROOT);
-        String like = "%" + value + "%";
-        return jdbc.query("""
-                SELECT p.*,
-                       EXISTS(SELECT 1 FROM user_product up WHERE up.user_id = ? AND up.product_id = p.id) AS owned,
-                       (SELECT COUNT(DISTINCT er.id) FROM experience_record er
-                          LEFT JOIN user_product eup ON eup.id = er.user_product_id
-                          LEFT JOIN experience_session es ON es.id = er.session_id
-                         WHERE er.user_id = ? AND (
-                               eup.product_id = p.id OR EXISTS (
-                                   SELECT 1 FROM routine_item eri
-                                   JOIN user_product rup ON rup.id = eri.user_product_id
-                                   WHERE eri.routine_id = es.routine_id AND rup.product_id = p.id
-                               )
-                         )) AS personal_record_count
-                  FROM product_catalog_public p
-                 WHERE ? = '' OR lower(p.name) LIKE ? OR lower(p.brand) LIKE ? OR lower(p.category) LIKE ?
-                 ORDER BY owned DESC, p.id
-                """, this::mapProduct, userId(), userId(), value, like, like, like);
+        return findProductsPage(query, 0, Integer.MAX_VALUE);
     }
 
-    public List<ProductView> findProductsPage(String query, Integer cursorOwned, Long cursorId, int fetchLimit) {
+    public List<ProductView> findProductsPage(String query, long cursorOffset, int fetchLimit) {
         String value = query == null ? "" : query.trim().toLowerCase(Locale.ROOT);
         String like = "%" + value + "%";
+        String prefix = value + "%";
+        // 대표 제품과 브랜드 인지도를 이용한 탐색용 휴리스틱이며 안전성·적합성 점수가 아니다.
         return jdbc.query("""
-                WITH catalog AS (
+                WITH
+                featured_product(product_id, product_rank) AS (
+                    VALUES
+                      (1722, 1), (409, 2), (829, 3), (15, 4), (1439, 5), (425, 6),
+                      (1924, 7), (1734, 8), (822, 9), (244, 10), (475, 11), (106, 12),
+                      (436, 13), (828, 14), (103, 15), (434, 16), (210, 17), (225, 18),
+                      (833, 19), (835, 20), (2109, 21), (322, 22), (415, 23), (220, 24)
+                ),
+                brand_popularity(brand, brand_rank) AS (
+                    VALUES
+                      ('라운드랩', 1), ('아누아', 2), ('토리든', 3), ('넘버즈인', 4),
+                      ('마녀공장', 5), ('조선미녀', 6), ('코스알엑스', 7), ('닥터지', 8),
+                      ('에스트라', 9), ('메디힐', 10), ('이니스프리', 11), ('라네즈', 12),
+                      ('스킨1004', 13), ('구달', 14), ('닥터자르트', 15), ('메디큐브', 16),
+                      ('달바', 17), ('아이오페', 18), ('헤라', 19), ('설화수', 20),
+                      ('프리메라', 21), ('바이오던스', 22), ('리얼베리어', 23), ('일리윤', 24),
+                      ('셀퓨전씨', 25), ('아비브', 26), ('퓨리토', 27), ('메이크프렘', 28),
+                      ('클리오', 29), ('바닐라코', 30), ('토니모리', 31), ('에뛰드', 32),
+                      ('홀리카홀리카', 33), ('VT코스메틱', 34), ('스킨푸드', 35), ('미샤', 36),
+                      ('더페이스샵', 37), ('네이처리퍼블릭', 38), ('이즈앤트리', 39), ('웰라쥬', 40)
+                ),
+                catalog AS (
                     SELECT p.*,
                            EXISTS(SELECT 1 FROM user_product up WHERE up.user_id = ? AND up.product_id = p.id) AS owned,
                            (SELECT COUNT(DISTINCT er.id) FROM experience_record er
@@ -77,17 +82,46 @@ public class SkincareRepository {
                                        JOIN user_product rup ON rup.id = eri.user_product_id
                                        WHERE eri.routine_id = es.routine_id AND rup.product_id = p.id
                                    )
-                             )) AS personal_record_count
+                             )) AS personal_record_count,
+                           COALESCE(fp.product_rank, 10000) AS featured_rank,
+                           COALESCE(bp.brand_rank, 1000) AS brand_popularity_rank,
+                           CASE
+                               WHEN ? = '' THEN 0
+                               WHEN lower(p.name) = ? THEN 5
+                               WHEN lower(p.brand) = ? THEN 4
+                               WHEN lower(p.category) = ? THEN 4
+                               WHEN lower(p.name) LIKE ? THEN 3
+                               WHEN lower(p.brand) LIKE ? THEN 2
+                               ELSE 1
+                           END AS query_relevance
                       FROM product_catalog_public p
+                      LEFT JOIN featured_product fp ON fp.product_id = p.id
+                      LEFT JOIN brand_popularity bp ON bp.brand = p.brand
                      WHERE ? = '' OR lower(p.name) LIKE ? OR lower(p.brand) LIKE ? OR lower(p.category) LIKE ?
+                ),
+                ranked AS (
+                    SELECT catalog.*,
+                           ROW_NUMBER() OVER (
+                               PARTITION BY brand
+                               ORDER BY featured_rank, public_verified DESC, id
+                           ) AS brand_product_rank
+                      FROM catalog
                 )
-                SELECT * FROM catalog
-                 WHERE ? IS NULL OR owned < ? OR (owned = ? AND id > ?)
-                 ORDER BY owned DESC, id
+                SELECT * FROM ranked
+                 ORDER BY query_relevance DESC,
+                          featured_rank,
+                          CASE WHEN featured_rank < 10000 THEN 0
+                               ELSE brand_popularity_rank + ((brand_product_rank - 1) * 12)
+                          END,
+                          public_verified DESC,
+                          id
                  LIMIT ?
+                OFFSET ?
                 """, this::mapProduct,
-                userId(), userId(), value, like, like, like,
-                cursorOwned, cursorOwned, cursorOwned, cursorId, fetchLimit);
+                userId(), userId(),
+                value, value, value, value, prefix, prefix,
+                value, like, like, like,
+                fetchLimit, cursorOffset);
     }
 
     public Optional<ProductView> findProduct(long productId) {

@@ -10,6 +10,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
@@ -51,11 +52,19 @@ class CoreFlowIntegrationTest {
     }
 
     @Test
+    @Transactional
     void productCatalogUsesStableCursorPages() throws Exception {
+        insertCatalogProduct(1722, "라운드랩", "자작나무 수분 선크림", "선크림");
+        insertCatalogProduct(409, "토리든", "다이브인 저분자 히알루론산 세럼", "세럼");
+        insertCatalogProduct(829, "에스트라", "아토베리어365 크림", "수분크림");
+
         MockHttpSession session = demoSession();
         String firstBody = mvc.perform(get("/api/v1/products").session(session).param("limit", "3"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items.length()").value(3))
+                .andExpect(jsonPath("$.items[0].brand").value("라운드랩"))
+                .andExpect(jsonPath("$.items[1].brand").value("토리든"))
+                .andExpect(jsonPath("$.items[2].brand").value("에스트라"))
                 .andExpect(jsonPath("$.hasMore").value(true))
                 .andExpect(jsonPath("$.nextCursor").isString())
                 .andReturn().getResponse().getContentAsString();
@@ -77,6 +86,24 @@ class CoreFlowIntegrationTest {
         mvc.perform(get("/api/v1/products").session(session).param("cursor", "broken"))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.code").value("INVALID_PRODUCT_CURSOR"));
+    }
+
+    @Test
+    void userProductsAreReturnedNewestFirst() throws Exception {
+        String body = mvc.perform(get("/api/v1/me/products").session(demoSession()))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        JsonNode items = json.readTree(body);
+
+        for (int index = 1; index < items.size(); index++) {
+            JsonNode previous = items.get(index - 1);
+            JsonNode current = items.get(index);
+            int addedAtOrder = previous.path("addedAt").asText().compareTo(current.path("addedAt").asText());
+            assertThat(addedAtOrder).isGreaterThanOrEqualTo(0);
+            if (addedAtOrder == 0) {
+                assertThat(previous.path("id").asLong()).isGreaterThan(current.path("id").asLong());
+            }
+        }
     }
 
     @Test
@@ -959,5 +986,19 @@ class CoreFlowIntegrationTest {
                         .content("{\"productId\":" + productId + "}"))
                 .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
         return json.readTree(body).path("id").asLong();
+    }
+
+    private void insertCatalogProduct(long id, String brand, String name, String category) {
+        jdbc.update("""
+                INSERT INTO product(id, brand, name, category, description, texture, verified, facts_json)
+                VALUES (?, ?, ?, ?, '정렬 계약 테스트 제품', '테스트 제형', 0, '[]')
+                """, id, brand, name, category);
+        jdbc.update("""
+                INSERT INTO product_catalog_content(
+                    product_id, summary, routine_step, usage_type, usage_timing_json,
+                    usage_tips_json, observation_points_json, origin, generated_at
+                ) VALUES (?, '정렬 계약 테스트 안내', '테스트 단계', '테스트 유형', '[]', '[]', '[]',
+                          'EDITORIAL', CURRENT_TIMESTAMP)
+                """, id);
     }
 }
