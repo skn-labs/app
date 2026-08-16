@@ -51,7 +51,7 @@ export function HomePage() {
         <ChevronRight size={23} className="shrink-0 text-[#7892bb]"/>
       </button>
 
-      <ProfilePreview recordCount={data.recordCount} patternCount={data.patterns.length}/>
+      <ProfilePreview recordCount={data.recordCount} patterns={data.patterns}/>
     </div>
 
     {experience && endOpen && (
@@ -110,13 +110,61 @@ function InsightCard({ pattern, wave }: { pattern: Pattern; wave: string }) {
   </Link>
 }
 
-function ProfilePreview({ recordCount, patternCount }: { recordCount: number; patternCount: number }) {
+const hexPoint = (index: number, radius: number) => {
+  const angle = (-90 + index * 60) * Math.PI / 180
+  return { x: 120 + Math.cos(angle) * radius, y: 120 + Math.sin(angle) * radius }
+}
+
+function ProfilePreview({ recordCount, patterns }: { recordCount: number; patterns: Pattern[] }) {
+  const fields = [...patterns]
+    .sort((left, right) => (right.supportingCount + right.contradictingCount) - (left.supportingCount + left.contradictingCount))
+    .slice(0, 6)
+  const slots = Array.from({ length: 6 }, (_, index) => fields[index])
+  const hasProfile = fields.length > 0
+  const areaPoints = slots.map((pattern, index) => {
+    const evidenceCount = pattern ? pattern.supportingCount + pattern.contradictingCount : 0
+    const point = hexPoint(index, evidenceCount ? 28 + Math.min(evidenceCount, 5) / 5 * 82 : 10)
+    return `${point.x},${point.y}`
+  }).join(' ')
+
   return <section className="mt-11 pb-8" aria-labelledby="profile-preview-title">
-    <Link to="/records" className="flex items-center justify-between"><span><h2 id="profile-preview-title" className="text-lg font-medium tracking-[-.02em]">MY PROFILE</h2><p className="mt-1 text-xs text-[#636366]">기록을 통해 발견한 나의 스킨케어 성향</p></span><ChevronRight size={24}/></Link>
-    <Link to="/records" className="mt-5 grid grid-cols-[minmax(0,1fr)_minmax(0,.78fr)] items-end gap-4">
-      <div className="grid aspect-square place-items-center rounded-[22px] border border-[#d9e6ff] bg-[#fbfdff] p-4"><svg viewBox="0 0 160 160" className="size-full" role="img" aria-label="기록이 쌓이면 스킨케어 성향을 연결하는 빈 육각형 차트"><g fill="none" stroke="#d8e5ff" strokeWidth="1"><path d="M80 8 142 44v72l-62 36-62-36V44Z"/><path d="m80 32 41 24v48l-41 24-41-24V56Z"/><path d="m80 56 21 12v24l-21 12-21-12V68Z"/><path d="M80 8v144M18 44l124 72M142 44 18 116"/></g><circle cx="80" cy="80" r="13" fill="#fff" stroke="#c9dafb"/><text x="80" y="85" textAnchor="middle" fontSize="17" fill="#9ab8e8" fontWeight="600">?</text></svg></div>
-      <div className="pb-4"><p className="text-lg font-medium leading-snug">내 피부 취향은?</p><p className="mt-1.5 text-xs leading-5 text-[#5f7396]">{patternCount ? `근거가 있는 인사이트 ${patternCount}개` : recordCount ? `${recordCount}개 기록을 서로 비교하는 중` : '첫 경험부터 차곡차곡 연결해요'}</p></div>
-    </Link>
+    <Link to="/records" className="flex items-center justify-between"><span><h2 id="profile-preview-title" className="text-lg font-medium tracking-[-.02em]">MY PROFILE</h2><p className="mt-1 text-xs text-[#636366]">나의 경험 지도</p></span><ChevronRight size={24}/></Link>
+    <div className="mt-5 overflow-hidden rounded-[28px] border border-[#d8e5fb] bg-[linear-gradient(155deg,#fbfdff,#eef4ff)] p-4 shadow-[0_14px_38px_rgba(68,98,151,.08)]">
+      <span className="inline-flex rounded-full bg-white/85 px-3 py-2 text-[11px] font-medium text-[#52678c] shadow-[inset_0_0_0_1px_rgba(201,218,248,.75)]">{hasProfile ? `발견한 흐름 ${fields.length}개` : recordCount ? `기록 ${recordCount}건 비교 중` : '첫 기록을 기다리는 중'}</span>
+
+      <div className="mx-auto mt-1 aspect-square w-full max-w-[236px]">
+        <svg viewBox="0 0 240 240" className="size-full overflow-visible" role="img" aria-label={hasProfile ? `사용자 기록에서 동적으로 선정된 ${fields.length}개 필드의 육각형 근거 지도` : '기록이 쌓이면 필드가 동적으로 만들어지는 빈 육각형 근거 지도'}>
+          <g fill="none" stroke="#bfd0ed" strokeWidth="1">
+            {[110, 76, 42].map(radius => <polygon key={radius} points={Array.from({ length: 6 }, (_, index) => { const point = hexPoint(index, radius); return `${point.x},${point.y}` }).join(' ')}/>)}
+            {Array.from({ length: 6 }, (_, index) => { const point = hexPoint(index, 110); return <line key={index} x1="120" y1="120" x2={point.x} y2={point.y}/> })}
+          </g>
+          {hasProfile && fields.length > 1 && <polygon points={areaPoints} fill="rgba(127,159,215,.34)" stroke="#6f90ca" strokeWidth="2"/>}
+          {slots.map((pattern, index) => {
+            if (!pattern) return null
+            const evidenceCount = pattern.supportingCount + pattern.contradictingCount
+            const point = hexPoint(index, 28 + Math.min(evidenceCount, 5) / 5 * 82)
+            return <circle key={pattern.id} cx={point.x} cy={point.y} r="5" fill="#6f90ca" stroke="#fff" strokeWidth="2"/>
+          })}
+          {Array.from({ length: 6 }, (_, index) => {
+            const point = hexPoint(index, 110)
+            return slots[index] ? <g key={index}><circle cx={point.x} cy={point.y} r="10" fill="#fff" stroke="#b7c9e8"/><text x={point.x} y={point.y + 3.5} textAnchor="middle" fontSize="9" fontWeight="700" fill="#526f9f">{index + 1}</text></g> : <circle key={index} cx={point.x} cy={point.y} r="3" fill="#b7c9e8"/>
+          })}
+          {!hasProfile && <g><circle cx="120" cy="120" r="16" fill="#fff" stroke="#a9bee3"/><text x="120" y="126" textAnchor="middle" fontSize="18" fontWeight="700" fill="#7897ce">?</text></g>}
+        </svg>
+      </div>
+
+      {hasProfile ? <div className="-mx-1 mt-1 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {fields.map((pattern, index) => <Link key={pattern.id} to={`/patterns/${pattern.id}`} aria-label={`${index + 1}번 필드 ${pattern.title}, 근거 기록 보기`} className="inline-flex h-10 max-w-[190px] shrink-0 items-center gap-2 rounded-full bg-white/85 px-3 shadow-[inset_0_0_0_1px_rgba(211,224,245,.9)] transition active:scale-[.98]">
+          <span className="grid size-5 shrink-0 place-items-center rounded-full bg-[#e2ecff] text-[9px] font-semibold text-[#526f9f]">{index + 1}</span>
+          <span className="truncate text-[11px] font-medium text-[#303641]">{pattern.title}</span>
+        </Link>)}
+      </div> : <div className="mt-1 text-center"><p className="text-sm font-medium">기록이 쌓이면 모양이 생겨요.</p><p className="mt-1 text-[11px] text-[#68778f]">내 경험에 맞춰 여섯 축이 달라집니다.</p></div>}
+
+      <div className="mt-3 flex items-center justify-between gap-3 border-t border-[#d9e4f5] pt-3">
+        <p className="text-[10px] text-[#6d788a]">{hasProfile ? '기록이 쌓일수록 모양도 달라져요.' : '관련 경험 2개부터 연결해요.'}</p>
+        <Link to={recordCount ? '/records' : '/explore'} className="inline-flex h-8 shrink-0 items-center gap-0.5 rounded-full bg-[#121318] px-3.5 text-[10px] font-medium text-white">{hasProfile ? '자세히' : recordCount ? '기록 보기' : '시작하기'}<ChevronRight size={12}/></Link>
+      </div>
+    </div>
   </section>
 }
 
