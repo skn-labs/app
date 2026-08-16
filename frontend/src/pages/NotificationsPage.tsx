@@ -24,7 +24,7 @@ export function NotificationsPage() {
     navigate(item.action.href)
   }
 
-  return <Screen nav={false} className="bg-white">
+  return <Screen nav={false} className="animate-notification-page-in relative z-30 bg-white will-change-transform">
     <AppHeader back backTo="/" profile={false} notifications={false} sticky/>
     <div className="px-5 pb-12 pt-8">
       <div className="flex items-end justify-between gap-4">

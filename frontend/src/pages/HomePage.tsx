@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { ArrowRight, ChevronRight, NotebookText, Search, Sparkles } from 'lucide-react'
+import { ArrowRight, ChevronRight, Search, Sparkles } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { api } from '../lib/api'
 import { startChatPath } from '../lib/chat'
@@ -39,14 +39,15 @@ export function HomePage() {
       </div>
 
       <section className="mt-5" aria-label="AI와 화장품 탐색">
-        <button type="button" onClick={() => navigate('/ai')} className="group flex min-h-[104px] w-full items-center gap-4 overflow-hidden rounded-[24px] bg-[#050505] px-5 py-4 text-left text-white shadow-[0_10px_26px_rgba(0,0,0,.14)] transition hover:bg-black active:scale-[.99]">
-          <span className="grid size-11 shrink-0 place-items-center text-[#dce6ff]"><Sparkles size={30} strokeWidth={1.45}/></span>
-          <span className="min-w-0 flex-1"><span className="block text-xs font-medium leading-5 text-[#cdd0d6]">SKN AI에게 편하게 물어보세요.</span><strong className="mt-0.5 block text-base font-semibold leading-[1.35] tracking-[-.02em]">피부에 대해 궁금한 게 있나요?</strong></span>
-          <ChevronRight size={24} className="shrink-0 text-white/75 transition group-hover:translate-x-0.5"/>
+        <button type="button" onClick={() => navigate('/ai')} className="group flex min-h-[74px] w-full items-center gap-3.5 overflow-hidden rounded-[20px] bg-[#050505] px-4 py-3.5 text-left text-white shadow-[0_8px_22px_rgba(0,0,0,.14)] transition hover:bg-black active:scale-[.99]">
+          <span className="grid size-11 shrink-0 place-items-center rounded-[15px] bg-white/[.08] text-[#dce6ff]"><Sparkles size={20} strokeWidth={1.65}/></span>
+          <span className="min-w-0 flex-1"><strong className="block text-[14px] font-semibold leading-5 tracking-[-.025em]">피부에 대해 궁금한 게 있나요?</strong><span className="mt-1 block text-[11px] leading-4 text-[#cdd0d6]">SKN AI에게 편하게 물어보세요.</span></span>
+          <ChevronRight size={18} strokeWidth={1.8} className="shrink-0 text-white/70 transition group-hover:translate-x-0.5"/>
         </button>
-        <button type="button" onClick={() => setProductAddOpen(true)} className="group mt-3 flex min-h-[72px] w-full items-center gap-3 rounded-[20px] border border-[#dfe6f2] bg-[#f8faff] px-4 py-3 text-left shadow-[0_6px_20px_rgba(49,73,115,.055)] transition hover:border-[#cfdbea] hover:bg-white active:scale-[.99]">
-          <span className="min-w-0 flex-1"><span className="block text-[10px] font-semibold tracking-[.1em] text-[#7892bb]">MY LAB</span><strong className="mt-1 block text-[14px] font-semibold leading-5 tracking-[-.025em] text-[#1a2230]">궁금한 제품이 있나요?</strong><span className="mt-0.5 block text-[11px] leading-4 text-[#7b8290]">추천받거나 검색해 담아보세요.</span></span>
-          <span className="flex h-11 shrink-0 items-center gap-1.5 rounded-full bg-white px-4 text-[12px] font-semibold text-[#5f7396] shadow-[inset_0_0_0_1px_rgba(207,219,238,.9)] transition group-hover:bg-[#edf3ff]"><Search size={15} strokeWidth={1.9}/>제품 찾기</span>
+        <button type="button" onClick={() => setProductAddOpen(true)} className="group mt-3 flex min-h-[74px] w-full items-center gap-3.5 rounded-[20px] border border-[#dfe6f2] bg-[#f8faff] px-4 py-3.5 text-left shadow-[0_5px_18px_rgba(49,73,115,.05)] transition hover:border-[#ccd8e9] hover:bg-white active:scale-[.99]">
+          <span className="grid size-11 shrink-0 place-items-center rounded-[15px] bg-white text-[#657a9d] shadow-[inset_0_0_0_1px_rgba(215,225,241,.9)] transition group-hover:bg-[#edf3ff]"><Search size={19} strokeWidth={1.8}/></span>
+          <span className="min-w-0 flex-1"><strong className="block text-[14px] font-semibold leading-5 tracking-[-.025em] text-[#1a2230]">궁금한 제품이 있나요?</strong><span className="mt-1 block text-[11px] leading-4 text-[#7b8290]">추천받거나 직접 검색해보세요.</span></span>
+          <ChevronRight size={18} strokeWidth={1.8} className="shrink-0 text-[#8290a5] transition group-hover:translate-x-0.5 group-hover:text-[#5f7396]"/>
         </button>
       </section>
 
@@ -90,9 +91,9 @@ function ActiveExperienceCard({ experience, onOpen, onRecord }: { experience: No
         <h2 className="line-clamp-1 max-w-[290px] text-[clamp(20px,5.6vw,24px)] font-semibold leading-[1.16] tracking-[-.04em] text-[#101725]">{experience.title}</h2>
         <p className="mt-1 line-clamp-1 text-xs font-medium leading-5 tracking-[-.015em] text-[#52647f]">{experience.subtitle}</p>
       </div>
-      <div className="grid h-[clamp(48px,12.8vw,51px)] grid-cols-[minmax(0,.94fr)_minmax(0,1.06fr)] gap-1.5 rounded-[18px] border border-white/90 bg-white/82 p-1.5 shadow-[0_7px_22px_rgba(47,74,119,.12)] backdrop-blur-md">
-        <button type="button" onClick={onOpen} className="flex min-w-0 items-center justify-center gap-1.5 rounded-[13px] text-[12px] font-bold leading-none tracking-[-.02em] text-[#40516c] transition hover:bg-[#edf3fc] active:scale-[.975] active:bg-[#e5edf9]"><NotebookText size={15} strokeWidth={2}/><span>연구 노트 보기</span></button>
-        <button type="button" onClick={onRecord} className="flex min-w-0 items-center justify-center gap-1.5 rounded-[13px] bg-[#111722] text-[13px] font-bold leading-none tracking-[-.02em] text-white shadow-[0_5px_14px_rgba(17,23,34,.20)] transition hover:bg-black active:scale-[.975] active:bg-[#202838]"><span>느낌 남기기</span><ArrowRight size={15} strokeWidth={2}/></button>
+      <div className="grid grid-cols-2 gap-2.5 px-0.5">
+        <button type="button" onClick={onOpen} className="h-[clamp(43px,11.8vw,46px)] min-w-0 rounded-[15px] border border-[#cad5e5]/80 bg-white/90 text-[12.5px] font-[650] leading-none tracking-[-.02em] text-[#27354b] shadow-[0_4px_13px_rgba(43,65,102,.10)] backdrop-blur-md transition hover:border-[#b9c7dc] hover:bg-white active:scale-[.98]">연구 노트 보기</button>
+        <button type="button" onClick={onRecord} className="h-[clamp(43px,11.8vw,46px)] min-w-0 rounded-[15px] border border-[#111722] bg-[#111722] text-[12.5px] font-[650] leading-none tracking-[-.02em] text-white shadow-[0_5px_15px_rgba(17,23,34,.18)] transition hover:bg-black active:scale-[.98]">느낌 남기기</button>
       </div>
     </div>
   </section>

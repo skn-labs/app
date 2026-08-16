@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { AlertCircle, ArrowDown, ArrowUp, Check, ChevronRight, Clock3, GripVertical, Plus, Sparkles } from 'lucide-react'
+import { AlertCircle, ArrowDown, ArrowUp, Check, ChevronDown, ChevronRight, Clock3, Plus, Sparkles, X } from 'lucide-react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { api, ApiError, uid } from '../lib/api'
 import { startChatPath } from '../lib/chat'
-import type { Routine, RoutineItemInput, SavedRecord, UserProduct } from '../lib/types'
+import type { Experience, Routine, RoutineItemInput, SavedRecord, UserProduct } from '../lib/types'
 import { BeforeChangeSheet } from '../components/BeforeChangeSheet'
-import { AiBadge, AppHeader, Button, Card, ErrorState, Loading, PageHeading, ProductGlyph, Screen, StickyActionBar, TopBar } from '../components/ui'
+import { ProductAddSheet } from '../components/ProductAddSheet'
+import { AiBadge, AppHeader, BottomSheet, Button, Card, ErrorState, Loading, PageHeading, ProductGlyph, Screen, StickyActionBar, TopBar } from '../components/ui'
 import heroWave from '../assets/figma/hero-wave.webp'
 
 export function ExperiencePage() {
@@ -20,7 +21,7 @@ export function ExperiencePage() {
   const data = experience.data
   const day = Math.max(1, Math.min(7, data.day))
   if (data.status !== 'ACTIVE') return <Screen nav={false}><AppHeader back profile={false} notifications={false}/><div className="px-5 pb-10 pt-5"><PageHeading eyebrow="마친 경험" title={data.title} description={data.subtitle}/><div className="soft-card mt-8 p-5"><p className="text-sm font-medium text-muted">마지막으로 남긴 느낌</p><p className="mt-3 text-base leading-7">{data.latestRecord?.note || (data.latestRecord ? sentimentLabel(data.latestRecord.sentiment) : '아직 남긴 기록이 없어요.')}</p></div><Button onClick={() => navigate('/records')} className="mt-7 w-full">내 기록에서 보기</Button></div></Screen>
-  return <Screen nav={false} className="pb-32">
+  return <Screen nav={false} className="bg-[#fbfcff] pb-32">
     <AppHeader back profile={false} notifications={false} sticky/>
     <div className="px-5 pb-8 pt-4">
       <PageHeading eyebrow="확인 중인 경험" title={data.title} description={data.subtitle}/>
@@ -54,6 +55,7 @@ export function RecordPage() {
   const endAfterSave = params.get('end') === '1'
   const experience = useQuery({ queryKey: ['experience', experienceId], queryFn: () => api.experience(experienceId), enabled: validExperienceId })
   const [step, setStep] = useState<1 | 2>(1)
+  const [contextOpen, setContextOpen] = useState(false)
   const [sentiment, setSentiment] = useState<string>('')
   const [note, setNote] = useState('')
   const [tags, setTags] = useState<string[]>([])
@@ -71,9 +73,9 @@ export function RecordPage() {
   if (experience.isError) return <Screen nav={false}><AppHeader back profile={false} notifications={false}/><ErrorState message={experience.error.message}/></Screen>
   if (saved) return <SavedRecordResult saved={saved} reviewCompleted={experience.data.reviewDue} experienceEnded={endAfterSave} onRescue={openRescueChat} onContinue={() => navigate('/')} onComplete={() => complete.mutate()} completing={complete.isPending} completeError={complete.error?.message}/>
   const options = [
-    { value: 'LIKED', emoji: '☺', title: '마음에 들어요', body: '다시 손이 갈 것 같아요' },
-    { value: 'UNSURE', emoji: '◌', title: '아직 모르겠어요', body: '좀 더 써보고 싶어요' },
-    { value: 'DISAPPOINTED', emoji: '↘', title: '아쉬워요', body: '기대한 경험과 달랐어요' },
+    { value: 'LIKED', title: '마음에 들어요' },
+    { value: 'UNSURE', title: '아직 모르겠어요' },
+    { value: 'DISAPPOINTED', title: '아쉬워요' },
   ]
   const tagOptions = ['가벼움','촉촉함','산뜻함','흡수가 빠름','밀림 없음','답답함','무거움','따가움','붉어짐','계절 차이']
   const selectedOption = options.find(option => option.value === sentiment)
@@ -82,19 +84,29 @@ export function RecordPage() {
     : sentiment === 'DISAPPOINTED'
       ? { title: '어떤 점이 아쉬웠나요?', body: '기대와 달랐던 사용감이나 당시 조건을 남겨주세요.', placeholder: '예: 저녁에는 괜찮았지만 아침 화장 전에 바르면 조금 밀렸어요.' }
       : { title: '조금 더 지켜볼 점이 있나요?', body: '아직 모르는 상태도 충분한 기록이에요. 결론 없이 지금의 느낌만 남겨도 돼요.', placeholder: '예: 촉촉한지는 조금 더 써봐야 알 것 같고, 흡수는 빨랐어요.' }
+  const subjectLabel = experience.data.subjectType === 'ROUTINE' ? '루틴' : '제품'
   return <Screen nav={false} className="pb-28">
     <AppHeader back onBack={step === 2 ? () => setStep(1) : undefined} profile={false} notifications={false} sticky/>
     <div className="px-5 pb-8 pt-4">
-      <div className="flex items-center gap-2" aria-label={`기록 2단계 중 ${step}단계`}><span className="h-1.5 flex-1 rounded-full bg-ink"/><span className={`h-1.5 flex-1 rounded-full ${step === 2 ? 'bg-ink' : 'bg-line'}`}/><span className="ml-2 text-xs font-medium tabular-nums text-muted">{step} / 2</span></div>
+      <div aria-label={`기록 2단계 중 ${step}단계`}><div className="flex gap-1.5"><span className="h-1 flex-1 rounded-full bg-ink"/><span className={`h-1 flex-1 rounded-full ${step === 2 ? 'bg-ink' : 'bg-[#dde1e8]'}`}/></div><div className="mt-2 flex justify-between text-[10px] font-semibold"><span className={step === 1 ? 'text-ink' : 'text-muted'}>전체 느낌</span><span className={step === 2 ? 'text-ink' : 'text-[#a0a5ad]'}>자세히 남기기</span></div></div>
+
+      <RecordSubjectCard experience={experience.data} expanded={contextOpen} onToggle={() => setContextOpen(value => !value)}/>
 
       {step === 1 ? <>
-        <PageHeading className="mt-8" eyebrow={experience.data.title} title={<>이번 경험은<br/>어떠셨나요?</>} description={params.get('discomfort') === '1' ? '피부 불편 여부와는 별개로, 전반적인 인상을 먼저 남겨주세요.' : '좋고 나쁨을 판정하지 않아요. 지금 느낀 전반적인 인상을 골라주세요.'}/>
-        <div role="radiogroup" aria-label="전반적인 인상" className="mt-8 space-y-3">{options.map(option => <button type="button" role="radio" aria-checked={sentiment === option.value} key={option.value} onClick={() => setSentiment(option.value)} className={`interactive-card flex min-h-[88px] w-full items-center gap-4 rounded-[22px] border p-4 text-left ${sentiment === option.value ? 'border-ink bg-[#f5f8ff] shadow-[0_8px_24px_rgba(37,55,92,.08)]' : 'border-line bg-white'}`}><span className={`grid size-12 shrink-0 place-items-center rounded-full text-xl ${sentiment === option.value ? 'bg-ink text-white' : 'bg-soft text-ink'}`}>{option.emoji}</span><span className="min-w-0 flex-1"><b className="block text-lg font-medium tracking-[-.025em]">{option.title}</b><span className="mt-1 block text-xs leading-5 text-muted">{option.body}</span></span>{sentiment === option.value && <Check size={20}/>}</button>)}</div>
+        <PageHeading className="mt-8" title={<>이번 {subjectLabel}은<br/>어떠셨나요?</>} description={params.get('discomfort') === '1' ? '불편 여부와 별개로, 전반적인 느낌을 먼저 골라주세요.' : '지금 느끼는 인상에 가장 가까운 것을 골라주세요.'}/>
+        <div role="radiogroup" aria-label="전반적인 인상" className="mt-7 overflow-hidden rounded-[22px] border border-[#dfe4eb] bg-white">{options.map((option, index) => {
+          const selected = sentiment === option.value
+          return <button type="button" role="radio" aria-checked={selected} key={option.value} onClick={() => setSentiment(option.value)} className={`interactive-card flex min-h-[64px] w-full items-center gap-3 px-4 text-left ${index ? 'border-t border-[#e7eaf0]' : ''} ${selected ? 'bg-[#f3f7ff]' : 'bg-white'}`}><span className={`grid size-6 shrink-0 place-items-center rounded-full border ${selected ? 'border-[#7894c5] bg-white' : 'border-[#cfd4dc]'}`}>{selected && <span className="size-2.5 rounded-full bg-[#627ead]"/>}</span><b className={`min-w-0 flex-1 text-[16px] font-semibold tracking-[-.02em] ${selected ? 'text-[#16243a]' : 'text-ink'}`}>{option.title}</b>{selected && <Check size={18} className="text-[#627ead]"/>}</button>
+        })}</div>
       </> : <>
-        <div className="mt-8 flex items-center justify-between rounded-[18px] bg-[#f7f9fd] px-4 py-3"><div><p className="text-xs text-muted">전반적인 인상</p><p className="mt-1 text-sm font-medium">{selectedOption?.title}</p></div><button type="button" onClick={() => setStep(1)} className="min-h-10 rounded-full px-3 text-xs font-medium text-accent">바꾸기</button></div>
+        <div className="mt-6 flex min-h-12 items-center justify-between border-y border-[#e2e6ec] px-1"><p className="text-xs text-muted">전체 느낌 <strong className="ml-2 text-sm font-semibold text-ink">{selectedOption?.title}</strong></p><button type="button" onClick={() => setStep(1)} className="min-h-10 rounded-full px-3 text-xs font-semibold text-[#627ead]">바꾸기</button></div>
         <PageHeading className="mt-7" title={detailCopy.title} description={detailCopy.body}/>
-        <section className="mt-8"><h2 className="text-sm font-medium">기억할 사용감 <span className="font-normal text-muted">선택</span></h2><div className="mt-3 flex flex-wrap gap-2">{tagOptions.map(tag => <button type="button" aria-pressed={tags.includes(tag)} key={tag} onClick={() => setTags(value => value.includes(tag) ? value.filter(x => x !== tag) : [...value, tag])} className={`min-h-11 rounded-full border px-4 py-2 text-sm font-medium ${tags.includes(tag) ? 'border-ink bg-ink text-white' : 'border-line bg-white text-muted'}`}>{tag}</button>)}</div></section>
-        <label className="mt-8 block"><span className="text-sm font-medium">내 말로 남기기 <span className="font-normal text-muted">선택</span></span><textarea value={note} onChange={e => setNote(e.target.value)} maxLength={1200} rows={5} placeholder={detailCopy.placeholder} className="field-control mt-3 w-full resize-none p-4 text-base font-normal leading-7"/><span className="mt-2 block text-right text-xs text-muted">{note.length}/1200</span></label>
+        <section className="mt-8"><div className="flex items-center justify-between gap-4"><h2 className="text-sm font-semibold">기억할 사용감 <span className="font-normal text-muted">선택</span></h2>{tags.length > 0 && <span className="text-[10px] font-medium text-muted">{tags.length} / 8</span>}</div><div className="mt-3 flex flex-wrap gap-2">{tagOptions.map(tag => {
+          const selected = tags.includes(tag)
+          const limitReached = tags.length >= 8 && !selected
+          return <button type="button" aria-pressed={selected} disabled={limitReached} key={tag} onClick={() => setTags(value => value.includes(tag) ? value.filter(x => x !== tag) : [...value, tag])} className={`min-h-11 rounded-full border px-4 py-2 text-sm font-semibold transition disabled:opacity-35 ${selected ? 'border-ink bg-ink text-white' : 'border-line bg-white text-muted'}`}>{tag}</button>
+        })}</div></section>
+        <label className="mt-8 block"><span className="text-sm font-semibold">내 말로 남기기 <span className="font-normal text-muted">선택</span></span><textarea value={note} onChange={e => setNote(e.target.value)} maxLength={1200} rows={5} placeholder={detailCopy.placeholder} className="mt-3 w-full resize-none rounded-[18px] border border-[#dce5f2] bg-[#f8faff] p-4 text-base font-normal leading-7 text-ink outline-none transition placeholder:text-[#9ba6b5] hover:border-[#cad8ea] focus:border-[#91a9cf] focus:bg-white focus:shadow-[0_0_0_4px_rgba(226,235,250,.9)]"/><span className="mt-2 block text-right text-[11px] text-[#8b929d]">{note.length}/1200</span></label>
         <label className={`mt-6 flex cursor-pointer items-start gap-3 rounded-[20px] border p-4 transition ${discomfort === 'REPORTED' ? 'border-[#e8bcbc] bg-[#fff7f7]' : 'border-line bg-white'}`}><input type="checkbox" checked={discomfort === 'REPORTED'} onChange={e => setDiscomfort(e.target.checked ? 'REPORTED' : 'NOT_REPORTED')} className="mt-1 size-4 accent-[#d65454]"/><span><b className="block text-base font-medium">피부 불편함이 있었어요</b><span className="mt-1 block text-xs leading-5 text-muted">만족도와 별도의 관찰 사실이에요. 선택하면 저장 뒤 AI와 변경점을 확인할 수 있어요.</span></span></label>
         {endAfterSave && <div className="mt-5 rounded-[18px] bg-soft p-4 text-xs leading-5 text-muted">이 기록을 저장하면 확인 중인 경험도 함께 마칩니다. 현재 사용 루틴은 그대로 유지돼요.</div>}
         {record.error && <p role="alert" className="mt-4 text-sm text-danger">{record.error.message}</p>}
@@ -102,6 +114,26 @@ export function RecordPage() {
     </div>
     <StickyActionBar><Button disabled={!sentiment || record.isPending} onClick={() => step === 1 ? setStep(2) : record.mutate()} className="w-full">{step === 1 ? '다음' : record.isPending ? '기록하는 중…' : endAfterSave ? '기록하고 경험 마치기' : '이 경험 남기기'}</Button></StickyActionBar>
   </Screen>
+}
+
+function RecordSubjectCard({ experience, expanded, onToggle }: { experience: Experience; expanded: boolean; onToggle: () => void }) {
+  const routine = experience.routine
+  const hasRoutineDetails = Boolean(routine?.items.length)
+  const day = Math.max(1, Math.min(7, experience.day))
+  const groups = routine ? [
+    { key: 'MORNING', label: '아침', items: routine.items.filter(item => item.timeSlot === 'MORNING' || item.timeSlot === 'BOTH') },
+    { key: 'EVENING', label: '저녁', items: routine.items.filter(item => item.timeSlot === 'EVENING' || item.timeSlot === 'BOTH') },
+  ].filter(group => group.items.length) : []
+  const content = <div className="flex min-w-0 flex-1 items-center gap-3.5">
+    {experience.subjectType === 'ROUTINE'
+      ? <span aria-hidden="true" className="flex size-11 shrink-0 flex-col justify-center gap-1.5 rounded-[15px] border border-[#d9e3f2] bg-white px-3 shadow-[0_5px_16px_rgba(46,67,103,.06)]"><i className="h-0.5 w-full rounded-full bg-[#7f98c2]"/><i className="h-0.5 w-4/5 rounded-full bg-[#a7b9d6]"/><i className="h-0.5 w-3/5 rounded-full bg-[#c0cee2]"/></span>
+      : <ProductGlyph category={experience.product?.product?.category || experience.product?.customCategory} size="sm" src={experience.product?.product?.imageUrl}/>}
+    <span className="min-w-0"><span className="block text-[10px] font-semibold tracking-[-.01em] text-[#647796]">지금 기록하는 {experience.subjectType === 'ROUTINE' ? '루틴' : '제품'} · DAY {day}</span><strong id="record-subject-title" className="mt-1 block truncate text-[16px] font-semibold leading-5 tracking-[-.025em] text-[#172033]">{experience.title}</strong><span className="mt-1 block truncate text-[11px] leading-4 text-[#687386]">{experience.subtitle}</span></span>
+  </div>
+  return <section className="mt-5 overflow-hidden rounded-[22px] border border-[#dbe4f1] bg-[#f6f9ff]" aria-labelledby="record-subject-title">
+    {hasRoutineDetails ? <button type="button" aria-expanded={expanded} aria-controls="record-routine-detail" onClick={onToggle} className="flex w-full items-center gap-3 p-4 text-left transition active:bg-[#edf3fc]">{content}<span className="flex shrink-0 flex-col items-center gap-1 text-[9px] font-semibold text-[#71809a]"><ChevronDown size={18} className={`transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`}/>{expanded ? '접기' : '순서'}</span></button> : <div className="flex items-center p-4">{content}</div>}
+    {hasRoutineDetails && expanded && <div id="record-routine-detail" className="border-t border-[#dfe7f2] bg-white px-4 pb-4 pt-1">{groups.map(group => <div key={group.key} className="pt-3"><p className="mb-1.5 text-[10px] font-semibold text-[#748097]">{group.label}</p><ol className="space-y-1">{group.items.map((item, index) => <li key={`${group.key}-${item.userProductId}`} className="flex min-h-9 items-center gap-2.5"><span className="grid size-5 shrink-0 place-items-center rounded-full bg-[#eef3fb] text-[9px] font-semibold text-[#607493]">{index + 1}</span><span className="min-w-0 flex-1 truncate text-[12px] font-medium text-[#303b4e]">{item.productName}</span><span className="shrink-0 text-[10px] text-[#858e9d]">{item.frequency}</span></li>)}</ol></div>)}</div>}
+  </section>
 }
 
 function SavedRecordResult({ saved, reviewCompleted, experienceEnded, onRescue, onContinue, onComplete, completing, completeError }: { saved: SavedRecord; reviewCompleted: boolean; experienceEnded: boolean; onRescue: () => void; onContinue: () => void; onComplete: () => void; completing: boolean; completeError?: string }) {
@@ -128,6 +160,9 @@ export function RoutineEditPage() {
   const [confirmChange, setConfirmChange] = useState(false)
   const [earlyError, setEarlyError] = useState('')
   const [transitioning, setTransitioning] = useState(false)
+  const [settingPicker, setSettingPicker] = useState<{ productId: number; field: 'timeSlot' | 'frequency' } | null>(null)
+  const [ownedPickerOpen, setOwnedPickerOpen] = useState(false)
+  const [productAddOpen, setProductAddOpen] = useState(false)
   useEffect(() => {
     if (initialized || !auth.data || current.isPending) return
     const draft = readRoutineDraft(auth.data.userId)
@@ -167,34 +202,107 @@ export function RoutineEditPage() {
     }
   }
   const move = (index: number, direction: -1 | 1) => setSelected(value => { const next = [...value]; const target = index + direction; if (target < 0 || target >= next.length) return value; [next[index], next[target]] = [next[target], next[index]]; return next })
+  const updateSetting = (productId: number, patch: Partial<Pick<RoutineItemInput, 'timeSlot' | 'frequency'>>) => setSettings(value => ({ ...value, [productId]: { timeSlot: value[productId]?.timeSlot || 'EVENING', frequency: value[productId]?.frequency || '매일', ...patch } }))
   const byId = useMemo(() => new Map((products.data || []).map(item => [item.id, item])), [products.data])
   const currentError = current.error && !(current.error instanceof ApiError && current.error.status === 404) ? current.error : null
   if (auth.isPending || products.isPending || current.isPending || home.isPending || !initialized) return <Screen nav={false}><TopBar title="루틴 편집" back/><Loading label="편집 중인 루틴을 불러오는 중"/></Screen>
   const loadError = auth.error || products.error || currentError || home.error
   if (loadError) return <Screen nav={false}><TopBar title="루틴 편집" back/><ErrorState message={loadError.message} onRetry={() => { auth.refetch(); products.refetch(); current.refetch(); home.refetch() }}/></Screen>
   const canAdd = selected.length < 12
+  const availableCount = products.data.filter(item => !selected.includes(item.id)).length
   return <Screen nav={false} className="pb-32">
     <TopBar title="루틴 편집" back/>
     <div className="px-5 py-6">
-      <PageHeading title="실제로 바르는 순서" description={<>제품마다 시간과 빈도를 정하고 순서를 맞춰주세요.<br/>저장하면 과거 루틴은 보존되고 새 경험이 시작됩니다.</>}/>
+      <PageHeading title="실제로 바르는 순서" description="제품마다 언제, 얼마나 자주 쓰는지 정리해요."/>
 
       <section className="mt-8" aria-labelledby="selected-products-title">
-        <div className="flex items-end justify-between gap-4"><div><h2 id="selected-products-title" className="section-title">사용할 제품</h2><p className="mt-1 text-xs text-muted">위에서 아래 순서로 사용해요.</p></div><span className="rounded-full bg-soft px-3 py-1.5 text-xs font-medium text-muted">{selected.length} / 12</span></div>
+        <div className="flex items-end justify-between gap-4"><div><p className="text-[11px] font-semibold text-[#7695c7]">위에서 아래 순서로 사용해요</p><h2 id="selected-products-title" className="mt-1 text-[20px] font-semibold tracking-[-.03em]">사용할 제품</h2></div><span className="pb-0.5 text-xs font-medium tabular-nums text-muted">{selected.length} / 12</span></div>
         {selected.length ? <div className="mt-4 space-y-3">{selected.map((id, index) => {
           const item = byId.get(id)
           const setting = settings[id] || { timeSlot: 'EVENING', frequency: '매일' }
-          return <article key={id} className="surface-card overflow-hidden p-0">
-            <div className="flex items-center gap-3 px-3.5 py-3"><span className="grid size-8 shrink-0 place-items-center rounded-full bg-ink text-xs font-medium text-white">{index + 1}</span><GripVertical size={16} className="shrink-0 text-muted"/><div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{displayName(item)}</p><p className="mt-0.5 text-xs text-muted">{category(item)}</p></div><div className="flex rounded-full bg-soft p-0.5"><button type="button" aria-label={`${displayName(item)} 위로 이동`} onClick={() => move(index, -1)} disabled={index === 0} className="grid size-8 place-items-center rounded-full transition hover:bg-white disabled:opacity-20"><ArrowUp size={14}/></button><button type="button" aria-label={`${displayName(item)} 아래로 이동`} onClick={() => move(index, 1)} disabled={index === selected.length - 1} className="grid size-8 place-items-center rounded-full transition hover:bg-white disabled:opacity-20"><ArrowDown size={14}/></button></div><button type="button" aria-label={`${displayName(item)} 제거`} onClick={() => setSelected(value => value.filter(x => x !== id))} className="grid size-9 place-items-center rounded-full text-lg text-muted transition hover:bg-soft">×</button></div>
-            <div className="grid grid-cols-2 gap-2 border-t border-line bg-[#fcfcfa] p-3"><label className="text-xs font-medium text-muted">사용 시간<select aria-label={`${displayName(item)} 사용 시간`} value={setting.timeSlot} onChange={event => setSettings(value => ({ ...value, [id]: { ...setting, timeSlot: event.target.value as RoutineItemInput['timeSlot'] } }))} className="mt-1.5 h-11 w-full rounded-xl border border-line bg-white px-3 text-xs font-medium text-ink outline-none focus:border-accent"><option value="MORNING">아침</option><option value="EVENING">저녁</option><option value="BOTH">아침·저녁</option></select></label><label className="text-xs font-medium text-muted">사용 빈도<select aria-label={`${displayName(item)} 사용 빈도`} value={setting.frequency} onChange={event => setSettings(value => ({ ...value, [id]: { ...setting, frequency: event.target.value } }))} className="mt-1.5 h-11 w-full rounded-xl border border-line bg-white px-3 text-xs font-medium text-ink outline-none focus:border-accent"><option>매일</option><option>주 2~3회</option><option>필요할 때</option></select></label></div>
+          return <article key={id} className="overflow-hidden rounded-[22px] border border-[#dce6f5] bg-white shadow-[0_5px_18px_rgba(55,78,119,.045)]">
+            <div className="flex min-h-[72px] items-center gap-3 px-3.5 py-3"><span className="grid size-8 shrink-0 place-items-center rounded-full bg-[#172033] text-[12px] font-semibold text-white">{index + 1}</span><div className="min-w-0 flex-1"><p className="truncate text-[15px] font-semibold tracking-[-.02em]">{displayName(item)}</p><p className="mt-0.5 text-[11px] text-[#8a929e]">{category(item)}</p></div><div className="flex shrink-0 items-center"><button type="button" aria-label={`${displayName(item)} 위로 이동`} onClick={() => move(index, -1)} disabled={index === 0} className="grid size-9 place-items-center rounded-full text-[#26354b] transition hover:bg-[#f3f5f8] active:scale-95 disabled:text-[#d3d8e0]"><ArrowUp size={16}/></button><button type="button" aria-label={`${displayName(item)} 아래로 이동`} onClick={() => move(index, 1)} disabled={index === selected.length - 1} className="grid size-9 place-items-center rounded-full text-[#26354b] transition hover:bg-[#f3f5f8] active:scale-95 disabled:text-[#d3d8e0]"><ArrowDown size={16}/></button><span className="ml-1 border-l border-[#e7e9ed] pl-1"><button type="button" aria-label={`${displayName(item)} 제거`} onClick={() => { setSelected(value => value.filter(x => x !== id)); if (settingPicker?.productId === id) setSettingPicker(null) }} className="grid size-9 place-items-center rounded-full text-[#7d8591] transition hover:bg-[#f3f5f8] active:scale-95"><X size={17}/></button></span></div></div>
+            <div className="grid grid-cols-2 gap-2.5 border-t border-[#dfe8f5] bg-[#f6f9ff] px-3.5 pb-3.5 pt-3">
+              <RoutineSettingButton label="사용 시간" value={timeSlotLabel(setting.timeSlot)} onClick={() => setSettingPicker({ productId: id, field: 'timeSlot' })}/>
+              <RoutineSettingButton label="사용 빈도" value={setting.frequency} onClick={() => setSettingPicker({ productId: id, field: 'frequency' })}/>
+            </div>
           </article>
         })}</div> : <div className="mt-4 rounded-[22px] border border-dashed border-line bg-[#fafbf8] px-5 py-8 text-center"><p className="text-sm font-medium">아래에서 사용할 제품을 골라주세요</p><p className="mt-1.5 text-xs leading-5 text-muted">제품 하나만으로도 경험을 시작할 수 있어요.</p></div>}
       </section>
 
-      <section className="mt-9" aria-labelledby="available-products-title"><div className="flex items-end justify-between"><h2 id="available-products-title" className="section-title">추가할 화장품</h2>{!canAdd && <span className="text-xs font-medium text-danger">최대 12개</span>}</div><div className="mt-4 space-y-2">{products.data.filter(item => !selected.includes(item.id)).map(item => <button type="button" key={item.id} disabled={!canAdd} onClick={() => { setSelected(value => [...value, item.id]); setSettings(value => ({ ...value, [item.id]: { timeSlot: 'EVENING', frequency: '매일' } })) }} className="interactive-card flex w-full items-center gap-3 rounded-[18px] border border-line bg-white p-3 text-left disabled:cursor-not-allowed disabled:opacity-45"><ProductGlyph category={category(item)} size="sm" src={item.product?.imageUrl}/><div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{displayName(item)}</p><p className="mt-0.5 text-xs text-muted">{category(item)}</p></div><span className="grid size-9 place-items-center rounded-full bg-accent-soft text-accent"><Plus size={17}/></span></button>)}</div><Link to="/explore?returnTo=%2Froutine%2Fedit" className="mt-4 flex min-h-11 items-center justify-center gap-1 text-xs font-medium text-accent">새 화장품 찾아보기 <ChevronRight size={14}/></Link>{save.error && <p role="alert" className="mt-4 text-sm text-danger">{save.error.message}</p>}</section>
+      <section className="mt-9" aria-labelledby="available-products-title"><div className="flex items-end justify-between"><h2 id="available-products-title" className="text-[20px] font-semibold tracking-[-.03em]">제품 더하기</h2>{!canAdd && <span className="text-xs font-medium text-danger">최대 12개</span>}</div><div className="mt-4 overflow-hidden rounded-[20px] border border-[#dce6f5] bg-[#f8faff]">
+        <button type="button" disabled={!products.data.length} onClick={() => setOwnedPickerOpen(true)} className="flex min-h-[72px] w-full items-center gap-3.5 px-4 text-left transition hover:bg-white active:bg-[#f1f6fd] disabled:opacity-45"><span className="grid size-10 shrink-0 place-items-center rounded-[14px] border border-white bg-[#edf3fc] text-[#5e7393]"><Plus size={18}/></span><span className="min-w-0 flex-1"><strong className="block text-[14px] font-semibold tracking-[-.02em]">내 화장품에서 선택</strong><span className="mt-1 block text-[11px] text-[#7f8b9c]">{availableCount ? `추가할 수 있는 제품 ${availableCount}개` : '모든 보유 제품을 담았어요'}</span></span><ChevronRight size={17} className="shrink-0 text-[#8190a6]"/></button>
+        <button type="button" onClick={() => setProductAddOpen(true)} className="flex min-h-[72px] w-full items-center gap-3.5 border-t border-[#dfe8f5] px-4 text-left transition hover:bg-white active:bg-[#f1f6fd]"><span className="grid size-10 shrink-0 place-items-center rounded-[14px] border border-white bg-[#eaf1fd] text-[#627ead]"><Sparkles size={18}/></span><span className="min-w-0 flex-1"><strong className="block text-[14px] font-semibold tracking-[-.02em]">새 화장품 찾기</strong><span className="mt-1 block text-[11px] text-[#7f8b9c]">AI 추천 또는 제품명으로 검색</span></span><ChevronRight size={17} className="shrink-0 text-[#788aa5]"/></button>
+      </div>{save.error && <p role="alert" className="mt-4 text-sm text-danger">{save.error.message}</p>}</section>
+      <p className="mt-7 text-center text-[11px] leading-5 text-[#8a929d]">저장하면 이전 루틴은 그대로 남고 새 경험이 시작돼요.</p>
     </div>
     <StickyActionBar><Button disabled={!selected.length || save.isPending} onClick={() => home.data?.currentExperience ? setConfirmChange(true) : save.mutate()} className="w-full">{save.isPending ? '저장하는 중…' : `이 순서로 새 경험 시작 (${selected.length})`}</Button></StickyActionBar>
     <BeforeChangeSheet open={confirmChange} title={home.data?.currentExperience?.title || '지금 사용 중인 조합'} pending={transitioning || save.isPending} error={earlyError} onClose={() => setConfirmChange(false)} onChoose={choice => finishAndSave(choice)} onSkip={() => finishAndSave()}/>
+    <RoutineSettingSheet picker={settingPicker} productName={settingPicker ? displayName(byId.get(settingPicker.productId)) : ''} currentValue={settingPicker ? settings[settingPicker.productId]?.[settingPicker.field] || (settingPicker.field === 'timeSlot' ? 'EVENING' : '매일') : ''} onClose={() => setSettingPicker(null)} onChoose={value => {
+      if (!settingPicker) return
+      updateSetting(settingPicker.productId, settingPicker.field === 'timeSlot' ? { timeSlot: value as RoutineItemInput['timeSlot'] } : { frequency: value })
+      setSettingPicker(null)
+    }}/>
+    <RoutineProductPickerSheet open={ownedPickerOpen} products={products.data} selected={selected} onClose={() => setOwnedPickerOpen(false)} onToggle={item => {
+      if (selected.includes(item.id)) {
+        setSelected(value => value.filter(id => id !== item.id))
+        return
+      }
+      if (!canAdd) return
+      setSelected(value => [...value, item.id])
+      setSettings(value => ({ ...value, [item.id]: value[item.id] || { timeSlot: 'EVENING', frequency: '매일' } }))
+    }}/>
+    <ProductAddSheet open={productAddOpen} onClose={() => setProductAddOpen(false)} onAi={() => {
+      setProductAddOpen(false)
+      navigate(startChatPath('RECOMMEND', '지금 편집 중인 루틴과 내 사용 경험을 바탕으로 추가로 살펴볼 제품 후보를 찾아줘.'))
+    }} onSearch={() => {
+      setProductAddOpen(false)
+      navigate(`/explore?returnTo=${encodeURIComponent('/routine/edit')}`)
+    }}/>
   </Screen>
+}
+
+function RoutineSettingButton({ label, value, onClick }: { label: string; value: string; onClick: () => void }) {
+  return <div><p className="mb-1.5 pl-2 text-[10px] font-medium text-[#809ac3]">{label}</p><button type="button" aria-haspopup="dialog" onClick={onClick} className="flex min-h-12 w-full items-center justify-between rounded-full border border-[#cbdcf4] bg-white px-4 text-[13px] font-semibold text-[#1d2939] shadow-[0_2px_8px_rgba(65,94,142,.035)] transition hover:border-[#adc4e7] active:scale-[.985]">{value}<ChevronDown size={16} className="text-[#607696]"/></button></div>
+}
+
+function RoutineProductPickerSheet({ open, products, selected, onClose, onToggle }: { open: boolean; products: UserProduct[]; selected: number[]; onClose: () => void; onToggle: (item: UserProduct) => void }) {
+  const atLimit = selected.length >= 12
+  return <BottomSheet open={open} onClose={onClose} title="루틴에 제품 추가">
+    <div className="flex items-center justify-between gap-4"><p className="text-xs text-[#7c8592]">내 화장품에서 여러 개를 고를 수 있어요.</p><span className="shrink-0 text-xs font-semibold tabular-nums text-[#60718a]">{selected.length} / 12</span></div>
+    <div className="hide-scrollbar -mx-1 mt-4 max-h-[46svh] space-y-2 overflow-y-auto px-1 pb-1">{products.map(item => {
+      const checked = selected.includes(item.id)
+      const disabled = atLimit && !checked
+      return <button type="button" role="checkbox" aria-checked={checked} disabled={disabled} key={item.id} onClick={() => onToggle(item)} className={`flex min-h-[70px] w-full items-center gap-3 rounded-[18px] border px-3 text-left transition disabled:opacity-35 ${checked ? 'border-[#afc3e3] bg-[#f3f7ff]' : 'border-[#e3e7ec] bg-white hover:bg-[#fafbfd]'}`}><ProductGlyph category={category(item)} size="sm" src={item.product?.imageUrl}/><span className="min-w-0 flex-1"><strong className="block truncate text-[14px] font-semibold tracking-[-.02em]">{displayName(item)}</strong><span className="mt-0.5 block text-[11px] text-[#858d98]">{category(item)}</span></span><span className={`grid size-7 shrink-0 place-items-center rounded-full border ${checked ? 'border-[#718db9] bg-[#718db9] text-white' : 'border-[#d2d8e0] bg-white text-[#748094]'}`}>{checked ? <Check size={15}/> : <Plus size={15}/>}</span></button>
+    })}</div>
+    <Button onClick={onClose} className="mt-4 w-full">선택 완료 · {selected.length}개</Button>
+  </BottomSheet>
+}
+
+function RoutineSettingSheet({ picker, productName, currentValue, onClose, onChoose }: { picker: { field: 'timeSlot' | 'frequency' } | null; productName: string; currentValue: string; onClose: () => void; onChoose: (value: string) => void }) {
+  const options = picker?.field === 'timeSlot'
+    ? [
+        { value: 'MORNING', label: '아침', description: '아침 루틴에 사용해요' },
+        { value: 'EVENING', label: '저녁', description: '저녁 루틴에 사용해요' },
+        { value: 'BOTH', label: '아침 · 저녁', description: '두 루틴에 모두 사용해요' },
+      ]
+    : [
+        { value: '매일', label: '매일', description: '매일 같은 순서로 사용해요' },
+        { value: '주 2~3회', label: '주 2~3회', description: '간격을 두고 사용해요' },
+        { value: '필요할 때', label: '필요할 때', description: '정해진 주기 없이 사용해요' },
+      ]
+  return <BottomSheet open={Boolean(picker)} onClose={onClose} title={picker?.field === 'timeSlot' ? '언제 사용하나요?' : '얼마나 자주 사용하나요?'}>
+    <p className="-mt-2 truncate text-xs font-medium text-[#7c8796]">{productName}</p>
+    <div role="radiogroup" aria-label={picker?.field === 'timeSlot' ? '사용 시간' : '사용 빈도'} className="mt-5 overflow-hidden rounded-[20px] border border-[#dfe5ee]">{options.map((option, index) => {
+      const selected = currentValue === option.value
+      return <button type="button" role="radio" aria-checked={selected} key={option.value} onClick={() => onChoose(option.value)} className={`flex min-h-[68px] w-full items-center gap-3 px-4 text-left transition ${index ? 'border-t border-[#e5e9ef]' : ''} ${selected ? 'bg-[#f3f7ff]' : 'bg-white hover:bg-[#fafbfd]'}`}><span className={`grid size-6 shrink-0 place-items-center rounded-full border ${selected ? 'border-[#7895c3] bg-white' : 'border-[#cfd5de]'}`}>{selected && <span className="size-2.5 rounded-full bg-[#627ead]"/>}</span><span className="min-w-0 flex-1"><strong className="block text-[15px] font-semibold tracking-[-.02em]">{option.label}</strong><span className="mt-0.5 block text-[11px] text-[#7b8491]">{option.description}</span></span>{selected && <Check size={18} className="text-[#627ead]"/>}</button>
+    })}</div>
+    <p className="mt-4 text-center text-[10px] leading-4 text-[#9198a3]">선택하면 바로 편집안에 반영돼요.</p>
+  </BottomSheet>
+}
+
+function timeSlotLabel(value: RoutineItemInput['timeSlot']) {
+  return value === 'MORNING' ? '아침' : value === 'BOTH' ? '아침 · 저녁' : '저녁'
 }
 
 function displayName(item?: UserProduct) { return item?.product?.name || item?.customName || '제품' }

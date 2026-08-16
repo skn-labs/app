@@ -187,6 +187,16 @@ video:not([controls])::-webkit-media-controls { display: none !important; }
 
 @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes slide-in { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes notification-page-in {
+  from {
+    transform: translate3d(100%, 0, 0);
+    box-shadow: -24px 0 56px rgba(20, 30, 48, .18);
+  }
+  to {
+    transform: translate3d(0, 0, 0);
+    box-shadow: 0 0 0 rgba(20, 30, 48, 0);
+  }
+}
 @keyframes onboard-forward { from { opacity: 0; transform: translateX(14px); } to { opacity: 1; transform: translateX(0); } }
 @keyframes onboard-back { from { opacity: 0; transform: translateX(-14px); } to { opacity: 1; transform: translateX(0); } }
 @keyframes onboard-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
@@ -196,6 +206,7 @@ video:not([controls])::-webkit-media-controls { display: none !important; }
 @keyframes onboard-scan { 0% { transform: translateY(-105%); } 60%, 100% { transform: translateY(105%); } }
 .animate-rise { animation: rise .28s ease-out both; }
 .animate-slide-in { animation: slide-in .24s cubic-bezier(.2,.75,.2,1) both; }
+.animate-notification-page-in { animation: notification-page-in .4s cubic-bezier(.22, 1, .36, 1) both; }
 .animate-onboard-forward { animation: onboard-forward .3s cubic-bezier(.2,.75,.2,1) both; }
 .animate-onboard-back { animation: onboard-back .3s cubic-bezier(.2,.75,.2,1) both; }
 .onboard-float { transform-box: fill-box; transform-origin: center; animation: onboard-float 3.4s ease-in-out infinite; }
@@ -215,6 +226,6 @@ video:not([controls])::-webkit-media-controls { display: none !important; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .animate-rise, .animate-slide-in, .animate-onboard-forward, .animate-onboard-back, .onboard-float, .onboard-draw, .onboard-pop, .onboard-pulse, .onboard-scan { animation: none !important; }
+  .animate-rise, .animate-slide-in, .animate-notification-page-in, .animate-onboard-forward, .animate-onboard-back, .onboard-float, .onboard-draw, .onboard-pop, .onboard-pulse, .onboard-scan { animation: none !important; }
   .onboard-draw { stroke-dashoffset: 0; }
 }

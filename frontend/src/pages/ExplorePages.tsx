@@ -36,7 +36,7 @@ export function ExplorePage() {
       queryClient.invalidateQueries({ queryKey: ['product-pages'] })
       queryClient.invalidateQueries({ queryKey: ['home'] })
       setCustomOpen(false)
-      navigate(`/my-products/${item.id}`)
+      navigate(returnTo || `/my-products/${item.id}`)
     },
   })
   const openCustomProduct = () => {
