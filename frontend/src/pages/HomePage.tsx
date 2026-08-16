@@ -1,22 +1,27 @@
 import { useEffect, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { ArrowRight, Check, ChevronRight, Search, Sparkles, X } from 'lucide-react'
+import { ArrowRight, ChevronRight, Search, Sparkles, X } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { api } from '../lib/api'
 import { startChatPath } from '../lib/chat'
 import type { Home, Pattern } from '../lib/types'
-import { AppHeader, Card, ErrorState, Loading, Screen } from '../components/ui'
+import { AppHeader, BottomSheet, ErrorState, Loading, Screen } from '../components/ui'
 import { ProductAddSheet } from '../components/ProductAddSheet'
 import heroWave from '../assets/figma/hero-wave.webp'
-import insightWave1 from '../assets/figma/insight-wave-1.svg'
-import insightWave2 from '../assets/figma/insight-wave-2.svg'
-
-const insightWaves = [insightWave1, insightWave2]
+const insightGraphPresets = [
+  'M112 122 L148 108 L184 110 L220 91 L255 89 L292 56 L350 34',
+  'M110 116 L146 117 L182 92 L218 98 L253 71 L292 77 L350 47',
+  'M115 124 L151 102 L187 106 L223 79 L258 85 L296 51 L350 58',
+  'M109 112 L146 116 L182 87 L219 93 L255 62 L294 68 L350 38',
+  'M111 121 L148 97 L185 102 L222 81 L258 87 L297 53 L350 27',
+  'M108 115 L145 113 L181 90 L218 96 L254 67 L293 73 L350 43',
+]
 
 export function HomePage() {
   const navigate = useNavigate()
   const [endOpen, setEndOpen] = useState(false)
   const [productAddOpen, setProductAddOpen] = useState(false)
+  const [selectedInsight, setSelectedInsight] = useState<Pattern | null>(null)
   const home = useQuery({ queryKey: ['home'], queryFn: api.home })
 
   if (home.isPending) return <Screen><AppHeader/><Loading/></Screen>
@@ -48,11 +53,10 @@ export function HomePage() {
       </section>
 
       <section className="mt-10" aria-labelledby="home-insight-title">
-        <h2 id="home-insight-title" className="text-lg font-medium tracking-[-.02em]">MY INSIGHT</h2>
-        <p className="mt-1 text-xs leading-5 text-[#636366]">최근 기록을 비교해, 반복된 경험만 연결해요.</p>
-        {data.patterns.length ? <div className="mt-4 space-y-3">{data.patterns.slice(0, 2).map((pattern, index) => <InsightCard key={pattern.id} pattern={pattern} wave={insightWaves[index % insightWaves.length]}/>)}</div>
-          : <Card className="mt-4 border-0 bg-[#f5f8ff] px-5 py-6 text-left"><span className="inline-flex items-center gap-1 rounded-full bg-[#e4edff] px-3 py-1 text-xs font-medium text-[#566482]"><Check size={12}/>기록을 기다리는 중</span><p className="mt-4 text-base font-medium">두 번째 경험부터 서로 비교해요</p><p className="mt-1.5 text-xs leading-5 text-[#777d88]">좋았던 점과 아쉬웠던 점이 쌓이면<br/>근거가 있는 반복만 이곳에 나타나요.</p></Card>}
-        {data.patterns.length > 0 && <Link to="/records" className="mt-3 flex items-center justify-end gap-1 text-xs font-medium text-[#3a3a3c]">더보기<ChevronRight size={13}/></Link>}
+        <div className="flex items-end justify-between gap-4"><div><h2 id="home-insight-title" className="text-lg font-semibold tracking-[-.025em]">MY INSIGHT</h2><p className="mt-1 text-[11px] leading-5 text-[#747b86]">최근 기록을 비교해, 반복된 경험만 연결해요.</p></div>{data.patterns.length > 0 && <Link to="/records" className="shrink-0 pb-0.5 text-[11px] font-semibold text-[#667085]">전체 보기</Link>}</div>
+        {data.patterns.length
+          ? <div className="hide-scrollbar -mx-5 mt-4 flex snap-x snap-mandatory gap-2.5 overflow-x-auto px-5 pb-1" aria-label="최근 인사이트">{data.patterns.slice(0, 3).map(pattern => <InsightCard key={pattern.id} pattern={pattern} peek={data.patterns.length > 1} onOpen={() => setSelectedInsight(pattern)}/>)}</div>
+          : <EmptyInsightCard recordCount={data.recordCount} href={experience ? `/experiences/${experience.id}/record` : data.productCount ? '/routine/edit' : '/explore'}/>}
       </section>
 
       <ProfilePreview recordCount={data.recordCount} patterns={data.patterns}/>
@@ -79,6 +83,7 @@ export function HomePage() {
         navigate('/explore')
       }}
     />
+    <InsightEvidenceSheet pattern={selectedInsight} onClose={() => setSelectedInsight(null)}/>
   </Screen>
 }
 
@@ -118,12 +123,70 @@ function EmptyExperienceCard({ productCount }: { productCount: number }) {
   </section>
 }
 
-function InsightCard({ pattern, wave }: { pattern: Pattern; wave: string }) {
-  const records = pattern.supportingCount + pattern.contradictingCount
-  return <Link to={`/patterns/${pattern.id}`} className="relative block min-h-[128px] overflow-hidden rounded-[22px] bg-[#f5f8ff] px-5 py-4 transition active:scale-[.99]">
-    <img src={wave} alt="" aria-hidden className="absolute inset-0 size-full object-cover"/>
-    <div className="relative flex min-h-[96px] flex-col items-start"><span className="rounded-full bg-[#dce8ff]/75 px-3 py-1 text-xs font-medium">기록 {records}건</span><p className="mt-auto max-w-[86%] text-lg font-medium leading-[1.35] tracking-[-.02em]">{pattern.title}</p></div>
-  </Link>
+function InsightCard({ pattern, peek, onOpen }: { pattern: Pattern; peek: boolean; onOpen: () => void }) {
+  const graph = insightGraph(pattern)
+  return <button type="button" onClick={onOpen} aria-label={`${pattern.title}, 근거와 함께 보기`} className={`relative min-h-[136px] snap-center overflow-hidden rounded-[23px] bg-[#f5f8ff] px-5 py-4 text-left transition active:scale-[.99] ${peek ? 'w-[94%] shrink-0' : 'w-full'}`}>
+    <svg viewBox="0 0 350 136" preserveAspectRatio="none" aria-hidden="true" className="pointer-events-none absolute inset-0 size-full">
+      <path d={`${graph} L350 136 L108 136 Z`} fill="rgba(216,231,255,.56)"/>
+      <path d={graph} fill="none" stroke="#c9dcff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke"/>
+    </svg>
+    <span className="relative inline-flex h-7 items-center gap-0.5 rounded-full bg-white/80 px-3 text-[10px] font-semibold tracking-[-.01em] text-[#637594] shadow-[inset_0_0_0_1px_rgba(204,218,240,.82)]">근거와 함께 보기<ChevronRight size={12}/></span>
+    <span className="relative mt-8 block max-w-[285px] text-[17px] font-semibold leading-[1.38] tracking-[-.025em] [text-wrap:balance]">{pattern.title}</span>
+  </button>
+}
+
+function EmptyInsightCard({ recordCount, href }: { recordCount: number; href: string }) {
+  const reason = recordCount === 0
+    ? '아직 비교할 경험이 없어요. 첫 경험을 남기면 다음 기록부터 서로 살펴봐요.'
+    : recordCount === 1
+      ? '아직 비교할 비슷한 경험이 1개뿐이에요. 하나 더 쌓이면 반복된 흐름을 보여드려요.'
+      : '아직 서로 비슷한 경험이 충분하지 않아요. 같은 제품이나 루틴의 느낌을 이어서 남겨보세요.'
+  return <div className="mt-4">
+    <Link to={href} className="relative block min-h-[136px] overflow-hidden rounded-[23px] bg-[#f5f8ff] px-5 py-4 transition active:scale-[.99]">
+      <svg viewBox="0 0 350 136" preserveAspectRatio="none" aria-hidden="true" className="pointer-events-none absolute inset-0 size-full">
+        <path d="M112 122 L158 109 L202 110" fill="none" stroke="#b9d0f6" strokeWidth="3" strokeLinecap="round" vectorEffect="non-scaling-stroke"/>
+        <path d="M202 110 L248 84 L294 78 L350 46" fill="none" stroke="#cddbf1" strokeWidth="2" strokeDasharray="6 7" strokeLinecap="round" vectorEffect="non-scaling-stroke"/>
+        <circle cx="202" cy="110" r="4" fill="#fff" stroke="#87a6d9" strokeWidth="2" vectorEffect="non-scaling-stroke"/>
+      </svg>
+      <span className="relative inline-flex h-7 items-center gap-0.5 rounded-full bg-white/80 px-3 text-[10px] font-semibold tracking-[-.01em] text-[#637594] shadow-[inset_0_0_0_1px_rgba(204,218,240,.82)]">새 경험 남기기<ChevronRight size={12}/></span>
+      <span className="relative mt-8 block max-w-[250px] text-[17px] font-semibold leading-[1.38] tracking-[-.025em]">두 번째 경험부터<br/>서로 비교해요</span>
+    </Link>
+    <p className="mt-2.5 px-1 text-[10px] leading-[1.55] text-[#7c8491]">{reason}</p>
+  </div>
+}
+
+function InsightEvidenceSheet({ pattern, onClose }: { pattern: Pattern | null; onClose: () => void }) {
+  if (!pattern) return null
+  const visibleEvidence = [
+    ...pattern.evidence.filter(item => item.polarity === 'SUPPORTS').slice(0, 1),
+    ...pattern.evidence.filter(item => item.polarity === 'CONTRADICTS').slice(0, 1),
+  ]
+  return <BottomSheet open onClose={onClose} title="인사이트 근거">
+    <h3 className="max-w-[315px] text-[20px] font-semibold leading-[1.38] tracking-[-.035em] [text-wrap:balance]">{pattern.title}</h3>
+    <p className="mt-2.5 text-[12px] leading-5 text-[#697382]">{pattern.summary}</p>
+    <p className="mt-4 text-[10px] font-semibold text-[#697382]">같은 방향의 기록 {pattern.supportingCount} · 다른 기록 {pattern.contradictingCount}</p>
+    <section className="mt-5 border-t border-[#dfe4eb]" aria-labelledby="home-insight-evidence-title">
+      <h4 id="home-insight-evidence-title" className="pb-1 pt-4 text-[10px] font-semibold text-[#747d8a]">연결된 기록</h4>
+      {visibleEvidence.length ? visibleEvidence.map(item => <article key={item.recordId} className="border-b border-[#e4e8ee] py-3.5">
+        <div className="flex items-center justify-between gap-3"><p className="text-[9px] font-semibold text-[#7b8799]">{item.polarity === 'SUPPORTS' ? '같은 방향의 기록' : '다르게 느낀 기록'}</p><time className="text-[9px] text-[#939aa5]">{formatInsightDate(item.createdAt)}</time></div>
+        <p className="mt-1.5 text-[12px] font-medium leading-[1.55] tracking-[-.015em]">“{item.note}”</p>
+        <p className="mt-1 text-[9px] text-[#858d99]">{item.productName}</p>
+      </article>) : <p className="border-b border-[#e4e8ee] py-4 text-[11px] leading-5 text-[#7c8491]">원본 기록은 상세 화면에서 확인할 수 있어요.</p>}
+    </section>
+    <Link to={`/patterns/${pattern.id}`} onClick={onClose} className="mt-1 flex min-h-12 items-center justify-between border-b border-[#e1e5eb] text-[12px] font-semibold">연결된 기록 모두 보기<ChevronRight size={17} className="text-[#747d8b]"/></Link>
+    <p className="mt-3 text-[9px] leading-4 text-[#8a919b]">현재 기록에서 보인 흐름이며 피부 타입이나 원인 판정이 아니에요.</p>
+  </BottomSheet>
+}
+
+function insightGraph(pattern: Pattern) {
+  const titleHash = Array.from(pattern.title).reduce((sum, character) => sum + (character.codePointAt(0) || 0), 0)
+  return insightGraphPresets[Math.abs(pattern.id * 31 + titleHash) % insightGraphPresets.length]
+}
+
+function formatInsightDate(value: string) {
+  const normalized = /Z$|[+-]\d\d:\d\d$/.test(value) ? value : `${value.replace(' ', 'T')}Z`
+  const date = new Date(normalized)
+  return Number.isNaN(date.getTime()) ? value.slice(0, 10) : new Intl.DateTimeFormat('ko-KR', { month: 'short', day: 'numeric' }).format(date)
 }
 
 const hexPoint = (index: number, radius: number) => {

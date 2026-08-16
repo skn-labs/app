@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#fbfcff" />
+    <title>SKN 홈 · MY INSIGHT 개선 시안</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --paper: #fbfcff;
+        --ink: #101217;
+        --muted: #727986;
+        --line: #dce5f4;
+        --card: #f5f8ff;
+        --blue: #c9dcff;
+        --blue-strong: #6f8fc8;
+        --counter: #a77552;
+        font-family: Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+      }
+
+      * { box-sizing: border-box; }
+      body { margin: 0; background: var(--paper); color: var(--ink); }
+      button, a { color: inherit; font: inherit; }
+      button { border: 0; }
+
+      .page-head {
+        padding: 56px max(22px, calc((100vw - 930px) / 2)) 34px;
+        border-bottom: 1px solid var(--line);
+        background: radial-gradient(circle at 82% 8%, rgba(207, 222, 250, .72), transparent 30%), var(--paper);
+      }
+      .eyebrow { margin: 0; color: #667fa9; font-size: 10px; font-weight: 700; letter-spacing: .14em; }
+      h1 { margin: 12px 0 0; font-size: clamp(34px, 5vw, 54px); font-weight: 650; line-height: 1.08; letter-spacing: -.055em; }
+      .intro { max-width: 650px; margin: 17px 0 0; color: var(--muted); font-size: 13px; line-height: 1.7; word-break: keep-all; }
+      .rules { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 19px; }
+      .rules span { padding: 7px 10px; border: 1px solid #d8e3f5; border-radius: 999px; background: rgba(255,255,255,.72); color: #62718a; font-size: 10px; }
+
+      main { display: grid; width: min(930px, calc(100% - 28px)); grid-template-columns: 390px 1fr; gap: 42px; align-items: start; margin: 0 auto; padding: 34px 0 80px; }
+      .phone { position: relative; width: 390px; height: 720px; overflow: hidden; border: 1px solid #d8e2f1; border-radius: 38px; background: #fff; box-shadow: 0 24px 68px rgba(45, 67, 106, .13); }
+      .phone-bar { display: flex; min-height: 52px; align-items: center; justify-content: space-between; padding: 0 18px; border-bottom: 1px solid #e7edf7; background: #fbfcff; font-size: 10px; font-weight: 650; }
+      .phone-bar span:last-child { color: #7e899b; font-weight: 550; }
+      .home { height: calc(100% - 52px); overflow-y: auto; padding: 24px 20px 34px; background: #fff; }
+      .home-context { height: 64px; border-radius: 20px; background: linear-gradient(100deg, #f2f4f8 38%, #f8f9fb 38%); opacity: .72; }
+      .insight-section { margin-top: 34px; }
+      .section-head h2 { margin: 0; font-size: 18px; font-weight: 650; letter-spacing: -.025em; }
+      .section-head p { margin: 3px 0 0; color: #747b86; font-size: 11px; line-height: 1.5; }
+
+      .carousel { width: calc(100% + 40px); margin: 15px -20px 0; overflow-x: auto; padding: 0 20px 8px; scroll-snap-type: x mandatory; scrollbar-width: none; }
+      .carousel::-webkit-scrollbar { display: none; }
+      .track { display: flex; gap: 10px; }
+      .insight-card {
+        position: relative;
+        width: 350px;
+        min-width: 350px;
+        min-height: 132px;
+        overflow: hidden;
+        padding: 20px;
+        border-radius: 23px;
+        background: var(--card);
+        text-align: left;
+        scroll-snap-align: center;
+        transition: transform 160ms ease, box-shadow 180ms ease;
+      }
+      .insight-card:active { transform: scale(.992); }
+      .insight-card:focus-visible { outline: 2px solid #617fbb; outline-offset: 2px; }
+      .card-title { position: relative; z-index: 2; display: block; width: var(--title-width, 255px); max-width: 100%; margin-top: 45px; font-size: 17px; font-weight: 650; line-height: 1.38; letter-spacing: -.025em; word-break: keep-all; }
+      .card-hint { position: absolute; z-index: 2; top: 16px; left: 18px; display: inline-flex; min-height: 27px; align-items: center; gap: 4px; padding: 0 10px; border-radius: 999px; background: rgba(255,255,255,.78); color: #637594; font-size: 10px; font-weight: 650; letter-spacing: -.01em; box-shadow: inset 0 0 0 1px rgba(204,218,240,.82); backdrop-filter: blur(6px); }
+      .card-hint::after { content: "›"; font-size: 13px; line-height: 1; }
+
+      .graph { position: absolute; z-index: 1; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+      .graph .area { fill: rgba(216, 231, 255, .56); stroke: none; }
+      .graph .line { fill: none; stroke: var(--blue); stroke-linecap: round; stroke-linejoin: round; stroke-width: 3; vector-effect: non-scaling-stroke; }
+      .empty-card .graph .known { fill: none; stroke: #b9d0f6; stroke-linecap: round; stroke-width: 3; vector-effect: non-scaling-stroke; }
+      .empty-card .graph .future { fill: none; stroke: #cddbf1; stroke-dasharray: 6 7; stroke-linecap: round; stroke-width: 2; vector-effect: non-scaling-stroke; }
+      .empty-card .graph circle { fill: #fff; stroke: #87a6d9; stroke-width: 2; vector-effect: non-scaling-stroke; }
+      .empty-card .card-title { width: 245px; }
+
+      .carousel-meta { display: flex; align-items: center; justify-content: space-between; min-height: 28px; margin-top: 3px; }
+      .dots { display: flex; gap: 5px; }
+      .dot { width: 6px; height: 6px; padding: 0; border-radius: 999px; background: #d4dce9; transition: width 180ms ease, background 180ms ease; }
+      .dot.active { width: 16px; background: #718fc2; }
+      .swipe-hint { color: #929aa7; font-size: 9px; }
+      .bottom-context { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-top: 31px; }
+      .bottom-context span { height: 76px; border-radius: 19px; background: #f4f6f9; }
+
+      .sheet-layer { position: absolute; z-index: 20; inset: 0; display: flex; align-items: flex-end; background: rgba(18, 25, 38, .3); opacity: 0; pointer-events: none; transition: opacity 200ms ease; backdrop-filter: blur(2px); }
+      .sheet-layer.open { opacity: 1; pointer-events: auto; }
+      .sheet { width: 100%; max-height: 88%; overflow-y: auto; padding: 9px 22px 25px; border-radius: 26px 26px 0 0; background: #fff; box-shadow: 0 -18px 54px rgba(34, 49, 76, .16); transform: translateY(22px); transition: transform 260ms cubic-bezier(.2,.8,.2,1); }
+      .sheet-layer.open .sheet { transform: translateY(0); }
+      .grabber { width: 38px; height: 4px; margin: 0 auto 17px; border-radius: 999px; background: #d9dde5; }
+      .sheet-top { display: flex; align-items: start; justify-content: space-between; gap: 12px; }
+      .sheet-label { margin: 0; color: #7a8391; font-size: 10px; font-weight: 600; letter-spacing: -.005em; }
+      .close { display: grid; width: 30px; height: 30px; flex: 0 0 auto; place-items: center; background: transparent; color: #747c88; font-size: 20px; font-weight: 400; }
+      .sheet h3 { max-width: 305px; margin: 9px 0 0; font-size: 21px; font-weight: 650; line-height: 1.34; letter-spacing: -.035em; word-break: keep-all; }
+      .sheet-summary { margin: 10px 0 0; color: #6c7584; font-size: 11px; line-height: 1.65; word-break: keep-all; }
+      .evidence-row { display: flex; align-items: center; gap: 7px; margin-top: 15px; color: #697382; font-size: 10px; }
+      .evidence { font-weight: 650; }
+      .evidence.counter::before { margin-right: 7px; color: #b6bbc3; content: "·"; font-weight: 400; }
+      .sources { margin-top: 23px; border-top: 1px solid #dde2e9; }
+      .sources::before { display: block; padding: 14px 0 5px; color: #747d8a; content: "연결된 기록"; font-size: 10px; font-weight: 650; }
+      .source { display: block; min-height: 68px; padding: 11px 2px; border-bottom: 1px solid #e4e8ee; }
+      .source-icon { display: block; margin-bottom: 5px; color: #7b8799; font-size: 9px; font-weight: 600; }
+      .source .source-icon { margin-top: 0; }
+      .source .source-icon .source-title { display: inline; margin: 0; color: inherit; font-size: inherit; }
+      .source b { display: block; font-size: 12px; font-weight: 550; line-height: 1.55; letter-spacing: -.015em; }
+      .source span { display: block; margin-top: 3px; color: #858d99; font-size: 9px; }
+      .source em { display: none; }
+      .source.hidden { display: none; }
+      .sheet-action { display: flex; width: 100%; min-height: 44px; align-items: center; justify-content: space-between; margin-top: 7px; border-bottom: 1px solid #e1e5eb; background: transparent; font-size: 11px; font-weight: 650; letter-spacing: -.01em; }
+      .sheet-action::after { content: "›"; color: #747d8b; font-size: 16px; font-weight: 400; }
+      .secondary-action { display: block; margin: 14px 0 0; background: transparent; color: #858c97; font-size: 10px; font-weight: 550; text-decoration: underline; text-decoration-color: #ccd0d6; text-underline-offset: 3px; }
+
+      .note { grid-column: 1 / -1; padding-top: 12px; }
+      .note small { color: #6981aa; font-size: 10px; font-weight: 700; letter-spacing: .12em; }
+      .note h2 { margin: 9px 0 0; font-size: 27px; font-weight: 650; line-height: 1.18; letter-spacing: -.04em; }
+      .note > p { margin: 14px 0 0; color: var(--muted); font-size: 12px; line-height: 1.7; word-break: keep-all; }
+      .decision-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 24px; }
+      .decision { display: grid; grid-template-columns: 28px 1fr; gap: 11px; padding: 14px; border: 1px solid #dce5f4; border-radius: 17px; background: #fff; }
+      .decision i { display: grid; width: 28px; height: 28px; place-items: center; border-radius: 9px; background: #edf3ff; color: #5872a0; font-size: 10px; font-style: normal; font-weight: 700; }
+      .decision b { display: block; font-size: 11px; font-weight: 650; }
+      .decision p { margin: 3px 0 0; color: #747d8d; font-size: 10px; line-height: 1.55; }
+      .demo-hint { margin-top: 20px; padding: 13px 14px; border-radius: 16px; background: #15181e; color: #fff; font-size: 11px; font-weight: 600; }
+
+      @media (max-width: 760px) {
+        main { width: min(390px, calc(100% - 20px)); grid-template-columns: 1fr; gap: 26px; }
+        .page-head { padding-top: 44px; }
+        .phone { width: 100%; border-radius: 32px; }
+        .insight-card { width: calc(100vw - 50px); min-width: calc(100vw - 50px); max-width: 350px; }
+        .note { padding-top: 0; }
+        .decision-list { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+        .decision { display: block; padding: 10px; }
+        .decision i { margin-bottom: 8px; }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="page-head">
+      <p class="eyebrow">SKN · MY INSIGHT PROTOTYPE V2</p>
+      <h1>Simple card,<br />focused evidence.</h1>
+      <p class="intro">카드는 한 문장을 읽는 역할만 맡기고, 근거는 별도의 바텀시트에서 확인합니다. 이렇게 하면 기존 카드의 심플한 맛과 제품의 근거 투명성을 둘 다 지킬 수 있습니다.</p>
+      <div class="rules"><span>카드 안 배지 없음</span><span>17px · 650 제목</span><span>한 장씩 스와이프</span><span>근거는 바텀시트</span></div>
+    </header>
+
+    <main>
+      <section class="phone" aria-label="MY INSIGHT 빈 상태 모바일 프로토타입">
+        <div class="phone-bar"><span>인사이트가 아직 없을 때</span><span>EMPTY STATE</span></div>
+        <div class="home">
+          <div class="home-context" aria-hidden="true"></div>
+          <section class="insight-section">
+            <div class="section-head"><h2>MY INSIGHT</h2><p>최근 기록을 비교해, 반복된 경험만 연결해요.</p></div>
+            <div class="carousel">
+              <div class="track">
+                <button class="insight-card empty-card" type="button">
+                  <span class="card-hint">새 경험 남기기</span>
+                  <svg class="graph" viewBox="0 0 350 132" preserveAspectRatio="none" aria-hidden="true">
+                    <path class="known" d="M116 115 L160 103 L202 104"/>
+                    <path class="future" d="M202 104 L248 79 L294 74 L350 43"/>
+                    <circle cx="202" cy="104" r="4"/>
+                  </svg>
+                  <span class="card-title">두 번째 경험부터<br />서로 비교해요</span>
+                </button>
+              </div>
+            </div>
+            <div class="carousel-meta"><span class="swipe-hint">아직 비교할 비슷한 경험이 1개뿐이에요. 하나 더 쌓이면 반복된 흐름을 보여드려요.</span></div>
+          </section>
+          <div class="bottom-context" aria-hidden="true"><span></span><span></span></div>
+        </div>
+      </section>
+
+      <section class="phone" aria-label="MY INSIGHT 모바일 프로토타입">
+        <div class="phone-bar"><span>인사이트가 형성됐을 때</span><span>카드를 눌러보세요</span></div>
+        <div class="home">
+          <div class="home-context" aria-hidden="true"></div>
+          <section class="insight-section">
+            <div class="section-head"><h2>MY INSIGHT</h2><p>최근 기록을 비교해, 반복된 경험만 연결해요.</p></div>
+            <div class="carousel formed-carousel">
+              <div class="track">
+                <button class="insight-card" type="button" aria-haspopup="dialog" data-title="가벼운 제품을 아침에 썼을 때 만족도가 높았어요" data-summary="서로 다른 세 제품의 아침 기록에서 비슷한 표현이 반복됐어요. 한 번은 보습감이 더 필요하다고 느꼈어요." data-support="3" data-counter="1" data-source="수분 세럼 · 아침 루틴" data-same-quote="“산뜻하게 마무리돼서 아침에 편했어요.”" data-different-quote="“오후에는 보습감이 조금 부족했어요.”">
+                  <span class="card-hint">근거와 함께 보기</span><svg class="graph" viewBox="0 0 350 132" preserveAspectRatio="none" aria-hidden="true"><path class="area"/><path class="line"/></svg><span class="card-title" style="--title-width:246px">가벼운 제품을 아침에 썼을 때 만족도가 높았어요</span>
+                </button>
+                <button class="insight-card" type="button" aria-haspopup="dialog" data-title="저녁에는 보습 단계를 길게 쓴 날이 편했어요" data-summary="저녁 루틴 네 번에서 보습 단계를 두 개 이상 사용했고, 모두 편안했다는 기록이 연결됐어요." data-support="4" data-counter="0" data-source="토너 · 세럼 · 크림 루틴" data-same-quote="“보습 단계를 더한 날은 당김이 덜했어요.”" data-different-quote="">
+                  <span class="card-hint">근거와 함께 보기</span><svg class="graph" viewBox="0 0 350 132" preserveAspectRatio="none" aria-hidden="true"><path class="area"/><path class="line"/></svg><span class="card-title" style="--title-width:272px">저녁에는 보습 단계를 길게 쓴 날이 편했어요</span>
+                </button>
+                <button class="insight-card" type="button" aria-haspopup="dialog" data-title="향이 오래 남았을 때 아쉽다는 표현이 반복됐어요" data-summary="향이 오래 남은 두 경험에서는 아쉬움을 남겼지만, 짧게 느껴진 한 제품은 만족스럽게 기록했어요." data-support="2" data-counter="1" data-source="에센스 · 크림 사용 기록" data-same-quote="“향이 오래 남아서 조금 아쉬웠어요.”" data-different-quote="“이 제품의 은은한 향은 괜찮았어요.”">
+                  <span class="card-hint">근거와 함께 보기</span><svg class="graph" viewBox="0 0 350 132" preserveAspectRatio="none" aria-hidden="true"><path class="area"/><path class="line"/></svg><span class="card-title" style="--title-width:205px">향이 오래 남았을 때 아쉽다는 표현이 반복됐어요</span>
+                </button>
+              </div>
+            </div>
+            <div class="carousel-meta"><div class="dots" aria-label="인사이트 선택"><button class="dot active" type="button" aria-label="첫 번째 인사이트"></button><button class="dot" type="button" aria-label="두 번째 인사이트"></button><button class="dot" type="button" aria-label="세 번째 인사이트"></button></div><span class="swipe-hint">옆으로 넘겨 다른 흐름 보기</span></div>
+          </section>
+          <div class="bottom-context" aria-hidden="true"><span></span><span></span></div>
+        </div>
+
+        <div class="sheet-layer" id="evidence-dialog" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+          <section class="sheet">
+            <div class="grabber" aria-hidden="true"></div>
+            <div class="sheet-top"><div><p class="sheet-label">인사이트 근거</p><h3 id="sheet-title"></h3></div><button class="close" type="button" aria-label="닫기">×</button></div>
+            <p class="sheet-summary"></p>
+            <div class="evidence-row"><span class="evidence support"></span><span class="evidence counter"></span></div>
+            <div class="sources"><div class="source"><span class="source-icon">같은 방향의 기록 · <span class="source-title"></span></span><b class="same-quote"></b><span>사용자가 남긴 원문</span></div><div class="source different-source"><span class="source-icon">다르게 느낀 기록</span><b class="different-quote"></b><span>함께 확인한 반대 맥락</span></div></div>
+            <button class="sheet-action" type="button">연결된 기록 모두 보기</button>
+            <button class="secondary-action" type="button">이 연결이 맞지 않아요</button>
+          </section>
+        </div>
+      </section>
+
+      <aside class="note">
+        <small>IMPROVED DIRECTION</small>
+        <h2>열리는 카드를 버리고,<br />읽는 카드와 보는 근거를 분리했습니다.</h2>
+        <p>카드에 장식과 기능을 계속 얹지 않습니다. 홈에서는 한 장만 온전히 보여주고, 넘김과 탭이라는 두 동작만 제공합니다.</p>
+        <div class="decision-list">
+          <div class="decision"><i>01</i><div><b>한 장만 노출</b><p>세로로 카드가 쌓이지 않아 홈의 리듬을 해치지 않습니다.</p></div></div>
+          <div class="decision"><i>02</i><div><b>그래프는 배경</b><p>여섯 개 프리셋을 섞되 제목보다 먼저 읽히지 않습니다.</p></div></div>
+          <div class="decision"><i>03</i><div><b>근거는 바텀시트</b><p>카드 형태를 망가뜨리지 않고 지지·반대 원문까지 보여줍니다.</p></div></div>
+        </div>
+        <div class="demo-hint">카드를 좌우로 넘기고, 탭해서 근거 시트를 확인하세요.</div>
+      </aside>
+    </main>
+
+    <script>
+      const presets = [
+        [[118,116],[151,102],[184,104],[218,86],[251,84],[286,52],[350,31]],
+        [[112,111],[146,112],[181,88],[216,94],[250,68],[290,74],[350,44]],
+        [[120,118],[153,97],[187,101],[222,75],[255,81],[291,48],[350,55]],
+        [[114,106],[149,110],[183,83],[219,88],[254,59],[291,65],[350,36]],
+        [[116,115],[150,93],[185,98],[220,78],[255,84],[292,50],[350,24]],
+        [[110,109],[145,107],[180,86],[215,92],[251,64],[289,70],[350,40]],
+      ]
+      const shuffled = presets.map(points => ({ points, order: Math.random() })).sort((a, b) => a.order - b.order).map(item => item.points)
+      const toLine = points => points.map(([x, y], index) => `${index ? 'L' : 'M'}${x} ${y}`).join(' ')
+      const toArea = points => `${toLine(points)} L350 132 L110 132 Z`
+
+      const cards = [...document.querySelectorAll('.track .insight-card:not(.empty-card)')]
+      const carousel = document.querySelector('.formed-carousel')
+      const dots = [...document.querySelectorAll('.dot')]
+      const layer = document.querySelector('.sheet-layer')
+      const close = document.querySelector('.close')
+
+      cards.forEach((card, index) => {
+        const points = shuffled[index]
+        card.querySelector('.line').setAttribute('d', toLine(points))
+        card.querySelector('.area').setAttribute('d', toArea(points))
+        card.addEventListener('click', () => {
+          document.querySelector('#sheet-title').textContent = card.dataset.title
+          document.querySelector('.sheet-summary').textContent = card.dataset.summary
+          document.querySelector('.support').textContent = `지지 기록 ${card.dataset.support}`
+          document.querySelector('.counter').textContent = `반대 기록 ${card.dataset.counter}`
+          document.querySelector('.source-title').textContent = card.dataset.source
+          document.querySelector('.same-quote').textContent = card.dataset.sameQuote
+          document.querySelector('.different-quote').textContent = card.dataset.differentQuote
+          document.querySelector('.different-source').classList.toggle('hidden', !card.dataset.differentQuote)
+          layer.classList.add('open')
+          close.focus()
+        })
+      })
+
+      const selectCard = index => carousel.scrollTo({ left: cards[index].offsetLeft - 20, behavior: 'smooth' })
+      dots.forEach((dot, index) => dot.addEventListener('click', () => selectCard(index)))
+      carousel.addEventListener('scroll', () => {
+        const cardStep = cards.length > 1 ? cards[1].offsetLeft - cards[0].offsetLeft : cards[0].offsetWidth
+        const index = Math.max(0, Math.min(cards.length - 1, Math.round(carousel.scrollLeft / cardStep)))
+        dots.forEach((dot, dotIndex) => dot.classList.toggle('active', dotIndex === index))
+      }, { passive: true })
+
+      const closeSheet = () => layer.classList.remove('open')
+      close.addEventListener('click', closeSheet)
+      layer.addEventListener('click', event => { if (event.target === layer) closeSheet() })
+      document.addEventListener('keydown', event => { if (event.key === 'Escape') closeSheet() })
+    </script>
+  </body>
+</html>
