@@ -842,6 +842,62 @@ class CoreFlowIntegrationTest {
                 .andExpect(jsonPath("$.routine.items[1].frequency").value("주 2~3회"));
     }
 
+    @Test
+    void brandLogoIsProjectedWithoutInventingALegalManufacturer() throws Exception {
+        MockHttpSession session = demoSession();
+        String logoUrl = "/manufacturer-logos/nature-republic.png";
+
+        assertThat(jdbc.queryForList("""
+                SELECT DISTINCT logo_url FROM brand_asset
+                 WHERE brand IN ('CNP', 'CNP차앤박', '차앤박')
+                """, String.class)).containsExactly("/manufacturer-logos/cnp.png");
+
+        mvc.perform(get("/api/v1/products/2").session(session))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.brand").value("바이옴"))
+                .andExpect(jsonPath("$.brandLogoUrl").doesNotExist());
+
+        jdbc.update("""
+                INSERT INTO brand_asset(brand, logo_url, source_url)
+                VALUES ('뉴트리랩', ?, NULL)
+                ON CONFLICT(brand) DO UPDATE SET logo_url = excluded.logo_url,
+                                                 source_url = excluded.source_url
+                """, logoUrl);
+        jdbc.update("INSERT INTO brand_asset(brand, logo_url) VALUES ('직접 입력 브랜드', ?)", logoUrl);
+        Long customUserProductId = jdbc.queryForObject("""
+                INSERT INTO user_product(user_id, custom_brand, custom_name, custom_category)
+                VALUES (1, '직접 입력 브랜드', '나만의 크림', '크림') RETURNING id
+                """, Long.class);
+        try {
+            mvc.perform(get("/api/v1/products/1").session(session))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.brand").value("뉴트리랩"))
+                    .andExpect(jsonPath("$.brandLogoUrl").value(logoUrl));
+
+            mvc.perform(get("/api/v1/me/products/1").session(session))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.brandLogoUrl").value(logoUrl))
+                    .andExpect(jsonPath("$.product.brandLogoUrl").value(logoUrl));
+
+            mvc.perform(get("/api/v1/me/products/{id}", customUserProductId).session(session))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.customBrand").value("직접 입력 브랜드"))
+                    .andExpect(jsonPath("$.brandLogoUrl").value(logoUrl))
+                    .andExpect(jsonPath("$.product").doesNotExist());
+
+            String routineBody = mvc.perform(get("/api/v1/me/routines/current").session(session))
+                    .andExpect(status().isOk())
+                    .andReturn().getResponse().getContentAsString();
+            JsonNode nutrilabItem = json.readTree(routineBody).path("items").valueStream()
+                    .filter(item -> item.path("userProductId").asLong() == 1)
+                    .findFirst().orElseThrow();
+            assertThat(nutrilabItem.path("brandLogoUrl").asText()).isEqualTo(logoUrl);
+        } finally {
+            jdbc.update("DELETE FROM user_product WHERE id = ?", customUserProductId);
+            jdbc.update("DELETE FROM brand_asset WHERE brand IN ('뉴트리랩', '직접 입력 브랜드')");
+        }
+    }
+
     private MockHttpSession demoSession() throws Exception {
         return (MockHttpSession) mvc.perform(post("/api/v1/auth/demo")
                         .contentType(MediaType.APPLICATION_JSON).content("{}"))

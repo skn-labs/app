@@ -8,6 +8,7 @@ import remarkBreaks from 'remark-breaks'
 import remarkGfm from 'remark-gfm'
 import { api } from '../lib/api'
 import type { Conversation, ExperienceRecord, Pattern, Product, Routine, WebSource } from '../lib/types'
+import { BrandIdentity } from '../components/BrandIdentity'
 import { AiBadge, AppHeader, AssetMotion, Button, Card, ErrorState, ProductGlyph, Screen } from '../components/ui'
 import { startChatPath } from '../lib/chat'
 
@@ -232,7 +233,7 @@ function RetryCard({ message, onRetry }: { message: string; onRetry: () => void 
 }
 
 function ProductSearchResult({ product, onSelect }: { product: Product; onSelect: () => void }) {
-  return <button type="button" onClick={onSelect} className="flex w-full items-center gap-3 rounded-[20px] border border-[#cfe0ff] bg-white p-3 text-left transition hover:border-[#a9c6f3] active:scale-[.99]"><ProductGlyph category={product.category} src={product.imageUrl} size="sm"/><span className="min-w-0 flex-1"><span className="flex items-center gap-1.5"><span className="truncate text-xs font-medium text-[#6f88b2]">{product.brand} · {product.category}</span>{product.owned && <span className="shrink-0 rounded-full border border-[#cfe0ff] px-1.5 py-0.5 text-xs font-medium text-[#667da3]">내 화장품</span>}</span><span className="mt-1 block truncate text-sm font-medium tracking-[-.02em]">{product.name}</span><span className="mt-1 block text-xs text-[#737880]">{product.volume}{product.versionLabel ? ` · ${product.versionLabel} 버전` : ''}{product.personalRecordCount ? ` · 내 경험 ${product.personalRecordCount}건` : ''}</span></span><ChevronRight size={17} className="shrink-0 text-[#737880]"/></button>
+  return <button type="button" onClick={onSelect} className="flex w-full items-center gap-3 rounded-[20px] border border-[#cfe0ff] bg-white p-3 text-left transition hover:border-[#a9c6f3] active:scale-[.99]"><ProductGlyph category={product.category} src={product.imageUrl} size="sm"/><span className="min-w-0 flex-1"><span className="flex min-w-0 items-center gap-1.5"><BrandIdentity name={product.brand} logoUrl={product.brandLogoUrl} size="xs" className="min-w-0" nameClassName="text-[#6f88b2]"/><span className="shrink-0 text-xs text-[#8b94a1]">· {product.category}</span>{product.owned && <span className="shrink-0 rounded-full border border-[#cfe0ff] px-1.5 py-0.5 text-xs font-medium text-[#667da3]">내 화장품</span>}</span><span className="mt-1 block truncate text-sm font-medium tracking-[-.02em]">{product.name}</span><span className="mt-1 block text-xs text-[#737880]">{product.volume}{product.versionLabel ? ` · ${product.versionLabel} 버전` : ''}{product.personalRecordCount ? ` · 내 경험 ${product.personalRecordCount}건` : ''}</span></span><ChevronRight size={17} className="shrink-0 text-[#737880]"/></button>
 }
 
 function ProductResultsSkeleton() {
@@ -276,7 +277,7 @@ function isCautionSuggestion(value: string) {
 
 function ProductContextCard({ product }: { product: Product }) {
   return <section className="mb-5 overflow-hidden rounded-[22px] border border-[#d9ddff] bg-[linear-gradient(135deg,#f8f8ff_0%,#fff_72%)]">
-    <div className="flex items-center gap-4 p-4"><div className="grid size-[72px] shrink-0 place-items-center rounded-2xl bg-white"><ProductGlyph category={product.category} size="sm" src={product.imageUrl}/></div><div className="min-w-0 flex-1"><div className="flex items-center gap-2"><span className="rounded-full bg-accent-soft px-2 py-1 text-xs font-semibold text-accent">선택한 제품</span><span className="text-xs text-muted">{product.category}</span></div><p className="mt-2 truncate text-xs font-medium text-muted">{product.brand}</p><h2 className="mt-1 line-clamp-2 text-sm font-semibold leading-5">{product.name}</h2><p className="mt-1 text-xs text-muted">{product.volume}</p></div></div>
+    <div className="flex items-center gap-4 p-4"><div className="grid size-[72px] shrink-0 place-items-center rounded-2xl bg-white"><ProductGlyph category={product.category} size="sm" src={product.imageUrl}/></div><div className="min-w-0 flex-1"><div className="flex items-center gap-2"><span className="rounded-full bg-accent-soft px-2 py-1 text-xs font-semibold text-accent">선택한 제품</span><span className="text-xs text-muted">{product.category}</span></div><BrandIdentity name={product.brand} logoUrl={product.brandLogoUrl} size="xs" className="mt-2 max-w-full"/><h2 className="mt-1.5 line-clamp-2 text-sm font-semibold leading-5">{product.name}</h2><p className="mt-1 text-xs text-muted">{product.volume}</p></div></div>
     <div className="border-t border-[#e5e6f5] bg-white/65 px-4 py-2.5 text-xs font-medium text-accent">SKN AI에게 이 제품을 내 기록과 비교해달라고 요청했어요.</div>
   </section>
 }
@@ -352,7 +353,7 @@ function RecommendedProductLinks({ refs }: { refs: string[] }) {
   return <section className="-mx-5 mt-4" aria-label="AI 추천 제품">
     <div className="hide-scrollbar flex gap-2 overflow-x-auto px-5 pb-2">{loaded.map(product => <Link key={product.id} to={`/products/${product.id}`} className="w-[160px] shrink-0 rounded-[19px] border border-[#cfe0ff] bg-white p-2.5 transition active:scale-[.99]">
       <div className="grid h-[140px] place-items-center rounded-[15px] border border-[#deebff] bg-white"><ProductGlyph category={product.category} src={product.imageUrl} size="md"/></div>
-      <span className="mt-2.5 block truncate text-xs text-[#6f88b2]">{product.brand}</span><span className="mt-1 block truncate text-sm font-medium text-black">{product.name}</span>
+      <BrandIdentity name={product.brand} logoUrl={product.brandLogoUrl} size="xs" className="mt-2.5 max-w-full" nameClassName="text-[#6f88b2]"/><span className="mt-1.5 block truncate text-sm font-medium text-black">{product.name}</span>
     </Link>)}</div>
   </section>
 }
@@ -412,7 +413,7 @@ function sourceTier(tier: WebSource['tier']) {
   return 'P4 · 보조 자료'
 }
 
-type ResolvedEvidence = { ref: string; kind: 'PRODUCT' | 'ROUTINE' | 'RECORD' | 'PATTERN' | 'UNKNOWN'; eyebrow: string; title: string; subtitle?: string; details: string[] }
+type ResolvedEvidence = { ref: string; kind: 'PRODUCT' | 'ROUTINE' | 'RECORD' | 'PATTERN' | 'UNKNOWN'; eyebrow: string; title: string; subtitle?: string; brandName?: string; brandLogoUrl?: string | null; details: string[] }
 
 function resolveEvidence(ref: string, products: Product[], routines: Routine[], records: ExperienceRecord[], patterns: Pattern[]): ResolvedEvidence {
   const id = Number(ref.split('-').at(-1))
@@ -422,7 +423,7 @@ function resolveEvidence(ref: string, products: Product[], routines: Routine[], 
   }
   if (ref.startsWith('P-')) {
     const product = products.find(item => item.id === id)
-    return product ? { ref, kind: 'PRODUCT', eyebrow: product.facts.length ? '출처에서 확인한 제품 정보' : '선택한 제품', title: product.name, subtitle: `${product.brand} · ${product.category}${product.volume ? ` · ${product.volume}` : ''}`, details: product.facts.map(fact => fact.text).slice(0, 5) } : unresolvedEvidence(ref)
+    return product ? { ref, kind: 'PRODUCT', eyebrow: product.facts.length ? '출처에서 확인한 제품 정보' : '선택한 제품', title: product.name, subtitle: `${product.category}${product.volume ? ` · ${product.volume}` : ''}`, brandName: product.brand, brandLogoUrl: product.brandLogoUrl, details: product.facts.map(fact => fact.text).slice(0, 5) } : unresolvedEvidence(ref)
   }
   if (ref.startsWith('R-')) {
     const routine = routines.find(item => item.id === id)
@@ -441,7 +442,7 @@ function unresolvedEvidence(ref: string): ResolvedEvidence {
 
 function EvidenceCard({ item }: { item: ResolvedEvidence }) {
   const icon = item.kind === 'PRODUCT' ? <BadgeCheck size={18}/> : item.kind === 'ROUTINE' ? <Layers3 size={18}/> : item.kind === 'RECORD' ? <Clock3 size={18}/> : <Sparkles size={18}/>
-  return <article className="overflow-hidden rounded-[20px] border border-line bg-white"><div className="flex gap-3 p-4"><div className="grid size-10 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent">{icon}</div><div className="min-w-0 flex-1"><p className="text-xs font-semibold text-accent">{item.eyebrow}</p><h3 className="mt-1 text-sm font-semibold leading-5">{item.title}</h3>{item.subtitle && <p className="mt-1 text-xs text-muted">{item.subtitle}</p>}</div></div>{item.details.length > 0 && <div className="border-t border-line bg-[#fcfcfa] px-4 py-3"><ul className="space-y-2">{item.details.map((detail, index) => <li key={index} className="flex gap-2 text-xs leading-5 text-muted"><span className="mt-2 size-1 shrink-0 rounded-full bg-[#aeb2aa]"/><span>{detail}</span></li>)}</ul></div>}</article>
+  return <article className="overflow-hidden rounded-[20px] border border-line bg-white"><div className="flex gap-3 p-4"><div className="grid size-10 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent">{icon}</div><div className="min-w-0 flex-1"><p className="text-xs font-semibold text-accent">{item.eyebrow}</p><h3 className="mt-1 text-sm font-semibold leading-5">{item.title}</h3>{item.brandName && <BrandIdentity name={item.brandName} logoUrl={item.brandLogoUrl} size="xs" className="mt-2 max-w-full"/>}{item.subtitle && <p className="mt-1.5 text-xs text-muted">{item.subtitle}</p>}</div></div>{item.details.length > 0 && <div className="border-t border-line bg-[#fcfcfa] px-4 py-3"><ul className="space-y-2">{item.details.map((detail, index) => <li key={index} className="flex gap-2 text-xs leading-5 text-muted"><span className="mt-2 size-1 shrink-0 rounded-full bg-[#aeb2aa]"/><span>{detail}</span></li>)}</ul></div>}</article>
 }
 
 function timeSlotLabel(value: Routine['items'][number]['timeSlot']) { return value === 'MORNING' ? '아침' : value === 'EVENING' ? '저녁' : '아침·저녁' }

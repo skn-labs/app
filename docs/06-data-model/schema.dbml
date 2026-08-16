@@ -52,6 +52,12 @@ Table product {
   image_url text
 }
 
+Table brand_asset {
+  brand text [pk, note: 'product.brand 또는 custom_brand와 exact match하는 표시 이름']
+  logo_url text [not null, note: '저장소에 포함된 /manufacturer-logos/* 공개 경로']
+  source_url text [note: '공식 로고 출처. 중립 카탈로그 마크는 null']
+}
+
 Table product_catalog_content {
   product_id integer [pk, ref: > product.id]
   summary text [not null]

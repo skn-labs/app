@@ -5,6 +5,7 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { api, ApiError, uid } from '../lib/api'
 import { startChatPath } from '../lib/chat'
 import type { Experience, Routine, RoutineItemInput, SavedRecord, UserProduct } from '../lib/types'
+import { BrandIdentity } from '../components/BrandIdentity'
 import { BeforeChangeSheet } from '../components/BeforeChangeSheet'
 import { ProductAddSheet } from '../components/ProductAddSheet'
 import { AiBadge, AppHeader, BottomSheet, Button, Card, ErrorState, Loading, PageHeading, ProductGlyph, Screen, StickyActionBar, TopBar } from '../components/ui'
@@ -37,7 +38,7 @@ export function ExperiencePage() {
       </section>
 
       {data.routine && <RoutineSteps routine={data.routine}/>} 
-      {!data.routine && data.product && <Card className="mt-8 flex items-center gap-4"><ProductGlyph category={data.product.product?.category || data.product.customCategory} src={data.product.product?.imageUrl}/><div className="min-w-0"><p className="text-xs text-muted">{data.product.product?.brand || data.product.customBrand}</p><p className="mt-1 truncate text-base font-medium">{data.product.product?.name || data.product.customName}</p><p className="mt-2 text-sm leading-6 text-muted">현재 루틴은 바꾸지 않고 이 제품의 경험만 남기고 있어요.</p></div></Card>}
+      {!data.routine && data.product && <Card className="mt-8 flex items-center gap-4"><ProductGlyph category={data.product.product?.category || data.product.customCategory} src={data.product.product?.imageUrl}/><div className="min-w-0"><BrandIdentity name={data.product.product?.brand || data.product.customBrand} logoUrl={data.product.brandLogoUrl} size="xs" className="max-w-full"/><p className="mt-1.5 truncate text-base font-medium">{data.product.product?.name || data.product.customName}</p><p className="mt-2 text-sm leading-6 text-muted">현재 루틴은 바꾸지 않고 이 제품의 경험만 남기고 있어요.</p></div></Card>}
 
       {data.latestRecord && <section className="mt-8 rounded-[22px] border border-line bg-[#fafbf8] p-5"><div className="flex items-center justify-between gap-3"><h2 className="text-lg font-medium">최근에 남긴 느낌</h2><span className="rounded-full bg-white px-3 py-1.5 text-xs text-muted">{sentimentLabel(data.latestRecord.sentiment)}</span></div><p className="mt-3 text-sm leading-6 text-muted">{data.latestRecord.note || '짧은 선택으로 기록했어요.'}</p></section>}
       <div className="mt-8 flex items-start gap-3 rounded-[20px] bg-accent-soft p-4"><Clock3 size={19} className="mt-0.5 shrink-0 text-accent"/><div><p className="text-sm font-medium text-[#46519a]">기억이 선명할 때만 남겨도 충분해요.</p><p className="mt-1 text-xs leading-5 text-[#626aa1]">7일은 안전이나 효능을 판정하는 기간이 아니라, 지금까지의 경험을 함께 돌아보는 기본 시점이에요.</p></div></div>

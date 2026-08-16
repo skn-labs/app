@@ -17,6 +17,7 @@ public final class ApiModels {
     public record ProductView(
             long id,
             String brand,
+            String brandLogoUrl,
             String name,
             String category,
             String volume,
@@ -63,6 +64,7 @@ public final class ApiModels {
             long id,
             ProductView product,
             String customBrand,
+            String brandLogoUrl,
             String customName,
             String customCategory,
             String memo,
@@ -79,6 +81,7 @@ public final class ApiModels {
             long userProductId,
             String productName,
             String brand,
+            String brandLogoUrl,
             String category,
             String timeSlot,
             int position,

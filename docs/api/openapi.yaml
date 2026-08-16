@@ -537,6 +537,7 @@ components:
       properties:
         id: { type: integer, format: int64 }
         brand: { type: string }
+        brandLogoUrl: { type: [string, 'null'], description: 저장소에 등록된 브랜드 로고 애셋 경로. 실제 제조 법인 정보가 아님 }
         name: { type: string }
         category: { type: string }
         volume: { type: [string, 'null'] }
@@ -601,6 +602,7 @@ components:
         id: { type: integer, format: int64 }
         product: { anyOf: [ { $ref: '#/components/schemas/Product' }, { type: 'null' } ] }
         customBrand: { type: [string, 'null'], maxLength: 120 }
+        brandLogoUrl: { type: [string, 'null'], description: 카탈로그 또는 정확히 일치하는 직접 입력 브랜드의 로고 애셋 경로 }
         customName: { type: [string, 'null'], maxLength: 160 }
         customCategory: { type: [string, 'null'], maxLength: 80 }
         memo: { type: [string, 'null'], maxLength: 1000 }
@@ -623,6 +625,7 @@ components:
         userProductId: { type: integer, format: int64 }
         productName: { type: string }
         brand: { type: string }
+        brandLogoUrl: { type: [string, 'null'] }
         category: { type: string }
         timeSlot: { type: string, enum: [MORNING, EVENING, BOTH] }
         position: { type: integer, minimum: 0 }

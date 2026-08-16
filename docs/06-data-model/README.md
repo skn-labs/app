@@ -45,6 +45,7 @@ erDiagram
 | `user_skin_profile` | `prototype_2` 8단계에서 직접 받은 자기보고 피부 프로필 | 연령대·성별·피부 타입·최근 상태·고민·사용감·기피·시도 빈도를 한 사용자당 한 행으로 저장하고 수정 시 통째로 갱신 |
 | `user_preference` | 온보딩과 설정에서 받은 사용감 선호 (ONB-01) | `user_skin_profile`의 사용감·기피 항목을 기존 개인화 소비자와 연결하며 실제 경험보다 약한 자기보고 맥락으로 취급 |
 | `product` | 검색 가능한 카탈로그 제품 식별 정보 | `description`, `facts_json`은 출처 미확인 카탈로그 입력으로 제품별 AI 가이드에만 사용. 확인 사실·추천·Rescue 근거로 승격하지 않음 |
+| `brand_asset` | 카탈로그 브랜드 표시명과 저장소 로고 애셋의 연결 | `product.brand` 또는 직접 입력 브랜드와 정확히 일치할 때만 로고를 연결. 브랜드를 법적 제조사·소유 회사·OEM/ODM으로 해석하지 않음 |
 | `product_catalog_content` | 모든 제품에 제공하는 제품 안내 | 제품별 설명·특징·category·등록 제형을 바탕으로 정체와 일반 사용법을 설명하며, 입력에 없는 적합성·효능·성분을 만들지 않고 생성 출처와 시각을 저장 |
 | `product_source_fact` | 출처를 다시 열 수 있는 제품 사실 | 출처명·URL·확인 시각이 모두 있는 행만 API와 AI의 `출처 확인 사실`로 노출 |
 | `user_product` | 사용자가 가진 화장품 | 카탈로그 제품 또는 사용자 직접 입력 이름 중 하나는 필수 |
@@ -122,9 +123,10 @@ AI가 적용했다고 말하는 것으로는 상태가 바뀌지 않는다. `/re
 ## 제품 상세의 권위 순서
 
 1. `product`는 이름·브랜드·category 같은 식별 정보를 제공한다.
-2. `product_catalog_content`는 제품별 `description`, `facts_json`, category와 등록 제형을 바탕으로 제품이 무엇인지와 일반 사용법을 설명하는 가이드다. `summary`는 상세 상단의 제품명을 반복하지 않고 제품별 특징을 먼저 설명한다. SQL fallback은 `EDITORIAL`, 생성 파이프라인 성공 결과만 `AI_GENERATED`이며 둘 다 출처 확인 사실이나 개인 적합 판정이 아니다.
-3. `product_source_fact`만 출처 확인 사실이다. 근거 행이 없으면 API의 `facts`는 빈 배열이다.
-4. `owned`, 연결 경험 수와 원문은 사용자별 조회에서 계산하며 정적 카탈로그에 저장하지 않는다.
+2. `brand_asset`은 브랜드명이 표시되는 UI에 로고를 더하기 위한 exact-match 애셋 매핑이다. 같은 회사의 브랜드라도 자동으로 합치지 않고, 검증한 별칭만 같은 로고 URL에 명시적으로 연결한다. 로고가 없으면 API는 optional `brandLogoUrl`을 생략하며 UI는 브랜드명을 유지한 중립 문자 마크를 보여준다.
+3. `product_catalog_content`는 제품별 `description`, `facts_json`, category와 등록 제형을 바탕으로 제품이 무엇인지와 일반 사용법을 설명하는 가이드다. `summary`는 상세 상단의 제품명을 반복하지 않고 제품별 특징을 먼저 설명한다. SQL fallback은 `EDITORIAL`, 생성 파이프라인 성공 결과만 `AI_GENERATED`이며 둘 다 출처 확인 사실이나 개인 적합 판정이 아니다.
+4. `product_source_fact`만 출처 확인 사실이다. 근거 행이 없으면 API의 `facts`는 빈 배열이다.
+5. `owned`, 연결 경험 수와 원문은 사용자별 조회에서 계산하며 정적 카탈로그에 저장하지 않는다.
 
 API의 `verified`는 legacy `product.verified=1`만으로 true가 되지 않는다. source-backed fact가 하나 이상 있을 때만 public projection에서 true가 되어, 기존 seed 11건에 근거 없는 확인 badge가 나타나지 않는다.
 

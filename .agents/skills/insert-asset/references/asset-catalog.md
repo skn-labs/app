@@ -24,6 +24,94 @@ SKN의 모든 애셋은 하나의 시각 언어를 공유한다: **맑은 물방
 
 ---
 
+## 화장품 브랜드 로고 — `assets/제조사 로고/`
+
+제품 데이터의 `brand`를 식별하는 제3자 브랜드 워드마크 원본이다. 현재 데이터 모델에는 법적 제조사 필드가 없으므로 폴더의 기존 이름과 달리 **제조사 로고로 해석하지 않는다.** 원본과 byte가 같은 웹 배포본은 `frontend/public/manufacturer-logos/`에 둔다.
+
+| 파일 | DB `brand` 정확 일치값 | 형태 | 크기·포맷 | 배경 | 웹 경로 |
+| --- | --- | --- | --- | --- | --- |
+| `anua.png` | `아누아` | 검정 `Anua` 혼합 대소문자 워드마크 | 247×60, PNG | 투명 | `/manufacturer-logos/anua.png` |
+| `beauty-of-joseon.png` | `조선미녀` | 검정 `BEAUTY OF JOSEON` 고대비 세리프 워드마크 | 2501×236, PNG | 투명 | `/manufacturer-logos/beauty-of-joseon.png` |
+| `belif.svg` | `belif`, `벨리프` | belif 워드마크, `believe in truth` 태그라인과 원형 인장 | viewBox 140.93×44.7, SVG | 투명 | `/manufacturer-logos/belif.svg` |
+| `cnp.png` | `CNP`, `CNP차앤박`, `차앤박` | 회색 `CNP Laboratory` 가로 워드마크 | 192×25, PNG | 투명 | `/manufacturer-logos/cnp.png` |
+| `cosrx.png` | `코스알엑스` | 검정 `COSRX` 압축형 대문자 워드마크 | 129×27, PNG | 투명 | `/manufacturer-logos/cosrx.png` |
+| `dr-g.png` | `닥터지` | 진녹색 `Dr.G` 워드마크와 밑줄 | 240×92, PNG | 흰색, 불투명 | `/manufacturer-logos/dr-g.png` |
+| `etude.png` | `에뛰드`, `에뛰드하우스` | 검정 `ETUDE` 산세리프 워드마크 | 480×96, PNG | 투명 | `/manufacturer-logos/etude.png` |
+| `goodal.png` | `구달` | 짙은 회색 `goodal` 세리프 워드마크 | 402×148, PNG | 투명 | `/manufacturer-logos/goodal.png` |
+| `innisfree.svg` | `이니스프리` | 녹색 `innisfree` 소문자 워드마크 | viewBox 247×32, SVG | 투명 | `/manufacturer-logos/innisfree.svg` |
+| `isntree.png` | `이즈앤트리`, `이즌트리` | 검정 ISNTREE 영문·한글 조합 워드마크 | 154×47, PNG | 투명 | `/manufacturer-logos/isntree.png` |
+| `iunik.png` | `iUNIK`, `아이유닉` | 짙은 회색 `IUNIK` 워드마크와 올리브색 잎 | 500×150, PNG | 투명 | `/manufacturer-logos/iunik.png` |
+| `jmsolution.png` | `JMsolution`, `JM솔루션`, `제이엠솔루션` | 검정 `JMsolution` 워드마크 | 501×100, PNG | 투명 | `/manufacturer-logos/jmsolution.png` |
+| `klairs.svg` | `Klairs`, `디어클레어스`, `클레어스` | 검정 `dear Klairs` 세리프 워드마크 | viewBox 849.83×356.27, SVG | 투명 | `/manufacturer-logos/klairs.svg` |
+| `laneige.svg` | `라네즈` | 페리윙클 블루 `LANEIGE` 기하학 대문자 워드마크 | viewBox 984×173.7, SVG | 투명 | `/manufacturer-logos/laneige.svg` |
+| `mediheal.png` | `메디힐` | 짙은 파란색 `MEDIHEAL` 대문자 워드마크 | 1595×237, PNG | 투명 | `/manufacturer-logos/mediheal.png` |
+| `missha.png` | `미샤` | 가는 회색 `MISSHA` 대문자 워드마크 | 140×26, PNG | 흰색에 가까운 반투명 | `/manufacturer-logos/missha.png` |
+| `nature-republic.png` | `네이처리퍼블릭` | 짙은 회색 `NATURE REPUBLIC` 가로 워드마크 | 370×30, PNG | 투명 | `/manufacturer-logos/nature-republic.png` |
+| `round-lab.png` | `라운드랩` | 검정 `ROUND LAB` 자간형 워드마크 | 150×40, PNG | 투명 | `/manufacturer-logos/round-lab.png` |
+| `skin1004.png` | `스킨1004` | 검정 `SKIN1004` 자간형 워드마크 | 300×46, PNG | 투명 | `/manufacturer-logos/skin1004.png` |
+| `skinfood.svg` | `스킨푸드` | 짙은 갈색 `SKINFOOD` 세리프 워드마크 | viewBox 150×22, SVG | 투명 | `/manufacturer-logos/skinfood.svg` |
+| `the-face-shop.png` | `더페이스샵` | `THE FACE SHOP`과 작은 `CLEAN BEAUTY` 락업 | 187×37, PNG | 투명 | `/manufacturer-logos/the-face-shop.png` |
+| `tonymoly.png` | `토니모리` | 짙은 갈색 심벌과 `TONYMOLY` 워드마크 | 384×72, PNG | 투명 | `/manufacturer-logos/tonymoly.png` |
+| `torriden.png` | `토리든` | 짙은 회색 `Torriden` 워드마크 | 155×29, PNG | 투명 | `/manufacturer-logos/torriden.png` |
+| `vt.png` | `VT`, `VT코스메틱` | 검정 VT COSMETICS 가로 워드마크 | 444×70, PNG | 투명 | `/manufacturer-logos/vt.png` |
+| `wellage.png` | `웰라쥬` | 검정 `WELLAGE` 기하학 워드마크 | 575×104, PNG | 투명 | `/manufacturer-logos/wellage.png` |
+
+### 공식 출처와 사용 근거
+
+각 파일은 브랜드 또는 브랜드 운영사의 공개 공식 사이트가 헤더·브랜드 소개에 직접 제공한 원본이다. 별도 재배포 라이선스 문구는 확인되지 않았으며 로고와 상표의 권리는 각 권리자에게 있다. SKN의 제품 브랜드 식별 목적으로만 사용하고 임의 재디자인·트레이싱·packshot 크롭은 하지 않았다.
+
+| 파일 | 공식 페이지 | 공식 원본 URL |
+| --- | --- | --- |
+| `anua.png` | `https://anua.com/` | `https://anua.com/cdn/shop/files/PNG_RGB_Primary_logo_ver2_2_255e833c-0e91-42df-96ca-0b7377ba7a8a.png?v=1779429699` |
+| `beauty-of-joseon.png` | `https://beautyofjoseon.com/` | `https://beautyofjoseon.com/cdn/shop/files/boj-logo-text-default.png?v=1765267757` |
+| `belif.svg` | `https://www.belif.jp/` | `https://www.belif.jp/wp-content/themes/belif/img/common/logo.svg` |
+| `cnp.png` | `https://cnpmall.com/` | `https://cnpmall.com/img/cnp_logo.png` |
+| `cosrx.png` | `https://www.cosrx.com/` | `https://www.cosrx.com/cdn/shop/files/COSRX_150x.png?v=1658313147` |
+| `dr-g.png` | `https://www.dr-g.com/` | `https://www.dr-g.com/cdn/shop/files/3801b937541112e838c2a1bf2ef1af71_240x.png?v=1771999118` |
+| `etude.png` | `https://brand.amoremall.com/kr/ko/etude?menuNo=679` | `https://images-kr.amoremall.com/sis/images/2025/11/28/dc9beac6-26a4-40b9-880e-e22c45cb2b5b.png` |
+| `goodal.png` | `https://cliocosmetic.com/goodal_en.html` | `https://cliocosmetic.com/public/images/logo/goodal.png` |
+| `innisfree.svg` | `https://us.innisfree.com/` | `https://us.innisfree.com/cdn/shop/files/IFLogo-Green-247x32.svg?v=1778609524` |
+| `isntree.png` | `https://isntree.com/` | `https://isntree.com/web/upload/fixed_logo.png` |
+| `iunik.png` | `https://www.iunik.com/` | `https://www.iunik.com/cdn/shop/files/iunik_logo.png?v=1743988775&width=500` |
+| `jmsolution.png` | `https://jmsolutioncm.cafe24.com/brand/index.html` | `https://jmsolutioncm.cafe24.com/skin/main/logo.png` |
+| `klairs.svg` | `https://klairs.co.kr/` | `https://klairs.co.kr/assets/images/common/DK_logo_b.svg` |
+| `laneige.svg` | `https://us.laneige.com/` | `https://us.laneige.com/cdn/shop/files/B.I_LANEIGE_wordmark_Blue.svg?v=1723506883` |
+| `mediheal.png` | `https://medihealshop.com/` | `https://medihealshop.com/morenvyimg/logo_sub.png` |
+| `missha.png` | `https://missha.com/en/index` | `https://missha.com/static/img/logo.png` |
+| `nature-republic.png` | `https://www.naturerepublic.com/brand/brand` | `https://www.naturerepublic.com/img/brand/story/logo_en_b.png` |
+| `round-lab.png` | `https://roundlab.co.kr/` | `https://roundlab.co.kr/_dj/img/logo_.png` |
+| `skin1004.png` | `https://www.skin1004.com/` | `https://www.skin1004.com/cdn/shop/files/SKIN1004_LOGO_300PX_30c77c72-0035-4b50-ba2c-f2c7a36a0d9d.png?v=1738771518` |
+| `skinfood.svg` | `https://www.theskinfood.com/` | `https://www.theskinfood.com/design/skinfood/skinfood/images/wib/PC/common/skinfood_pc_logo.svg` |
+| `the-face-shop.png` | `https://www.thefaceshop.com/mall/brand.jsp?cate_seq=662` | `https://image.ethefaceshop.com/tfsshopWebSrc/images/common/logo_brand662.png` |
+| `tonymoly.png` | `https://tonymoly.com/` | `https://d214w0arlvd25g.cloudfront.net/new_asset/img_logo_gnb_m.png` |
+| `torriden.png` | `https://www.torriden.com/` | `https://torriden2.cdn-nhncommerce.com/data/skin/front/mo_designart/img/banner/03b0b50ebf12bb71f624b6ee36ab73a9_44226.png` |
+| `vt.png` | `https://vt-cosmetics.com/` | `https://vt-cosmetics.com/images/cm_logo_1_black.png` |
+| `wellage.png` | `https://www.mywellage.com/` | `https://www.mywellage.com/web/upload/logo.png` |
+
+### 매핑·폴백 규칙
+
+- 위 표의 `brand` 문자열에만 정확히 매핑한다. 대소문자나 한글/영문이 비슷하다는 이유로 fuzzy matching하지 않는다.
+- 브랜드명은 항상 텍스트로 유지하고 로고는 인접 장식으로 배치한다. 로고 이미지의 대체 텍스트는 빈 문자열(`alt=""`)로 두어 브랜드명이 중복 낭독되지 않게 한다.
+- 로고가 없거나 로드에 실패하면 중립 모노그램/텍스트 폴백을 보여준다.
+- 데모 seed의 `뉴트리랩`, `바이옴`, `더마리브`, `솔라핏`, `어퀴즈`, `데이지코`, `오브리에`는 공식 실재 브랜드임을 검증할 수 없고 제품 packshot URL도 다른 실제 브랜드와 일치한다. 따라서 다른 브랜드 로고를 붙이거나 공식 로고처럼 보이는 가공물을 만들지 않고 공통 폴백을 사용한다.
+- `Dr.Belmeur`/`닥터벨머`, `Dr.Ceuracle`/`닥터세라클`, `더히스토리오브후`/`후`처럼 검증한 한글·영문 표기만 같은 공식 로고에 명시적으로 연결한다.
+
+### 2026-08-16 전수 보강
+
+실제 카탈로그 2,654개·원문 브랜드 157종을 전수 감사해 공식 1차 출처 로고 **111파일**을 확보하고, 검증한 한글·영문 별칭을 포함한 **126개 exact-match 값**에 연결했다. 제품 행 기준 2,517개(94.8%)가 공식 로고를 사용한다. 전체 런타임 매핑과 각 `source_url`의 권위 원본은 `backend/src/main/resources/schema.sql`의 `brand_asset` seed가 단일 기준이며, 같은 내용은 운영 마이그레이션 `deploy/oci/migrations/20260816_04_add_brand_assets.sql`에 복제한다.
+
+위 상세 표 이후 추가한 파일은 다음과 같다.
+
+`abib.svg`, `about-me.png`, `acwell.png`, `aestura.png`, `ahc.svg`, `amuse.png`, `apieu.png`, `aromatica.svg`, `avajar.png`, `axis-y.png`, `banila-co.png`, `benton.png`, `beplain.svg`, `berrisom.png`, `biodance.png`, `bioheal-boh.png`, `bringgreen.png`, `celimax.png`, `cell-fusion-c.svg`, `celltrion-skincure.png`, `charmzone.png`, `clio.png`, `dalba.svg`, `donginbi.png`, `dr-banggiwon.png`, `dr-belmeur.png`, `dr-ceuracle.png`, `dr-jart.svg`, `dr-oracle.png`, `espoir.png`, `fation.png`, `fillimilli.png`, `grafen.png`, `hanskin.png`, `hanyul.png`, `haruharu-wonder.png`, `heimish.png`, `hera.svg`, `huxley.png`, `hwaaerak-main.png`, `illiyoon.svg`, `iope.png`, `isoi.png`, `its-skin.png`, `jayjun.png`, `jumiso.png`, `krave-beauty.svg`, `labo-h.png`, `laka.svg`, `leaders.png`, `make-prem.png`, `mamonde.svg`, `manyo.png`, `medianswer.png`, `medicube.svg`, `medipeel.png`, `melixir.png`, `mizon.png`, `neogen.png`, `ohui.svg`, `papa-recipe.png`, `peripera.png`, `physiogel.png`, `primera.svg`, `purito.svg`, `pyunkang-yul.png`, `real-barrier.svg`, `rejuran.png`, `romand.png`, `round-around.png`, `s-nature.png`, `shingmulnara.png`, `skin-and-lab.svg`, `skin79.png`, `snp.png`, `some-by-mi.png`, `sooryehan.gif`, `sulwhasoo.png`, `sum37.svg`, `the-saem.png`, `then-i-met-you.svg`, `tirtir.svg`, `tocobo.svg`, `unove.png`, `vidivici.svg`, `whoo.svg`.
+
+- `dr-jart.svg`, `purito.svg`, `mamonde.svg`, `then-i-met-you.svg`는 공식 사이트가 파일 대신 제공한 헤더 inline SVG를 형태 변경 없이 추출한 원본이다.
+- `melixir.png`, `dr-ceuracle.png`, `snp.png`는 공식 사이트가 직접 지정한 브랜드 아이콘·공유 이미지를 사용한다.
+- `acwell.png`, `hanyul.png`는 밝은 워드마크이므로 공통 `BrandIdentity`가 어두운 전용 프레임을 적용한다.
+- DB 원문 `닥터방기순`은 공식 브랜드 `닥터방기원`의 오기임을 확인하고 공식 로고를 명시적으로 연결한다. 표시 원문은 호환성을 위해 이 작업에서 바꾸지 않는다.
+- 공식 원본 또는 브랜드 실체를 검증하지 못한 31개 값(`넘버즈인`, `홀리카홀리카`, `이자녹스`, `그레이스데이`, `더마리브`, `뉴트리랩`, `닥터오트`, `비욘드`, `센텔리안24`, `솔라핏`, `시오리스`, `일리`, `클린잇제로`, `프루디아`, `닥터메디아`, `닥터스킨`, `데이지코`, `라베이지`, `라비오뜨`, `라이크바이`, `미미박스`, `바이옴`, `아토팜`, `애니레이`, `어퀴즈`, `오브리에`, `케어존`, `코드글로컬러`, `크레이버`, `클렌즈업`, `티엔지`)은 다른 회사 로고를 추론하지 않고 중립 문자 마크를 사용한다.
+
+---
+
 ## 아이콘 — `assets/아이콘/`
 
 기능 아이콘은 각각 **맑은 유리·물로 빚은 오브젝트**로 표현된다. 투명 PNG(정지본)와 MP4(애니메이션본)가 짝을 이룬다. 상태 표현에 쓴다.

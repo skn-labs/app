@@ -34,7 +34,7 @@ export type ProductFact = {
 }
 
 export type Product = {
-  id: number; brand: string; name: string; category: string; volume?: string;
+  id: number; brand: string; brandLogoUrl?: string; name: string; category: string; volume?: string;
   versionLabel?: string; description?: string; texture?: string; verified: boolean;
   guide?: ProductGuide | null; facts: ProductFact[];
   personalRecordCount: number; owned: boolean; imageUrl?: string;
@@ -43,13 +43,13 @@ export type Product = {
 export type ProductPage = { items: Product[]; nextCursor?: string; hasMore: boolean }
 
 export type UserProduct = {
-  id: number; product?: Product; customBrand?: string; customName?: string;
+  id: number; product?: Product; customBrand?: string; brandLogoUrl?: string; customName?: string;
   customCategory?: string; memo?: string; addedAt: string;
   personalRecordCount: number; inCurrentRoutine: boolean;
 }
 
 export type RoutineItem = {
-  userProductId: number; productName: string; brand: string; category: string;
+  userProductId: number; productName: string; brand: string; brandLogoUrl?: string; category: string;
   timeSlot: 'MORNING' | 'EVENING' | 'BOTH'; position: number; frequency: string;
 }
 

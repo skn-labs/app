@@ -5,6 +5,7 @@ import { Link, useParams } from 'react-router-dom'
 import { api, ApiError } from '../lib/api'
 import { startChatPath } from '../lib/chat'
 import type { Routine } from '../lib/types'
+import { BrandIdentity } from '../components/BrandIdentity'
 import { AppHeader, ErrorState, FloatingAddButton, Loading, Screen } from '../components/ui'
 import routineCard1 from '../assets/figma/routine-card-1.webp'
 import routineCard2 from '../assets/figma/routine-card-2.webp'
@@ -253,7 +254,7 @@ export function RoutineDetailPage() {
           <div aria-hidden className="absolute bottom-9 left-[15px] top-9 w-px bg-[#d8dee8]"/>
           {routine.items.map((item, index) => <div key={item.userProductId} className="relative flex items-center gap-3">
             <span className="z-10 grid size-[31px] shrink-0 place-items-center rounded-full border-[3px] border-white bg-[#172033] text-[11px] font-semibold text-white shadow-[0_3px_10px_rgba(23,32,51,.16)]">{index + 1}</span>
-            <Link to={`/my-products/${item.userProductId}`} aria-label={`${index + 1}번째 제품 ${item.productName} 상세 보기`} className="interactive-card flex min-h-[92px] flex-1 items-center justify-between rounded-[20px] border border-[#e9ecf1] bg-white px-4 py-3.5 shadow-[0_7px_22px_rgba(32,43,64,.06)]"><div className="min-w-0"><p className="truncate text-[15px] font-semibold tracking-[-.025em] text-[#171d29]">{item.productName}</p><p className="mt-1 truncate text-[11px] font-medium text-[#858d99]">{item.brand} · {item.category}</p><div className="mt-2 flex flex-wrap gap-1.5"><span className="rounded-full bg-[#eef3fb] px-2 py-1 text-[10px] font-semibold text-[#61708a]">{timeSlotLabel(item.timeSlot)}</span><span className="rounded-full bg-[#f1f5ed] px-2 py-1 text-[10px] font-semibold text-[#68735b]">{item.frequency}</span></div></div><ChevronRight size={18} className="ml-2 shrink-0 text-[#8b94a2]"/></Link>
+            <Link to={`/my-products/${item.userProductId}`} aria-label={`${index + 1}번째 제품 ${item.productName} 상세 보기`} className="interactive-card flex min-h-[92px] flex-1 items-center justify-between rounded-[20px] border border-[#e9ecf1] bg-white px-4 py-3.5 shadow-[0_7px_22px_rgba(32,43,64,.06)]"><div className="min-w-0"><p className="truncate text-[15px] font-semibold tracking-[-.025em] text-[#171d29]">{item.productName}</p><span className="mt-1 flex min-w-0 items-center gap-1.5"><BrandIdentity name={item.brand} logoUrl={item.brandLogoUrl} size="xs" className="min-w-0"/><span className="shrink-0 text-[11px] text-[#858d99]">· {item.category}</span></span><div className="mt-2 flex flex-wrap gap-1.5"><span className="rounded-full bg-[#eef3fb] px-2 py-1 text-[10px] font-semibold text-[#61708a]">{timeSlotLabel(item.timeSlot)}</span><span className="rounded-full bg-[#f1f5ed] px-2 py-1 text-[10px] font-semibold text-[#68735b]">{item.frequency}</span></div></div><ChevronRight size={18} className="ml-2 shrink-0 text-[#8b94a2]"/></Link>
           </div>)}
         </div>
       </section>

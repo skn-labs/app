@@ -1,7 +1,18 @@
-@import "pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css";
+@import "wanted-sans/fonts/webfonts/variable/split/WantedSansVariable.css";
 @import "tailwindcss";
 
 @theme {
+  --font-sans: "Wanted Sans Variable", "Wanted Sans", -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --text-xs: .8125rem;
+  --text-xs--line-height: 1.5;
+  --text-sm: .875rem;
+  --text-sm--line-height: 1.55;
+  --text-base: 1rem;
+  --text-base--line-height: 1.6;
   --color-ink: #171816;
   --color-muted: #73766f;
   --color-line: #e7e9e3;
@@ -19,10 +30,12 @@
 :root {
   color: #171816;
   background: #fff;
-  font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", "Segoe UI", sans-serif;
+  font-family: "Wanted Sans Variable", "Wanted Sans", -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
   font-size: 16px;
-  line-height: 1.55;
-  letter-spacing: -.014em;
+  line-height: 1.6;
+  letter-spacing: 0;
+  font-kerning: normal;
+  font-optical-sizing: auto;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -34,7 +47,7 @@
 html, body { width: 100%; height: 100%; overflow: hidden; background: #fff; }
 html { -webkit-text-size-adjust: 100%; }
 body { margin: 0; min-width: 320px; font-weight: 400; }
-button, input, textarea { font: inherit; }
+button, input, textarea, select { font: inherit; letter-spacing: inherit; }
 input, textarea, select { min-width: 0; }
 button, a { -webkit-tap-highlight-color: transparent; }
 button { touch-action: manipulation; }
@@ -85,34 +98,42 @@ video:not([controls])::-webkit-media-controls { display: none !important; }
   background: #fff;
 }
 
-/* Figma의 12/14/16 본문과 18/24/30/40 제목 축을 제품 전역에서 재사용한다. */
+/*
+ * SKN typography: 기록 본문은 여유 있게, 제품명과 화면 제목은 선명하게,
+ * 상태·메타 정보는 작아도 읽히게 유지한다.
+ */
 .display-title {
   font-size: clamp(36px, 9.6vw, 40px);
-  font-weight: 500;
+  font-weight: 550;
   line-height: 1.15;
-  letter-spacing: -.04em;
+  letter-spacing: -.035em;
   text-wrap: balance;
 }
 .page-title {
   font-size: clamp(28px, 7.4vw, 30px);
-  font-weight: 500;
-  line-height: 1.2;
-  letter-spacing: -.035em;
+  font-weight: 550;
+  line-height: 1.25;
+  letter-spacing: -.03em;
   text-wrap: balance;
 }
 .section-title {
-  font-size: 18px;
-  font-weight: 500;
-  line-height: 1.4;
+  font-size: 19px;
+  font-weight: 550;
+  line-height: 1.42;
   letter-spacing: -.02em;
 }
 .supporting-copy {
   color: #73766f;
   font-size: 14px;
   font-weight: 400;
-  line-height: 1.6;
-  letter-spacing: -.01em;
+  line-height: 1.68;
+  letter-spacing: -.005em;
 }
+
+/* 기존 화면의 촘촘한 메타 라벨은 의미 계층을 유지하며 최소 가독성을 높인다. */
+.text-\[9px\] { font-size: 11px; line-height: 1.45; }
+.text-\[10px\] { font-size: 11px; line-height: 1.5; }
+.text-\[11px\] { font-size: 12px; line-height: 1.5; }
 .surface-card {
   border: 1px solid #e7e9e3;
   border-radius: 22px;

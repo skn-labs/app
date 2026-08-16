@@ -112,6 +112,7 @@ public class SkincareRepository {
         return jdbc.query("""
                 SELECT up.id AS user_product_id, up.custom_brand, up.custom_name, up.custom_category,
                        up.memo, up.added_at, p.*,
+                       COALESCE(p.brand_logo_url, custom_ba.logo_url) AS user_product_brand_logo_url,
                        CASE WHEN p.id IS NULL THEN 0 ELSE 1 END AS owned,
                        EXISTS(
                            SELECT 1 FROM routine r
@@ -129,6 +130,7 @@ public class SkincareRepository {
                          )) AS personal_record_count
                   FROM user_product up
                   LEFT JOIN product_catalog_public p ON p.id = up.product_id
+                  LEFT JOIN brand_asset custom_ba ON custom_ba.brand = up.custom_brand
                  WHERE up.user_id = ?
                  ORDER BY up.added_at DESC, up.id DESC
                 """, this::mapUserProduct, userId());
@@ -138,6 +140,7 @@ public class SkincareRepository {
         return jdbc.query("""
                 SELECT up.id AS user_product_id, up.custom_brand, up.custom_name, up.custom_category,
                        up.memo, up.added_at, p.*,
+                       COALESCE(p.brand_logo_url, custom_ba.logo_url) AS user_product_brand_logo_url,
                        CASE WHEN p.id IS NULL THEN 0 ELSE 1 END AS owned,
                        EXISTS(
                            SELECT 1 FROM routine r
@@ -155,6 +158,7 @@ public class SkincareRepository {
                          )) AS personal_record_count
                   FROM user_product up
                   LEFT JOIN product_catalog_public p ON p.id = up.product_id
+                  LEFT JOIN brand_asset custom_ba ON custom_ba.brand = up.custom_brand
                  WHERE up.user_id = ? AND up.id = ?
                 """, this::mapUserProduct, userId(), userProductId).stream().findFirst();
     }
@@ -162,7 +166,8 @@ public class SkincareRepository {
     public Optional<UserProductView> findOwnedCatalogProduct(long productId) {
         return jdbc.query("""
                 SELECT up.id AS user_product_id, up.custom_brand, up.custom_name, up.custom_category,
-                       up.memo, up.added_at, p.*, 1 AS owned,
+                       up.memo, up.added_at, p.*,
+                       p.brand_logo_url AS user_product_brand_logo_url, 1 AS owned,
                        EXISTS(
                            SELECT 1 FROM routine r
                            JOIN routine_item ri ON ri.routine_id = r.id
@@ -726,7 +731,8 @@ public class SkincareRepository {
                 rs.getString("guide_generated_at")
         );
         return new ProductView(
-                rs.getLong("id"), rs.getString("brand"), rs.getString("name"), rs.getString("category"),
+                rs.getLong("id"), rs.getString("brand"), rs.getString("brand_logo_url"),
+                rs.getString("name"), rs.getString("category"),
                 rs.getString("volume"), rs.getString("version_label"), rs.getInt("public_verified") == 1,
                 guide, parseSourceFacts(rs.getString("source_facts_json")),
                 rs.getInt("personal_record_count"), rs.getInt("owned") == 1, rs.getString("image_url")
@@ -737,7 +743,8 @@ public class SkincareRepository {
         ProductView product = rs.getObject("id") == null ? null : mapProduct(rs, rowNum);
         return new UserProductView(
                 rs.getLong("user_product_id"), product, rs.getString("custom_brand"),
-                rs.getString("custom_name"), rs.getString("custom_category"), rs.getString("memo"),
+                rs.getString("user_product_brand_logo_url"), rs.getString("custom_name"),
+                rs.getString("custom_category"), rs.getString("memo"),
                 rs.getString("added_at"), rs.getInt("personal_record_count"),
                 rs.getInt("in_current_routine") == 1
         );
@@ -880,15 +887,18 @@ public class SkincareRepository {
                 SELECT ri.user_product_id, ri.time_slot, ri.position, ri.frequency,
                        COALESCE(p.name, up.custom_name) AS product_name,
                        COALESCE(p.brand, up.custom_brand, '') AS brand,
+                       ba.logo_url AS brand_logo_url,
                        COALESCE(p.category, up.custom_category, '기타') AS category
                   FROM routine_item ri
                   JOIN user_product up ON up.id = ri.user_product_id
                   LEFT JOIN product p ON p.id = up.product_id
+                  LEFT JOIN brand_asset ba ON ba.brand = COALESCE(p.brand, up.custom_brand)
                  WHERE ri.routine_id = ?
                  ORDER BY ri.position
                 """, (itemRs, rowNum) -> new RoutineItemView(
                 itemRs.getLong("user_product_id"), itemRs.getString("product_name"),
-                itemRs.getString("brand"), itemRs.getString("category"),
+                itemRs.getString("brand"), itemRs.getString("brand_logo_url"),
+                itemRs.getString("category"),
                 itemRs.getString("time_slot"),
                 itemRs.getInt("position"), itemRs.getString("frequency")
         ), routineId);
