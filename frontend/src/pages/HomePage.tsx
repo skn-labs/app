@@ -3,8 +3,10 @@ import { useQuery } from '@tanstack/react-query'
 import { ArrowRight, Check, ChevronRight, Search, Sparkles, X } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { api } from '../lib/api'
+import { startChatPath } from '../lib/chat'
 import type { Home, Pattern } from '../lib/types'
 import { AppHeader, Card, ErrorState, Loading, Screen } from '../components/ui'
+import { ProductAddSheet } from '../components/ProductAddSheet'
 import heroWave from '../assets/figma/hero-wave.webp'
 import insightWave1 from '../assets/figma/insight-wave-1.svg'
 import insightWave2 from '../assets/figma/insight-wave-2.svg'
@@ -14,6 +16,7 @@ const insightWaves = [insightWave1, insightWave2]
 export function HomePage() {
   const navigate = useNavigate()
   const [endOpen, setEndOpen] = useState(false)
+  const [productAddOpen, setProductAddOpen] = useState(false)
   const home = useQuery({ queryKey: ['home'], queryFn: api.home })
 
   if (home.isPending) return <Screen><AppHeader/><Loading/></Screen>
@@ -31,11 +34,18 @@ export function HomePage() {
           : <EmptyExperienceCard productCount={data.productCount}/>}
       </div>
 
-      <button type="button" onClick={() => navigate('/ai')} className="interactive-card mt-5 flex min-h-[100px] w-full items-center gap-4 rounded-[22px] bg-[#050505] px-5 py-4 text-left text-white shadow-[0_8px_24px_rgba(0,0,0,.12)]">
-        <div className="grid size-11 shrink-0 place-items-center text-[#dce6ff]"><Sparkles size={30} strokeWidth={1.45}/></div>
-        <div className="min-w-0 flex-1"><p className="text-xs font-medium leading-5 text-[#cdd0d6]">SKN AI에게 편하게 물어보세요.</p><p className="mt-0.5 text-base font-semibold leading-[1.35] tracking-[-.02em]">피부에 대해 궁금한 게 있나요?</p></div>
-        <ChevronRight size={24} className="shrink-0 text-white/75"/>
-      </button>
+      <section className="mt-5 overflow-hidden rounded-[24px] border border-black/[.055] bg-white shadow-[0_10px_28px_rgba(0,0,0,.09)]" aria-label="AI와 화장품 탐색">
+        <button type="button" onClick={() => navigate('/ai')} className="group flex min-h-[104px] w-full items-center gap-4 bg-[#050505] px-5 py-4 text-left text-white transition hover:bg-black active:bg-[#111]">
+          <span className="grid size-11 shrink-0 place-items-center text-[#dce6ff]"><Sparkles size={30} strokeWidth={1.45}/></span>
+          <span className="min-w-0 flex-1"><span className="block text-xs font-medium leading-5 text-[#cdd0d6]">SKN AI에게 편하게 물어보세요.</span><strong className="mt-0.5 block text-base font-semibold leading-[1.35] tracking-[-.02em]">피부에 대해 궁금한 게 있나요?</strong></span>
+          <ChevronRight size={24} className="shrink-0 text-white/75 transition group-hover:translate-x-0.5"/>
+        </button>
+        <button type="button" onClick={() => setProductAddOpen(true)} className="group flex min-h-[82px] w-full items-center gap-3.5 border-t border-black/[.055] bg-[linear-gradient(110deg,#f8faff_0%,#f4f7fc_100%)] px-5 py-3.5 text-left transition hover:bg-white active:bg-[#f1f4f9]">
+          <span className="grid size-10 shrink-0 place-items-center rounded-[15px] bg-white text-[#60779f] shadow-[0_5px_16px_rgba(65,91,136,.10)]"><Search size={19} strokeWidth={1.8}/></span>
+          <span className="min-w-0 flex-1"><span className="block text-[11px] font-medium leading-4 text-[#687b9b]">추천받거나 검색해 MY LAB에 담아보세요.</span><strong className="mt-0.5 block text-[15px] font-semibold leading-5 tracking-[-.025em] text-[#1a2230]">궁금한 제품이 있나요?</strong></span>
+          <ChevronRight size={20} className="shrink-0 text-[#7892bb] transition group-hover:translate-x-0.5"/>
+        </button>
+      </section>
 
       <section className="mt-10" aria-labelledby="home-insight-title">
         <h2 id="home-insight-title" className="text-lg font-medium tracking-[-.02em]">MY INSIGHT</h2>
@@ -44,12 +54,6 @@ export function HomePage() {
           : <Card className="mt-4 border-0 bg-[#f5f8ff] px-5 py-6 text-left"><span className="inline-flex items-center gap-1 rounded-full bg-[#e4edff] px-3 py-1 text-xs font-medium text-[#566482]"><Check size={12}/>기록을 기다리는 중</span><p className="mt-4 text-base font-medium">두 번째 경험부터 서로 비교해요</p><p className="mt-1.5 text-xs leading-5 text-[#777d88]">좋았던 점과 아쉬웠던 점이 쌓이면<br/>근거가 있는 반복만 이곳에 나타나요.</p></Card>}
         {data.patterns.length > 0 && <Link to="/records" className="mt-3 flex items-center justify-end gap-1 text-xs font-medium text-[#3a3a3c]">더보기<ChevronRight size={13}/></Link>}
       </section>
-
-      <button type="button" onClick={() => navigate('/explore')} className="interactive-card mt-7 flex min-h-[92px] w-full items-center gap-4 rounded-[22px] border border-[#d9e6ff] bg-[#fbfdff] px-5 py-4 text-left">
-        <Search size={31} strokeWidth={1.6} className="shrink-0 text-[#7892bb]"/>
-        <div className="min-w-0 flex-1"><p className="text-xs font-medium leading-5 text-[#5f7396]">검색해서 내 LAB에 등록해보세요.</p><p className="mt-0.5 text-base font-semibold leading-[1.35] tracking-[-.02em]">궁금한 제품이 있나요?</p></div>
-        <ChevronRight size={23} className="shrink-0 text-[#7892bb]"/>
-      </button>
 
       <ProfilePreview recordCount={data.recordCount} patterns={data.patterns}/>
     </div>
@@ -63,6 +67,18 @@ export function HomePage() {
         }}
       />
     )}
+    <ProductAddSheet
+      open={productAddOpen}
+      onClose={() => setProductAddOpen(false)}
+      onAi={() => {
+        setProductAddOpen(false)
+        navigate(startChatPath('RECOMMEND', '내가 좋아했던 사용감과 아쉬웠던 경험을 바탕으로 다음에 탐색할 제품 후보를 찾아줘.'))
+      }}
+      onSearch={() => {
+        setProductAddOpen(false)
+        navigate('/explore')
+      }}
+    />
   </Screen>
 }
 
