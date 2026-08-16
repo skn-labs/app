@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { ArrowRight, ChevronRight, Search, Sparkles, X } from 'lucide-react'
+import { ArrowRight, ChevronRight, NotebookText, Search, Sparkles } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { api } from '../lib/api'
 import { startChatPath } from '../lib/chat'
@@ -19,7 +19,6 @@ const insightGraphPresets = [
 
 export function HomePage() {
   const navigate = useNavigate()
-  const [endOpen, setEndOpen] = useState(false)
   const [productAddOpen, setProductAddOpen] = useState(false)
   const [selectedInsight, setSelectedInsight] = useState<Pattern | null>(null)
   const home = useQuery({ queryKey: ['home'], queryFn: api.home })
@@ -35,7 +34,7 @@ export function HomePage() {
       <div className="mt-3"><h1 className="display-title break-words">{data.displayName} 님</h1><p className="mt-2 text-sm leading-6 text-black/50">오늘의 사용 경험을 가볍게 이어가요.</p></div>
 
       <div className="mt-7">
-        {experience ? <ActiveExperienceCard experience={experience} onOpen={() => navigate(`/experiences/${experience.id}`)} onEnd={() => setEndOpen(true)}/>
+        {experience ? <ActiveExperienceCard experience={experience} onOpen={() => navigate(`/experiences/${experience.id}`)} onRecord={() => navigate(`/experiences/${experience.id}/record`)}/>
           : <EmptyExperienceCard productCount={data.productCount}/>}
       </div>
 
@@ -61,15 +60,6 @@ export function HomePage() {
       <ProfilePreview recordCount={data.recordCount} patterns={data.patterns}/>
     </div>
 
-    {experience && endOpen && (
-      <EndExperienceDialog
-        onClose={() => setEndOpen(false)}
-        onConfirm={() => {
-          setEndOpen(false)
-          navigate(`/experiences/${experience.id}/record?end=1`)
-        }}
-      />
-    )}
     <ProductAddSheet
       open={productAddOpen}
       onClose={() => setProductAddOpen(false)}
@@ -86,7 +76,7 @@ export function HomePage() {
   </Screen>
 }
 
-function ActiveExperienceCard({ experience, onOpen, onEnd }: { experience: NonNullable<Home['currentExperience']>; onOpen: () => void; onEnd: () => void }) {
+function ActiveExperienceCard({ experience, onOpen, onRecord }: { experience: NonNullable<Home['currentExperience']>; onOpen: () => void; onRecord: () => void }) {
   const day = Math.max(1, Math.min(7, experience.day))
   const subjectLabel = experience.subjectType === 'ROUTINE' ? '지금 연구 중인 루틴' : '지금 연구 중인 제품'
   return <section className="relative left-1/2 aspect-[378/216] w-[104.42%] -translate-x-1/2" aria-label={`${subjectLabel}, 7일 중 ${day}일`}>
@@ -100,9 +90,9 @@ function ActiveExperienceCard({ experience, onOpen, onEnd }: { experience: NonNu
         <h2 className="line-clamp-1 max-w-[290px] text-[clamp(20px,5.6vw,24px)] font-semibold leading-[1.16] tracking-[-.04em] text-[#101725]">{experience.title}</h2>
         <p className="mt-1 line-clamp-1 text-xs font-medium leading-5 tracking-[-.015em] text-[#52647f]">{experience.subtitle}</p>
       </div>
-      <div className="grid grid-cols-2 gap-2">
-        <button type="button" onClick={onEnd} className="h-[clamp(40px,11vw,44px)] rounded-[14px] border border-[#cbd7e8] bg-white/92 text-[13px] font-bold leading-none tracking-[-.015em] text-[#172235] shadow-[0_5px_14px_rgba(47,74,119,.10)] backdrop-blur-md transition hover:border-[#b9c9df] hover:bg-white active:scale-[.975] active:bg-[#f7faff]">느낌 남기기</button>
-        <button type="button" onClick={onOpen} className="h-[clamp(40px,11vw,44px)] rounded-[14px] border border-[#111722] bg-[#111722] text-[13px] font-bold leading-none tracking-[-.015em] text-white shadow-[0_7px_18px_rgba(17,23,34,.20)] transition hover:bg-black active:scale-[.975] active:bg-[#202838]">연구 노트 보기</button>
+      <div className="grid h-[clamp(48px,12.8vw,51px)] grid-cols-[minmax(0,.94fr)_minmax(0,1.06fr)] gap-1.5 rounded-[18px] border border-white/90 bg-white/82 p-1.5 shadow-[0_7px_22px_rgba(47,74,119,.12)] backdrop-blur-md">
+        <button type="button" onClick={onOpen} className="flex min-w-0 items-center justify-center gap-1.5 rounded-[13px] text-[12px] font-bold leading-none tracking-[-.02em] text-[#40516c] transition hover:bg-[#edf3fc] active:scale-[.975] active:bg-[#e5edf9]"><NotebookText size={15} strokeWidth={2}/><span>연구 노트 보기</span></button>
+        <button type="button" onClick={onRecord} className="flex min-w-0 items-center justify-center gap-1.5 rounded-[13px] bg-[#111722] text-[13px] font-bold leading-none tracking-[-.02em] text-white shadow-[0_5px_14px_rgba(17,23,34,.20)] transition hover:bg-black active:scale-[.975] active:bg-[#202838]"><span>느낌 남기기</span><ArrowRight size={15} strokeWidth={2}/></button>
       </div>
     </div>
   </section>
@@ -244,30 +234,4 @@ function ProfilePreview({ recordCount, patterns }: { recordCount: number; patter
       </div>
     </div>
   </section>
-}
-
-function EndExperienceDialog({ onClose, onConfirm }: { onClose: () => void; onConfirm: () => void }) {
-  const dialog = useRef<HTMLElement>(null)
-  const close = useRef(onClose)
-  close.current = onClose
-  useEffect(() => {
-    const previousFocus = document.activeElement as HTMLElement | null
-    dialog.current?.focus({ preventScroll: true })
-    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === 'Escape') close.current() }
-    window.addEventListener('keydown', closeOnEscape)
-    return () => {
-      window.removeEventListener('keydown', closeOnEscape)
-      previousFocus?.focus({ preventScroll: true })
-    }
-  }, [])
-
-  return <div className="fixed inset-0 z-50 grid place-items-center bg-black/35 px-7 backdrop-blur-[2px]" onPointerDown={onClose}>
-    <section ref={dialog} role="dialog" aria-modal="true" aria-labelledby="end-experience-title" aria-describedby="end-experience-description" tabIndex={-1} className="relative w-full max-w-[342px] rounded-[26px] bg-white px-6 pb-6 pt-8 text-center shadow-[0_24px_80px_rgba(0,0,0,.24)] outline-none" onPointerDown={event => event.stopPropagation()}>
-      <button type="button" onClick={onClose} aria-label="닫기" className="absolute right-3 top-3 grid size-9 place-items-center rounded-full text-[#8e8e93] transition active:bg-[#f2f2f7]"><X size={18}/></button>
-      <img src="/skn-assets/onboarding-orb.png" alt="" className="mx-auto size-16 object-contain"/>
-      <h2 id="end-experience-title" className="mt-4 text-2xl font-medium tracking-[-.035em]">이번 경험 확인을 마칠까요?</h2>
-      <p id="end-experience-description" className="mx-auto mt-3 max-w-[270px] text-sm leading-5 text-[#636366]">마치기 전에 지금까지의 느낌을 남겨요. 현재 사용 루틴은 그대로 유지됩니다.</p>
-      <div className="mt-7 grid grid-cols-2 gap-2"><button type="button" onClick={onClose} className="h-[52px] rounded-full bg-[#eef3ff] text-[13px] font-semibold leading-none tracking-[-.015em] transition active:scale-[.98]">취소</button><button type="button" onClick={onConfirm} className="h-[52px] rounded-full bg-[#0a0a0a] text-[13px] font-semibold leading-none tracking-[-.015em] text-white transition active:scale-[.98]">느낌 남기기</button></div>
-    </section>
-  </div>
 }

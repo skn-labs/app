@@ -145,7 +145,7 @@ function AiHeader({ onBack }: { onBack?: () => void }) {
   const navigate = useNavigate()
   const [historyOpen, setHistoryOpen] = useState(false)
   const conversations = useQuery({ queryKey: ['conversations'], queryFn: api.conversations, enabled: historyOpen })
-  const historyButton = <button type="button" onClick={() => setHistoryOpen(true)} aria-label="AI 대화 기록 열기" aria-haspopup="dialog" aria-expanded={historyOpen} className="inline-flex h-10 items-center gap-1.5 rounded-full border border-[#dfe4ee] bg-white px-3.5 text-[13px] font-bold tracking-[-.015em] text-[#273247] shadow-[0_3px_10px_rgba(31,46,75,.06)] transition hover:border-[#cbd5e5] hover:bg-[#f7f9fd] active:scale-95"><History size={16} strokeWidth={2}/><span>기록</span></button>
+  const historyButton = <button type="button" onClick={() => setHistoryOpen(true)} aria-label="AI 대화 기록 열기" aria-haspopup="dialog" aria-expanded={historyOpen} className="grid size-11 place-items-center rounded-full border border-[#e1e6ef] bg-white text-[#273247] shadow-[0_3px_10px_rgba(31,46,75,.06)] transition hover:border-[#cbd5e5] hover:bg-[#f7f9fd] active:scale-95"><History size={20} strokeWidth={1.9}/></button>
   return <>
     <AppHeader back onBack={onBack || (() => navigate('/'))} profile={false} sticky right={historyButton}/>
     {historyOpen && <AiHistory conversations={conversations.data || []} loading={conversations.isPending} error={conversations.error?.message} onRetry={() => conversations.refetch()} onClose={() => setHistoryOpen(false)}/>}
@@ -165,7 +165,43 @@ function AiHistory({ conversations, loading, error, onRetry, onClose }: { conver
     return () => { window.removeEventListener('keydown', closeOnEscape); previousFocus?.focus({ preventScroll: true }) }
   }, [])
   const startNew = () => { onClose(); navigate('/ai') }
-  return <div className="fixed inset-0 z-50 flex justify-center bg-black/25 backdrop-blur-[2px]" onPointerDown={onClose}><div className="flex h-full w-full max-w-[430px] justify-end"><aside ref={dialog} role="dialog" aria-modal="true" aria-labelledby="history-title" tabIndex={-1} className="safe-bottom flex h-full w-[88%] max-w-[360px] animate-slide-in flex-col bg-white shadow-[-18px_0_55px_rgba(22,30,45,.16)] outline-none" onPointerDown={event => event.stopPropagation()}><div className="safe-top flex items-center justify-between border-b border-[#eef0f3] px-5 pb-4"><div><p className="text-xs font-medium text-[#778096]">SKN AI</p><h2 id="history-title" className="mt-0.5 text-2xl font-medium tracking-[-.04em]">최근 대화</h2></div><button type="button" onClick={onClose} aria-label="최근 대화 닫기" className="grid size-11 place-items-center rounded-full bg-[#f5f7fa]"><X size={18}/></button></div><div className="px-4 pt-4"><button type="button" onClick={startNew} className="flex h-12 w-full items-center justify-center gap-2 rounded-[16px] bg-black text-sm font-medium text-white"><Plus size={17}/>새 대화 시작</button></div><div className="hide-scrollbar flex-1 overflow-y-auto px-4 pb-6 pt-3">{loading ? <div className="grid min-h-56 place-items-center"><AiMotion size="tiny"/></div> : error ? <div className="mt-6 rounded-[18px] bg-[#fff5f5] p-4 text-center"><p className="text-xs leading-5 text-danger">{error}</p><button type="button" onClick={onRetry} className="mt-3 inline-flex items-center gap-1 text-xs font-medium"><RefreshCw size={13}/>다시 불러오기</button></div> : conversations.length ? <div className="space-y-1">{conversations.map(item => <Link key={item.id} to={`/ai/${item.id}`} className="flex items-center gap-3 rounded-[18px] p-3.5 transition hover:bg-[#f4f6f9] active:scale-[.99]" onClick={onClose}><div className="grid size-9 shrink-0 place-items-center rounded-[13px] bg-[#f0f4fc] text-[#62709a]"><MessageCircle size={17}/></div><div className="min-w-0 flex-1"><div className="flex items-center justify-between gap-2"><p className="truncate text-sm font-medium">{titleFor(item)}</p><span className="shrink-0 text-xs text-[#a1a6ad]">{historyTime(item)}</span></div><p className="mt-1 truncate text-xs text-[#848a92]">{item.messages.at(-1)?.content}</p><p className="mt-1.5 text-xs font-medium text-[#7985a4]">{modeLabel(item.mode)}</p></div></Link>)}</div> : <div className="px-4 py-16 text-center"><MessageCircle className="mx-auto text-[#b7bdc6]"/><p className="mt-4 text-sm font-medium">아직 대화가 없어요</p><p className="mt-1 text-xs leading-5 text-[#8b9199]">제품이나 루틴에 대해 물어보면<br/>여기에서 다시 이어볼 수 있어요.</p></div>}</div></aside></div></div>
+  return <div className="fixed inset-0 z-50 flex justify-center bg-[#111827]/30 backdrop-blur-[3px]" onPointerDown={onClose}>
+    <div className="flex h-full w-full max-w-[430px] justify-end overflow-hidden">
+      <aside ref={dialog} role="dialog" aria-modal="true" aria-labelledby="history-title" tabIndex={-1} className="safe-bottom flex h-full w-[89%] max-w-[360px] animate-slide-in flex-col overflow-hidden rounded-l-[28px] border-l border-white/80 bg-[#fbfcfe] shadow-[-22px_0_64px_rgba(22,30,45,.18)] outline-none" onPointerDown={event => event.stopPropagation()}>
+        <header className="safe-top shrink-0 border-b border-[#e9edf3] bg-white/95">
+          <div className="flex items-center justify-between gap-4 px-5 pb-5 pt-3">
+            <div>
+              <p className="text-[11px] font-semibold tracking-[.09em] text-[#71809a]">SKN AI</p>
+              <h2 id="history-title" className="mt-1 text-[26px] font-semibold leading-tight tracking-[-.04em] text-[#151b26]">대화 기록</h2>
+            </div>
+            <button type="button" onClick={onClose} aria-label="대화 기록 닫기" className="grid size-11 shrink-0 place-items-center rounded-full border border-[#e7ebf1] bg-[#f7f9fc] text-[#596273] transition hover:border-[#d6dde8] hover:bg-white active:scale-95"><X size={18} strokeWidth={1.9}/></button>
+          </div>
+        </header>
+
+        <div className="shrink-0 px-5 pt-5">
+          <button type="button" onClick={startNew} className="flex h-[52px] w-full items-center justify-center gap-2 rounded-[18px] bg-[#111722] text-sm font-bold tracking-[-.015em] text-white shadow-[0_8px_20px_rgba(17,23,34,.16)] transition hover:bg-black active:scale-[.985]"><Plus size={18} strokeWidth={2}/>새 대화 시작</button>
+        </div>
+
+        <div className="hide-scrollbar flex-1 overflow-y-auto px-5 pb-7 pt-5" aria-live="polite">
+          {loading ? <div className="grid min-h-56 place-items-center"><AiMotion size="tiny"/></div>
+            : error ? <div className="rounded-[22px] border border-[#f1d9d9] bg-[#fff8f8] px-5 py-8 text-center"><p className="text-xs leading-5 text-danger">{error}</p><button type="button" onClick={onRetry} className="mt-4 inline-flex h-10 items-center gap-1.5 rounded-full border border-[#efcece] bg-white px-4 text-xs font-semibold text-[#9c4545] transition active:scale-95"><RefreshCw size={14}/>다시 불러오기</button></div>
+              : conversations.length ? <section aria-label={`저장된 AI 대화 ${conversations.length}개`}>
+                <p className="mb-3 text-[11px] font-semibold tracking-[.06em] text-[#8a93a2]">최근 대화 {conversations.length}</p>
+                <div className="space-y-2.5">{conversations.map(item => <Link key={item.id} to={`/ai/${item.id}`} className="group flex items-center gap-3 rounded-[20px] border border-[#e6eaf0] bg-white px-3.5 py-3.5 shadow-[0_4px_14px_rgba(42,56,82,.045)] transition hover:border-[#d3dbe8] hover:shadow-[0_7px_18px_rgba(42,56,82,.08)] active:scale-[.985]" onClick={onClose}>
+                  <div className="grid size-10 shrink-0 place-items-center rounded-[14px] bg-[#eef3fc] text-[#5d6f91] transition group-hover:bg-[#e7eefb]"><MessageCircle size={17} strokeWidth={1.9}/></div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-2"><p className="truncate text-sm font-semibold tracking-[-.015em] text-[#202735]">{titleFor(item)}</p><span className="shrink-0 text-[10px] font-medium text-[#9aa1ad]">{historyTime(item)}</span></div>
+                    <p className="mt-1 truncate text-[11px] leading-4 text-[#7d8490]">{item.messages.at(-1)?.content}</p>
+                    <span className="mt-2 inline-flex rounded-full bg-[#f0f4fb] px-2 py-1 text-[10px] font-semibold leading-none text-[#66789a]">{modeLabel(item.mode)}</span>
+                  </div>
+                  <ChevronRight size={15} className="shrink-0 text-[#a9b2c0] transition group-hover:translate-x-0.5"/>
+                </Link>)}</div>
+              </section>
+                : <div className="rounded-[24px] border border-[#e6eaf0] bg-white px-5 py-12 text-center shadow-[0_4px_14px_rgba(42,56,82,.04)]"><div className="mx-auto grid size-12 place-items-center rounded-[17px] bg-[#eef3fc] text-[#7484a1]"><MessageCircle size={20}/></div><p className="mt-4 text-sm font-semibold text-[#252c38]">아직 대화가 없어요</p><p className="mt-2 text-xs leading-5 text-[#858d99]">제품이나 루틴에 대해 물어보면<br/>여기에서 다시 이어볼 수 있어요.</p></div>}
+        </div>
+      </aside>
+    </div>
+  </div>
 }
 
 function AiMotion({ size }: { size: 'hero' | 'loading' | 'tiny' }) {
