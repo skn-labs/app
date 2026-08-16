@@ -1,7 +1,5 @@
 # F-07 홈·기록·패턴 요구사항
 
-[Feature #163](https://github.com/skn-labs/app/issues/163)
-
 ## P0
 
 | ID | 요구사항 | 이유 |

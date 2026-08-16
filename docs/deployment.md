@@ -4,6 +4,7 @@
 
 | 용도 | URL |
 | --- | --- |
+| Web | <https://skn.today> |
 | API 호스트 | <http://api.leafeep.com> |
 | 헬스체크 | <http://api.leafeep.com/actuator/health> |
 | API 계약 문서 | <https://skn-labs.github.io/app/api/> |
@@ -19,7 +20,7 @@
 
 ## 프론트엔드 연결
 
-- 운영 프론트엔드는 <https://skn-labs.vercel.app>에서 제공한다.
+- 운영 프론트엔드는 Vercel에서 제공하며 사용자는 <https://skn.today>로 접속한다.
 - 브라우저는 환경과 관계없이 같은 출처의 상대 경로 `/api/...`만 호출한다.
 - Vercel에서는 [`frontend/vercel.json`](../frontend/vercel.json)이 `/api/*`를 API 서버로 프록시한다. 따라서 액세스 토큰 쿠키를 교차 출처 쿠키로 만들지 않는다.
 - 운영 컨테이너는 `AUTH_COOKIE_SECURE=true`를 강제해 브라우저 HTTPS 구간에서만 액세스 토큰 쿠키가 전송되게 한다.

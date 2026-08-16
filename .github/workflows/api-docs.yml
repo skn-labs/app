@@ -1,11 +1,10 @@
-name: Deploy product pages
+name: Deploy documentation
 
 on:
   push:
     branches:
       - main
     paths:
-      - prototype/index.html
       - site/**
       - docs/api/openapi.yaml
       - redocly.yaml
@@ -40,9 +39,8 @@ jobs:
 
       - name: Build Pages site
         run: |
-          mkdir -p _site/prototype _site/api
+          mkdir -p _site/api
           cp -R site/. _site/
-          cp prototype/index.html _site/prototype/index.html
           npx --yes @redocly/cli@2.43.3 build-docs docs/api/openapi.yaml \
             --output _site/api/index.html \
             --title "SKN API"

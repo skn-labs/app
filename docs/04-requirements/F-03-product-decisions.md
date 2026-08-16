@@ -1,7 +1,5 @@
 # F-03 AI 제품 탐색 요구사항
 
-[Feature #159](https://github.com/skn-labs/app/issues/159)
-
 ## P0
 
 | ID | 요구사항 | 이유 |

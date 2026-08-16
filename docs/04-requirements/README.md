@@ -1,17 +1,17 @@
 # 요구사항
 
-요구사항은 SKN이 지켜야 할 사용자 결과와 시스템 의무다. 흐름·분기·오류·완료 조건은 연결된 GitHub Feature 이슈가 원본이다.
+요구사항은 SKN이 지켜야 할 사용자 결과와 시스템 의무다. 사용자의 현재 요청과 이 디렉터리의 문서가 흐름·분기·오류·완료 조건의 기준이며 GitHub 이슈는 과거 작업 이력으로만 본다.
 
-| 순서 | 영역 | 요구사항 | Feature |
-| --- | --- | --- | --- |
-| 1 | 계정·데이터 경계 | [F-01](./F-01-account.md) | [#157](https://github.com/skn-labs/app/issues/157) |
-| 2 | 카탈로그·내 화장품 | [F-02](./F-02-products.md) | [#158](https://github.com/skn-labs/app/issues/158) |
-| 3 | AI 제품 탐색 | [F-03](./F-03-product-decisions.md) | [#159](https://github.com/skn-labs/app/issues/159) |
-| 4 | 루틴·사용 맥락 | [F-04](./F-04-routine.md) | [#160](https://github.com/skn-labs/app/issues/160) |
-| 5 | 경험 기록·회고 | [F-05](./F-05-observation.md) | [#161](https://github.com/skn-labs/app/issues/161) |
-| 6 | AI Rescue | [F-06](./F-06-rescue.md) | [#162](https://github.com/skn-labs/app/issues/162) |
-| 7 | 홈·기록·패턴 | [F-07](./F-07-home-history.md) | [#163](https://github.com/skn-labs/app/issues/163) |
-| 8 | AI·보안·운영 | [F-08](./F-08-ai-operations.md) | [#164](https://github.com/skn-labs/app/issues/164) |
+| 순서 | 영역 | 요구사항 |
+| --- | --- | --- |
+| 1 | 계정·데이터 경계 | [F-01](./F-01-account.md) |
+| 2 | 카탈로그·내 화장품 | [F-02](./F-02-products.md) |
+| 3 | AI 제품 탐색 | [F-03](./F-03-product-decisions.md) |
+| 4 | 루틴·사용 맥락 | [F-04](./F-04-routine.md) |
+| 5 | 경험 기록·회고 | [F-05](./F-05-observation.md) |
+| 6 | AI Rescue | [F-06](./F-06-rescue.md) |
+| 7 | 홈·기록·패턴 | [F-07](./F-07-home-history.md) |
+| 8 | AI·보안·운영 | [F-08](./F-08-ai-operations.md) |
 
 ## 우선순위
 

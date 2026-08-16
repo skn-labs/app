@@ -43,7 +43,7 @@ Table user_skin_profile {
   avoid_note text [not null, default: '']
   trial_frequency text [not null, note: 'RARELY | EVERY_FEW_MONTHS | ONE_OR_TWO_MONTHLY | THREE_PLUS_MONTHLY']
   updated_at text [not null]
-  note: 'prototype_2 8단계에서 사용자가 직접 선택한 자기보고 프로필'
+  note: '현재 8단계 온보딩에서 사용자가 직접 선택한 자기보고 프로필'
 }
 
 Table product {

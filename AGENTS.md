@@ -32,3 +32,14 @@ GitHub Issues와 Projects는 작업 관리나 기능명세 원본으로 사용�
 - 사용자가 적용하기 전에는 AI가 루틴이나 개인 사실을 바꾸지 않는다.
 
 전체 문서 역할은 [문서 안내](./docs/README.md)를 따른다.
+
+## 저장소 길잡이
+
+파일 위치와 변경 시 함께 확인할 계약은 [프로젝트 맵](./.agents/context/project-map.md)을 따른다. 프로젝트 맵은 탐색을 돕는 하네스이며 제품 요구사항을 대신하지 않는다.
+
+기본 검증은 변경 범위에 맞춰 아래에서 선택한다.
+
+- 프론트엔드: `cd frontend && npm run lint && npm run build && npx vitest run`
+- 백엔드·DB·API: `cd backend && ./gradlew test bootJar`
+- 운영 스크립트: shell 구문 검사, 새 DB 생성, migration 재적용, `PRAGMA integrity_check`, `PRAGMA foreign_key_check`
+- UI: 390px 모바일과 데스크톱에서 로딩·빈 상태·오류·키보드 포커스를 함께 확인한다.

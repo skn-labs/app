@@ -1,7 +1,5 @@
 # F-05 경험 기록·회고 요구사항
 
-[Feature #161](https://github.com/skn-labs/app/issues/161)
-
 ## P0
 
 | ID | 요구사항 | 이유 |

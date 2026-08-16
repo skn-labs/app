@@ -108,7 +108,7 @@ paths:
     post:
       tags: [Auth]
       summary: 8단계 자기보고 피부 프로필을 저장하고 온보딩을 마친다
-      description: sktn-prototype_2의 연령대·성별·피부 타입·최근 상태·고민·사용감·기피·시도 빈도를 한 번에 저장한다.
+      description: 현재 8단계 온보딩의 연령대·성별·피부 타입·최근 상태·고민·사용감·기피·시도 빈도를 한 번에 저장한다.
       operationId: completeOnboarding
       requestBody:
         required: true
@@ -549,7 +549,7 @@ components:
         clientRequestId: { type: string, minLength: 1 }
     SkinProfile:
       type: object
-      description: 사용자가 prototype_2의 8단계에서 직접 선택한 자기보고 맥락. AI 추론이나 진단이 아니다.
+      description: 사용자가 현재 8단계 온보딩에서 직접 선택한 자기보고 맥락. AI 추론이나 진단이 아니다.
       required: [ageRange, gender, skinType, skinCondition, concerns, textures, avoids, avoidNote, trialFrequency]
       properties:
         ageRange: { type: string, enum: [10S, 20S, 30S, 40S, 50S, 60_PLUS] }

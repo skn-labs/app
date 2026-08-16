@@ -1,7 +1,5 @@
 # F-06 AI Rescue 요구사항
 
-[Feature #162](https://github.com/skn-labs/app/issues/162)
-
 ## P0
 
 | ID | 요구사항 | 이유 |
