@@ -27,7 +27,7 @@ function dayPartLabel(dayPart: Routine['dayPart']) { return dayPart === 'MORNING
 function timeSlotLabel(timeSlot: Routine['items'][number]['timeSlot']) { return timeSlot === 'MORNING' ? '아침' : timeSlot === 'EVENING' ? '저녁' : '아침·저녁' }
 function formatDate(value: string) { const normalized = /Z$|[+-]\d\d:\d\d$/.test(value) ? value : `${value.replace(' ', 'T')}Z`; const date = new Date(normalized); return Number.isNaN(date.getTime()) ? value.slice(0, 10) : new Intl.DateTimeFormat('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' }).format(date) }
 function isNotFound(error: unknown) { return error instanceof ApiError && error.status === 404 }
-function statusLabel(routine: Routine, current?: Routine) { return routine.id === current?.id ? '현재 사용 중' : '비교 기준 루틴' }
+function statusLabel(routine: Routine, current?: Routine) { return routine.id === current?.id ? '현재 사용 중' : '이전 루틴' }
 function routineGlance(routine: Routine) {
   const first = routine.items[0]?.category
   const last = routine.items[routine.items.length - 1]?.category
@@ -229,9 +229,8 @@ function RoutineCarouselCard({ routine, current, image, tone, expanded, onExpand
         <RoutineLabPattern/>
         <div className="relative flex h-full flex-col">
           <div className="flex items-center justify-between gap-3"><span className="rounded-full border border-white/65 bg-white/62 px-3 py-1.5 text-[10px] font-semibold text-[#56647a] shadow-[0_3px_10px_rgba(43,57,81,.05)] backdrop-blur-md">{statusLabel(routine, current)}</span><span className="text-[10px] font-medium text-[#7e8a9c]">눌러 앞면 보기</span></div>
-          <p className="mt-6 text-[10px] font-semibold tracking-[.13em] text-[#6e7f99]">{insight ? 'SKN AI · 이 루틴이 도와주는 것' : '이 루틴의 구성'}</p>
-          {insight && <div className="mt-2.5 flex flex-wrap gap-1.5">{(insight.keywords || []).map(keyword => <span key={keyword} className="rounded-full border border-white/80 bg-white/58 px-2.5 py-1 text-[9px] font-semibold tracking-[-.01em] text-[#5d6f88] shadow-[0_2px_8px_rgba(53,70,98,.04)] backdrop-blur">{keyword}</span>)}</div>}
-          <p className={`mt-4 tracking-[-.03em] text-[#1b2536] ${insight ? 'line-clamp-3 text-[16px] font-medium leading-[1.58]' : 'line-clamp-3 text-[18px] font-semibold leading-[1.42]'}`}>{insight?.text || routineGlance(routine)}</p>
+          {insight && <div className="mt-7 flex flex-wrap gap-1.5">{(insight.keywords || []).map(keyword => <span key={keyword} className="rounded-full border border-white/80 bg-white/58 px-2.5 py-1 text-[9px] font-semibold tracking-[-.01em] text-[#5d6f88] shadow-[0_2px_8px_rgba(53,70,98,.04)] backdrop-blur">{keyword}</span>)}</div>}
+          <p className={`tracking-[-.03em] text-[#1b2536] ${insight ? 'mt-4 line-clamp-3 text-[16px] font-medium leading-[1.58]' : 'mt-8 line-clamp-3 text-[18px] font-semibold leading-[1.42]'}`}>{insight?.text || routineGlance(routine)}</p>
           <Link to={`/routines/${routine.id}`} tabIndex={expanded ? 0 : -1} onClick={event => event.stopPropagation()} className="mt-auto flex h-11 items-center justify-center rounded-[15px] bg-[#111722] px-4 text-[12px] font-semibold text-white shadow-[0_8px_20px_rgba(17,23,34,.18)] transition hover:bg-black active:scale-[.98]">루틴 상세 보기</Link>
         </div>
       </article>

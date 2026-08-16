@@ -114,7 +114,7 @@ T(s,ML,5.6,8.6,0.8,
    R("AI가 내 기록에서 반복된 기준을 찾아 돌려줍니다.",14.5,INK,MD)],ls=1.45)
 hline(s,ML,6.55,CW)
 T(s,ML,6.72,8,0.35,[R("PERSONAL SKINCARE EXPERIENCE ARCHIVE",10.5,FAINT,MD,2.4)],an=MSO_ANCHOR.MIDDLE)
-T(s,PW-MR-4,6.72,4,0.35,[R("skn-labs.vercel.app",11,ACCENT,MD,0.3)],al=PP_ALIGN.RIGHT,an=MSO_ANCHOR.MIDDLE)
+T(s,PW-MR-4,6.72,4,0.35,[R("skn.today",11,ACCENT,MD,0.3)],al=PP_ALIGN.RIGHT,an=MSO_ANCHOR.MIDDLE)
 
 # ============================================================
 # 02 · PROBLEM (chart)
@@ -327,7 +327,7 @@ for i,(h,d) in enumerate(pts):
 rx=ML+lw+0.9; vline(s,rx-0.45,3.05,3.4,c=HAIR,wt=1.0)
 T(s,rx,3.0,PW-MR-rx,0.4,[R("LIVE",12,ACCENT,SB,3.0)])
 phone(s,(rx+PW-MR)/2,3.55,2.5,"데모 QR / 스크린샷","")
-T(s,rx,6.2,PW-MR-rx,0.4,[R("skn-labs.vercel.app",15,INK,SB,0.3)])
+T(s,rx,6.2,PW-MR-rx,0.4,[R("skn.today",15,INK,SB,0.3)])
 T(s,rx,6.62,PW-MR-rx,0.4,[R("테스트 계정 20개로 즉시 체험",11,SUB,RG)])
 foot(s,12)
 
@@ -393,7 +393,7 @@ T(s,ML,2.75,11,2.2,
    [R("사용자의 피부와 경험.",46,SAGEON,SB,-1.0)]],ls=1.2)
 T(s,ML,5.15,10.5,0.6,[R("써본 만큼 나를 더 잘 알게 되는 스킨케어 경험 아카이브.",14.5,SUBON,RG)])
 hline(s,ML,6.5,CW,c=HAIRON,wt=1.0)
-T(s,ML,6.68,8,0.35,[R("skn-labs.vercel.app",12,SAGEON,MD,0.3)],an=MSO_ANCHOR.MIDDLE)
+T(s,ML,6.68,8,0.35,[R("skn.today",12,SAGEON,MD,0.3)],an=MSO_ANCHOR.MIDDLE)
 T(s,PW-MR-4,6.68,4,0.35,[R("AI · WELLNESS",11,SUBON,MD,2.4)],al=PP_ALIGN.RIGHT,an=MSO_ANCHOR.MIDDLE)
 
 out=f"{BASE}/SKN_pitch3.pptx"; prs.save(out)
