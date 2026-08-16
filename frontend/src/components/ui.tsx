@@ -23,7 +23,7 @@ export function AppHeader({ back = false, backTo, onBack, left, right, profile =
   const navigate = useNavigate()
   return <header className={twMerge('safe-top z-20 flex min-h-[72px] shrink-0 items-center justify-between bg-white/95 px-5 backdrop-blur-xl', sticky ? 'sticky top-0' : 'relative')}>
     <div className="flex w-24 items-center">{left || (back && <button type="button" aria-label="뒤로" onClick={() => onBack ? onBack() : backTo ? navigate(backTo) : navigate(-1)} className="-ml-2 grid size-11 place-items-center rounded-full transition hover:bg-soft active:scale-95"><ChevronLeft size={24}/></button>)}</div>
-    <SknMark className="h-10 w-10"/>
+    <SknMark className="h-8 w-[30px]"/>
     <div className="flex w-24 items-center justify-end">
       {right || (!back && <>{notifications && <NotificationBell/>}{profile && <Link to="/records" aria-label="마이페이지" className="grid size-11 place-items-center rounded-full text-ink transition hover:bg-soft active:scale-95"><CircleUserRound size={22} strokeWidth={1.8}/></Link>}</>)}
     </div>
@@ -76,7 +76,7 @@ export function Button({ className, variant = 'primary', type = 'button', ...pro
     ghost: 'bg-transparent text-ink hover:bg-soft',
     danger: 'bg-[#fff0f0] text-danger hover:bg-[#ffe8e8]',
   }
-  return <button type={type} className={twMerge('flex min-h-12 items-center justify-center gap-2 rounded-full px-5 text-base font-medium transition active:scale-[.985] disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100', variants[variant], className)} {...props}/>
+  return <button type={type} className={twMerge('flex min-h-12 items-center justify-center gap-2 rounded-full px-5 text-sm font-medium leading-none tracking-[-.01em] transition active:scale-[.985] disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100', variants[variant], className)} {...props}/>
 }
 
 export function Card({ children, className = '' }: PropsWithChildren<{ className?: string }>) {

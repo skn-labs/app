@@ -33,7 +33,7 @@ export function HomePage() {
 
       <button type="button" onClick={() => navigate('/ai')} className="interactive-card mt-5 flex min-h-[100px] w-full items-center gap-4 rounded-[22px] bg-[#050505] px-5 py-4 text-left text-white shadow-[0_8px_24px_rgba(0,0,0,.12)]">
         <div className="grid size-11 shrink-0 place-items-center text-[#dce6ff]"><Sparkles size={30} strokeWidth={1.45}/></div>
-        <div className="min-w-0 flex-1"><p className="text-xs font-medium text-[#cdd0d6]">SKN AI에게 편하게 물어보세요.</p><p className="mt-1 text-lg font-medium leading-snug tracking-[-.02em]">피부에 대해 궁금한 게 있나요?</p></div>
+        <div className="min-w-0 flex-1"><p className="text-[13px] font-normal leading-5 text-[#cdd0d6]">SKN AI에게 편하게 물어보세요.</p><p className="mt-0.5 text-[17px] font-medium leading-[1.35] tracking-[-.015em]">피부에 대해 궁금한 게 있나요?</p></div>
         <ChevronRight size={24} className="shrink-0 text-white/75"/>
       </button>
 
@@ -47,7 +47,7 @@ export function HomePage() {
 
       <button type="button" onClick={() => navigate('/explore')} className="interactive-card mt-7 flex min-h-[92px] w-full items-center gap-4 rounded-[22px] border border-[#d9e6ff] bg-[#fbfdff] px-5 py-4 text-left">
         <Search size={31} strokeWidth={1.6} className="shrink-0 text-[#7892bb]"/>
-        <div className="min-w-0 flex-1"><p className="text-xs text-[#5f7396]">검색해서 내 LAB에 등록해보세요.</p><p className="mt-1 text-lg font-medium tracking-[-.02em]">궁금한 제품이 있나요?</p></div>
+        <div className="min-w-0 flex-1"><p className="text-[13px] font-normal leading-5 text-[#5f7396]">검색해서 내 LAB에 등록해보세요.</p><p className="mt-0.5 text-[17px] font-medium leading-[1.35] tracking-[-.015em]">궁금한 제품이 있나요?</p></div>
         <ChevronRight size={23} className="shrink-0 text-[#7892bb]"/>
       </button>
 
@@ -69,20 +69,20 @@ export function HomePage() {
 function ActiveExperienceCard({ experience, onOpen, onEnd }: { experience: NonNullable<Home['currentExperience']>; onOpen: () => void; onEnd: () => void }) {
   const day = Math.max(1, Math.min(7, experience.day))
   const subjectLabel = experience.subjectType === 'ROUTINE' ? '지금 연구 중인 루틴' : '지금 연구 중인 제품'
-  return <section className="relative mx-auto aspect-[378/216] w-full max-w-[378px]" aria-label={`${subjectLabel}, 7일 중 ${day}일`}>
+  return <section className="relative left-1/2 aspect-[378/216] w-[104.42%] -translate-x-1/2" aria-label={`${subjectLabel}, 7일 중 ${day}일`}>
     <img src="/skn-assets/routine-research-card.svg" alt="" aria-hidden className="absolute inset-0 size-full"/>
     <div className="absolute inset-[8px] flex flex-col px-[clamp(16px,5vw,22px)] py-[clamp(14px,4.4vw,19px)]">
       <div className="flex items-center justify-between gap-3">
-        <p className="text-[clamp(11px,3vw,12px)] font-semibold leading-none tracking-[-.01em] text-[#4e6387]">{subjectLabel}</p>
-        <p role="progressbar" aria-label={`7일 중 ${day}일`} aria-valuemin={1} aria-valuemax={7} aria-valuenow={day} className="shrink-0 rounded-full border border-white/85 bg-white/72 px-2.5 py-1 text-[10px] font-semibold leading-none tracking-[.04em] text-[#4b5f80] shadow-[0_2px_8px_rgba(56,83,129,.08)] backdrop-blur-sm tabular-nums">DAY {day} / 7</p>
+        <p className="text-[clamp(11px,3vw,12px)] font-medium leading-none tracking-[-.005em] text-[#4e6387]">{subjectLabel}</p>
+        <p role="progressbar" aria-label={`7일 중 ${day}일`} aria-valuemin={1} aria-valuemax={7} aria-valuenow={day} className="shrink-0 rounded-full border border-white/85 bg-white/72 px-2.5 py-1 text-[10px] font-medium leading-none tracking-[.035em] text-[#4b5f80] shadow-[0_2px_8px_rgba(56,83,129,.08)] backdrop-blur-sm tabular-nums">DAY {day} / 7</p>
       </div>
       <div className="min-h-0 flex-1 pt-[clamp(8px,2.8vw,12px)]">
-        <h2 className="line-clamp-1 max-w-[290px] text-[clamp(21px,6.3vw,27px)] font-semibold leading-[1.12] tracking-[-.048em] text-[#101725]">{experience.title}</h2>
-        <p className="mt-1 line-clamp-1 text-[clamp(11px,3.3vw,13px)] font-medium leading-5 tracking-[-.02em] text-[#52647f]">{experience.subtitle}</p>
+        <h2 className="line-clamp-1 max-w-[290px] text-[clamp(20px,5.8vw,25px)] font-medium leading-[1.16] tracking-[-.035em] text-[#101725]">{experience.title}</h2>
+        <p className="mt-1 line-clamp-1 text-[clamp(12px,3.3vw,13px)] font-normal leading-5 tracking-[-.01em] text-[#52647f]">{experience.subtitle}</p>
       </div>
       <div className="grid grid-cols-2 gap-2">
-        <button type="button" onClick={onEnd} className="h-[clamp(36px,10.5vw,42px)] rounded-full border border-white/90 bg-white/72 text-[clamp(11px,3.3vw,13px)] font-semibold text-[#1c2a3d] shadow-[0_4px_14px_rgba(47,74,119,.08)] backdrop-blur-md transition hover:bg-white active:scale-[.98]">느낌 남기기</button>
-        <button type="button" onClick={onOpen} className="h-[clamp(36px,10.5vw,42px)] rounded-full bg-[#111722] text-[clamp(11px,3.3vw,13px)] font-semibold text-white shadow-[0_7px_18px_rgba(17,23,34,.18)] transition hover:bg-black active:scale-[.98]">연구 노트 보기</button>
+        <button type="button" onClick={onEnd} className="h-[clamp(38px,10.5vw,42px)] rounded-full border border-white/90 bg-white/72 text-sm font-medium leading-none tracking-[-.01em] text-[#1c2a3d] shadow-[0_4px_14px_rgba(47,74,119,.08)] backdrop-blur-md transition hover:bg-white active:scale-[.98]">느낌 남기기</button>
+        <button type="button" onClick={onOpen} className="h-[clamp(38px,10.5vw,42px)] rounded-full bg-[#111722] text-sm font-medium leading-none tracking-[-.01em] text-white shadow-[0_7px_18px_rgba(17,23,34,.18)] transition hover:bg-black active:scale-[.98]">연구 노트 보기</button>
       </div>
     </div>
   </section>
@@ -97,7 +97,7 @@ function EmptyExperienceCard({ productCount }: { productCount: number }) {
     <div className="relative flex min-h-[300px] flex-col p-5">
       <span className="w-fit rounded-full bg-white/72 px-3 py-2 text-xs font-medium text-[#52678c] backdrop-blur">START YOUR SKN</span>
       <div className="my-auto max-w-[285px]"><h2 className="text-[28px] font-medium leading-[1.16] tracking-[-.045em]">첫 기록부터<br/>나만의 기준이 생겨요.</h2><p className="mt-3 max-w-[265px] text-sm leading-6 text-black/52">{productCount ? '가지고 있는 화장품으로 실제 사용 조합을 만들고, 느낀 순간을 이어보세요.' : '화장품 하나를 담으면 제품·루틴·경험이 연결되는 나만의 아카이브가 시작돼요.'}</p></div>
-      <Link to={productCount ? '/routine/edit' : '/explore'} className="flex h-[54px] w-full items-center justify-center gap-1 rounded-full bg-black text-base font-medium text-white shadow-[0_9px_24px_rgba(0,0,0,.18)] transition active:scale-[.98]">{productCount ? '새 경험 시작하기' : '첫 화장품 담기'}<ArrowRight size={17}/></Link>
+      <Link to={productCount ? '/routine/edit' : '/explore'} className="flex h-[54px] w-full items-center justify-center gap-1 rounded-full bg-black text-sm font-medium leading-none tracking-[-.01em] text-white shadow-[0_9px_24px_rgba(0,0,0,.18)] transition active:scale-[.98]">{productCount ? '새 경험 시작하기' : '첫 화장품 담기'}<ArrowRight size={17}/></Link>
     </div>
   </section>
 }
@@ -189,7 +189,7 @@ function EndExperienceDialog({ onClose, onConfirm }: { onClose: () => void; onCo
       <img src="/skn-assets/onboarding-orb.png" alt="" className="mx-auto size-16 object-contain"/>
       <h2 id="end-experience-title" className="mt-4 text-2xl font-medium tracking-[-.035em]">이번 경험 확인을 마칠까요?</h2>
       <p id="end-experience-description" className="mx-auto mt-3 max-w-[270px] text-sm leading-5 text-[#636366]">마치기 전에 지금까지의 느낌을 남겨요. 현재 사용 루틴은 그대로 유지됩니다.</p>
-      <div className="mt-7 grid grid-cols-2 gap-2"><button type="button" onClick={onClose} className="h-[52px] rounded-full bg-[#eef3ff] text-base font-medium transition active:scale-[.98]">취소</button><button type="button" onClick={onConfirm} className="h-[52px] rounded-full bg-[#0a0a0a] text-base font-medium text-white transition active:scale-[.98]">느낌 남기기</button></div>
+      <div className="mt-7 grid grid-cols-2 gap-2"><button type="button" onClick={onClose} className="h-[52px] rounded-full bg-[#eef3ff] text-sm font-medium leading-none tracking-[-.01em] transition active:scale-[.98]">취소</button><button type="button" onClick={onConfirm} className="h-[52px] rounded-full bg-[#0a0a0a] text-sm font-medium leading-none tracking-[-.01em] text-white transition active:scale-[.98]">느낌 남기기</button></div>
     </section>
   </div>
 }
