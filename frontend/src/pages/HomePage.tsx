@@ -68,17 +68,21 @@ export function HomePage() {
 
 function ActiveExperienceCard({ experience, onOpen, onEnd }: { experience: NonNullable<Home['currentExperience']>; onOpen: () => void; onEnd: () => void }) {
   const day = Math.max(1, Math.min(7, experience.day))
-  return <section className="relative min-h-[286px] overflow-hidden rounded-[30px] border border-[#d8e5fb] shadow-[0_18px_48px_rgba(44,71,122,.16)]" aria-label={`현재 확인 중인 경험, 7일 중 ${day}일`}>
-    <img src={heroWave} alt="" aria-hidden className="absolute inset-0 size-full scale-110 object-cover object-bottom"/>
-    <div aria-hidden className="absolute inset-0 bg-[linear-gradient(145deg,rgba(255,255,255,.96)_0%,rgba(245,249,255,.76)_47%,rgba(206,225,255,.18)_100%)]"/>
-    <div aria-hidden className="absolute -right-10 top-12 size-36 rounded-full border border-white/60 bg-white/20 shadow-[inset_0_0_30px_rgba(255,255,255,.65)] backdrop-blur-[2px]"/>
-    <div className="relative flex min-h-[286px] flex-col p-5">
-      <div className="flex items-center justify-between"><p className="rounded-full bg-white/72 px-3 py-2 text-xs font-medium text-[#52678c] backdrop-blur">확인 중인 경험</p><p className="text-sm font-medium tabular-nums">DAY {day} / 7</p></div>
-      <div role="progressbar" aria-label={`7일 중 ${day}일`} aria-valuemin={1} aria-valuemax={7} aria-valuenow={day} className="mt-4 flex gap-1.5">{Array.from({ length: 7 }, (_, index) => <span key={index} className={`h-1.5 flex-1 rounded-full ${index < day ? 'bg-[#0a0a0a]' : 'bg-[#0a0a0a]/15'}`}/>)}</div>
-      <div className="min-h-0 flex-1 py-6"><p className="text-xs text-black/45">지금 기억할 조합</p><h2 className="mt-2 line-clamp-2 max-w-[290px] text-[28px] font-medium leading-[1.15] tracking-[-.045em]">{experience.title}</h2><p className="mt-2 line-clamp-1 text-sm text-black/55">{experience.subtitle}</p></div>
+  const subjectLabel = experience.subjectType === 'ROUTINE' ? '지금 연구 중인 루틴' : '지금 연구 중인 제품'
+  return <section className="relative mx-auto aspect-[378/216] w-full max-w-[378px]" aria-label={`${subjectLabel}, 7일 중 ${day}일`}>
+    <img src="/skn-assets/routine-research-card.svg" alt="" aria-hidden className="absolute inset-0 size-full"/>
+    <div className="absolute inset-[8px] flex flex-col px-[clamp(16px,5vw,22px)] py-[clamp(14px,4.4vw,19px)]">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-[clamp(11px,3vw,12px)] font-semibold leading-none tracking-[-.01em] text-[#4e6387]">{subjectLabel}</p>
+        <p role="progressbar" aria-label={`7일 중 ${day}일`} aria-valuemin={1} aria-valuemax={7} aria-valuenow={day} className="shrink-0 rounded-full border border-white/85 bg-white/72 px-2.5 py-1 text-[10px] font-semibold leading-none tracking-[.04em] text-[#4b5f80] shadow-[0_2px_8px_rgba(56,83,129,.08)] backdrop-blur-sm tabular-nums">DAY {day} / 7</p>
+      </div>
+      <div className="min-h-0 flex-1 pt-[clamp(8px,2.8vw,12px)]">
+        <h2 className="line-clamp-1 max-w-[290px] text-[clamp(21px,6.3vw,27px)] font-semibold leading-[1.12] tracking-[-.048em] text-[#101725]">{experience.title}</h2>
+        <p className="mt-1 line-clamp-1 text-[clamp(11px,3.3vw,13px)] font-medium leading-5 tracking-[-.02em] text-[#52647f]">{experience.subtitle}</p>
+      </div>
       <div className="grid grid-cols-2 gap-2">
-        <button type="button" onClick={onEnd} className="h-[52px] rounded-full border border-white/80 bg-white/68 text-sm font-medium backdrop-blur-md transition hover:bg-white active:scale-[.98]">경험 마치기</button>
-        <button type="button" onClick={onOpen} className="h-[52px] rounded-full bg-[#0a0a0a] text-sm font-medium text-white shadow-[0_8px_20px_rgba(0,0,0,.16)] transition hover:bg-black active:scale-[.98]">자세히 보기</button>
+        <button type="button" onClick={onEnd} className="h-[clamp(36px,10.5vw,42px)] rounded-full border border-white/90 bg-white/72 text-[clamp(11px,3.3vw,13px)] font-semibold text-[#1c2a3d] shadow-[0_4px_14px_rgba(47,74,119,.08)] backdrop-blur-md transition hover:bg-white active:scale-[.98]">느낌 남기기</button>
+        <button type="button" onClick={onOpen} className="h-[clamp(36px,10.5vw,42px)] rounded-full bg-[#111722] text-[clamp(11px,3.3vw,13px)] font-semibold text-white shadow-[0_7px_18px_rgba(17,23,34,.18)] transition hover:bg-black active:scale-[.98]">연구 노트 보기</button>
       </div>
     </div>
   </section>
