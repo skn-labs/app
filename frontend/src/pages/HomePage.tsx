@@ -101,8 +101,8 @@ function ActiveExperienceCard({ experience, onOpen, onEnd }: { experience: NonNu
         <p className="mt-1 line-clamp-1 text-xs font-medium leading-5 tracking-[-.015em] text-[#52647f]">{experience.subtitle}</p>
       </div>
       <div className="grid grid-cols-2 gap-2">
-        <button type="button" onClick={onEnd} className="h-[clamp(38px,10.5vw,42px)] rounded-full border border-white/90 bg-white/72 text-[13px] font-semibold leading-none tracking-[-.015em] text-[#1c2a3d] shadow-[0_4px_14px_rgba(47,74,119,.08)] backdrop-blur-md transition hover:bg-white active:scale-[.98]">느낌 남기기</button>
-        <button type="button" onClick={onOpen} className="h-[clamp(38px,10.5vw,42px)] rounded-full bg-[#111722] text-[13px] font-semibold leading-none tracking-[-.015em] text-white shadow-[0_7px_18px_rgba(17,23,34,.18)] transition hover:bg-black active:scale-[.98]">연구 노트 보기</button>
+        <button type="button" onClick={onEnd} className="h-[clamp(40px,11vw,44px)] rounded-[14px] border border-[#cbd7e8] bg-white/92 text-[13px] font-bold leading-none tracking-[-.015em] text-[#172235] shadow-[0_5px_14px_rgba(47,74,119,.10)] backdrop-blur-md transition hover:border-[#b9c9df] hover:bg-white active:scale-[.975] active:bg-[#f7faff]">느낌 남기기</button>
+        <button type="button" onClick={onOpen} className="h-[clamp(40px,11vw,44px)] rounded-[14px] border border-[#111722] bg-[#111722] text-[13px] font-bold leading-none tracking-[-.015em] text-white shadow-[0_7px_18px_rgba(17,23,34,.20)] transition hover:bg-black active:scale-[.975] active:bg-[#202838]">연구 노트 보기</button>
       </div>
     </div>
   </section>

@@ -142,11 +142,12 @@ function Composer({ value, onChange, onSubmit, pending, suggestions, placeholder
 }
 
 function AiHeader({ onBack }: { onBack?: () => void }) {
+  const navigate = useNavigate()
   const [historyOpen, setHistoryOpen] = useState(false)
   const conversations = useQuery({ queryKey: ['conversations'], queryFn: api.conversations, enabled: historyOpen })
-  const historyButton = <button type="button" onClick={() => setHistoryOpen(true)} aria-label="최근 AI 대화" className="grid size-11 place-items-center rounded-full transition hover:bg-soft active:scale-95"><History size={21}/></button>
+  const historyButton = <button type="button" onClick={() => setHistoryOpen(true)} aria-label="AI 대화 기록 열기" aria-haspopup="dialog" aria-expanded={historyOpen} className="inline-flex h-10 items-center gap-1.5 rounded-full border border-[#dfe4ee] bg-white px-3.5 text-[13px] font-bold tracking-[-.015em] text-[#273247] shadow-[0_3px_10px_rgba(31,46,75,.06)] transition hover:border-[#cbd5e5] hover:bg-[#f7f9fd] active:scale-95"><History size={16} strokeWidth={2}/><span>기록</span></button>
   return <>
-    <AppHeader back={Boolean(onBack)} onBack={onBack} left={onBack ? undefined : historyButton} profile={false} sticky right={onBack ? historyButton : <Link to="/" className="-mr-1 rounded-full px-2 py-2 text-xs font-medium text-muted transition hover:bg-soft">닫기</Link>}/>
+    <AppHeader back onBack={onBack || (() => navigate('/'))} profile={false} sticky right={historyButton}/>
     {historyOpen && <AiHistory conversations={conversations.data || []} loading={conversations.isPending} error={conversations.error?.message} onRetry={() => conversations.refetch()} onClose={() => setHistoryOpen(false)}/>}
   </>
 }
