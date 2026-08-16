@@ -189,7 +189,7 @@ export function CustomProductPage() {
   const name = data.product?.name || data.customName || '이름 없는 제품'
   const brand = data.product?.brand || data.customBrand || '브랜드 미입력'
   const category = data.product?.category || data.customCategory || '제품 유형 미입력'
-  const askAi = () => navigate(startChatPath('GENERAL', `내가 직접 등록한 “${name}”의 사용 맥락을 정리해줘. 확인된 카탈로그 정보가 없으니 제품 사실을 추측하지 말고, 내가 남긴 기록과 현재 루틴만 구분해서 살펴봐줘.`))
+  const askAi = () => navigate(startChatPath('GENERAL', `내가 직접 등록한 “${name}”을 언제 어떻게 사용했는지 정리해줘. 확인된 카탈로그 정보가 없으니 제품 사실을 추측하지 말고, 내가 남긴 기록과 현재 루틴만 구분해서 살펴봐줘.`))
 
   return <Screen nav={false} className="bg-white pb-40">
     <CatalogHeader onBack={() => navigate(-1)} onAdd={() => navigate('/explore')}/>
@@ -342,19 +342,19 @@ export function ShelfPage() {
   const groups = filter === 'ALL'
     ? [
         { key: 'ROUTINE', title: '현재 루틴에서 쓰는 중', description: '실제 사용 조합에 들어 있는 화장품', items: routineProducts },
-        { key: 'RECORDED', title: '루틴 밖에서 기록 중', description: '현재 루틴에는 없지만 경험을 다시 비교할 수 있는 화장품', items: recordedOutsideRoutineProducts },
+        { key: 'RECORDED', title: '루틴 밖에서 써본 제품', description: '현재 루틴에는 없지만 이전에 느낌을 남긴 화장품', items: recordedOutsideRoutineProducts },
         { key: 'UNUSED', title: '아직 사용 전', description: '루틴에 넣기 전 보관 중인 화장품', items: unusedProducts },
       ].filter(group => group.items.length > 0)
     : [{
         key: filter,
-        title: filter === 'ROUTINE' ? '현재 루틴에서 쓰는 중' : filter === 'RECORDED' ? '경험 기록이 있는 화장품' : '아직 사용 전',
-        description: filter === 'ROUTINE' ? '실제 사용 조합에 들어 있는 화장품' : filter === 'RECORDED' ? '하나 이상의 경험 기록이 연결된 제품' : '루틴에 넣기 전 보관 중인 화장품',
+        title: filter === 'ROUTINE' ? '현재 루틴에서 쓰는 중' : filter === 'RECORDED' ? '느낌을 남긴 제품' : '아직 사용 전',
+        description: filter === 'ROUTINE' ? '실제 사용 조합에 들어 있는 화장품' : filter === 'RECORDED' ? '사용 후 느낌을 한 번 이상 남긴 화장품' : '루틴에 넣기 전 보관 중인 화장품',
         items: filter === 'ROUTINE' ? routineProducts : filter === 'RECORDED' ? products.data.filter(item => item.personalRecordCount > 0) : unusedProducts,
       }]
   const filters = [
     { value: 'ALL' as const, label: '전체', count: products.data.length },
     { value: 'ROUTINE' as const, label: '현재 루틴', count: currentRoutineCount },
-    { value: 'RECORDED' as const, label: '경험 기록', count: recordedCount },
+    { value: 'RECORDED' as const, label: '기록 있음', count: recordedCount },
     { value: 'UNUSED' as const, label: '사용 전', count: unusedCount },
   ]
   const openRecommendationChat = () => {
@@ -374,17 +374,16 @@ export function ShelfPage() {
     <Screen className="bg-white">
     <CatalogHeader/>
     <div className="px-5 pb-8 pt-5">
-      <div className="min-w-0"><p className="text-[11px] font-semibold tracking-[.14em] text-[#71809a]">MY PRODUCT ARCHIVE</p><h1 className="mt-2 text-[clamp(34px,9vw,40px)] font-semibold leading-[1.08] tracking-[-.052em] text-[#111722]">{home.data.displayName} 님의<br/>화장품</h1><p className="mt-3 text-[13px] font-medium leading-5 tracking-[-.018em] text-[#7a808a]">{products.data.length ? `보유 화장품 ${products.data.length}개를 사용 맥락과 경험에 따라 살펴보세요.` : '첫 화장품을 담아 나만의 사용 기록을 시작해보세요.'}</p></div>
-      {!!products.data.length && <section className="mt-7" aria-labelledby="collection-index-title">
-        <h2 id="collection-index-title" className="px-1 text-[11px] font-semibold tracking-[-.02em] text-[#8a9099]">보기 기준</h2>
-        <div className="mt-2 grid grid-cols-4 border-b border-[#e6e8ec]" aria-label="화장품 보기 기준">
+      <div className="min-w-0"><p className="text-[11px] font-semibold tracking-[.14em] text-[#71809a]">MY PRODUCT ARCHIVE</p><h1 className="mt-2 text-[clamp(34px,9vw,40px)] font-semibold leading-[1.08] tracking-[-.052em] text-[#111722]">{home.data.displayName} 님의<br/>화장품</h1><p className="mt-3 text-[13px] font-medium leading-5 tracking-[-.018em] text-[#7a808a]">{products.data.length ? `화장품 ${products.data.length}개를 현재 루틴과 남긴 기록에 따라 살펴보세요.` : '첫 화장품을 담아 나만의 사용 기록을 시작해보세요.'}</p></div>
+      {!!products.data.length && <section className="mt-7" aria-label="화장품 필터">
+        <div className="grid grid-cols-4 border-b border-[#e6e8ec]">
           {filters.map(option => {
             const selected = filter === option.value
             const disabled = option.value !== 'ALL' && option.count === 0
             return <button type="button" key={option.value} aria-pressed={selected} aria-label={`${option.label} ${option.count}개`} disabled={disabled} onClick={() => setFilter(option.value)} className={`relative flex min-h-[52px] min-w-0 items-center justify-center gap-1 px-1 pb-1 transition focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 ${selected ? 'text-black' : disabled ? 'cursor-not-allowed text-black/22' : 'text-black/48 hover:text-black/75 active:scale-[.98]'}`}><span className="whitespace-nowrap text-[11px] font-semibold tracking-[-.025em]">{option.label}</span><span className={`text-[10px] font-semibold tabular-nums ${selected ? 'text-black/48' : 'text-current'}`}>{option.count}</span>{selected && <span aria-hidden className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-black"/>}</button>
           })}
         </div>
-        <p className="px-1 pt-3 text-[11px] leading-[1.55] text-[#858b96]">현재 루틴과 경험 기록은 한 화장품에 함께 연결될 수 있어요.</p>
+        <p className="px-1 pt-3 text-[11px] leading-[1.55] text-[#858b96]">한 화장품이 현재 루틴에도 있고, 남긴 기록도 있을 수 있어요.</p>
       </section>}
       {shelfContent}
       <LabContext experience={home.data.currentExperience} current={current.data} productCount={products.data.length}/>
@@ -397,7 +396,7 @@ export function ShelfPage() {
 
 function LabContext({ experience, current, productCount }: { experience?: Experience | null; current?: Routine; productCount: number }) {
   return <section className="mt-8 border-t border-line pt-6" aria-labelledby="lab-context-title">
-    <div className="flex items-center justify-between"><div><p className="text-xs font-medium tracking-[.08em] text-muted">USE CONTEXT</p><h2 id="lab-context-title" className="mt-1 text-base font-medium">지금의 사용 맥락</h2></div><Link to="/experience" className="inline-flex min-h-10 items-center gap-1 rounded-full px-3 text-xs font-medium text-muted transition hover:bg-soft">전체 흐름 <ChevronRight size={14}/></Link></div>
+    <div className="flex items-center justify-between"><div><p className="text-xs font-medium tracking-[.08em] text-muted">CURRENT ACTIVITY</p><h2 id="lab-context-title" className="mt-1 text-base font-medium">현재 사용과 기록</h2></div><Link to="/experience" className="inline-flex min-h-10 items-center gap-1 rounded-full px-3 text-xs font-medium text-muted transition hover:bg-soft">전체 보기 <ChevronRight size={14}/></Link></div>
     <div className="mt-3 overflow-hidden rounded-[18px] border border-line bg-white">
       <Link to={experience ? `/experiences/${experience.id}` : productCount ? '/routine/edit' : '/explore'} className="interactive-card flex min-h-[72px] items-center gap-3 border-b border-line px-4"><span className="grid size-9 shrink-0 place-items-center rounded-full bg-[#edf3ff] text-[#5f7396]"><FlaskConical size={16}/></span><span className="min-w-0 flex-1"><span className="block text-xs font-medium text-[#5f7396]">{experience ? `확인 중 · DAY ${experience.day}` : '확인 중인 경험 없음'}</span><strong className="mt-1 block truncate text-sm font-medium">{experience?.title || '새 경험을 시작해보세요'}</strong></span><ChevronRight size={16} className="shrink-0 text-muted"/></Link>
       <Link to={current ? `/routines/${current.id}` : '/routine/edit'} className="interactive-card flex min-h-[72px] items-center gap-3 px-4"><span className="grid size-9 shrink-0 place-items-center rounded-full bg-[#f1f5ed] text-[#657253]"><Clock3 size={16}/></span><span className="min-w-0 flex-1"><span className="block text-xs font-medium text-[#657253]">{current ? `현재 루틴 · ${current.items.length}개 제품` : '현재 루틴 없음'}</span><strong className="mt-1 block truncate text-sm font-medium">{current?.name || '사용 루틴을 만들어보세요'}</strong></span><ChevronRight size={16} className="shrink-0 text-muted"/></Link>
@@ -408,7 +407,7 @@ function LabContext({ experience, current, productCount }: { experience?: Experi
 function ShelfCard({ item, onStart }: { item: UserProduct; onStart: () => void }) {
   const product = item.product
   const name = product?.name || item.customName || '이름 없는 제품'
-  const status = item.inCurrentRoutine ? '현재 루틴' : item.personalRecordCount > 0 ? `연결된 경험 ${item.personalRecordCount}건` : '아직 안 써봄'
+  const status = item.inCurrentRoutine ? '현재 루틴' : item.personalRecordCount > 0 ? `기록 ${item.personalRecordCount}건` : '아직 안 써봄'
   const category = product?.category || item.customCategory || '기타'
   const tone = /세럼|앰플/.test(category) ? 'from-[#edf3ff] to-[#f8fbff]' : /크림|로션/.test(category) ? 'from-[#f3f6ec] to-[#fbfcf8]' : /클렌/.test(category) ? 'from-[#eef8f8] to-[#f9fcfc]' : 'from-[#f5f1fb] to-[#fcfaff]'
   return <button type="button" onClick={onStart} aria-label={`${name} 상세 보기`} className="group flex min-h-[242px] w-full flex-col overflow-hidden rounded-[24px] border border-black/[.055] bg-white text-left shadow-[0_6px_22px_rgba(45,58,77,.055)] transition hover:-translate-y-1 hover:shadow-[0_14px_30px_rgba(45,58,77,.12)] active:scale-[.99]">
@@ -418,8 +417,8 @@ function ShelfCard({ item, onStart }: { item: UserProduct; onStart: () => void }
 }
 
 function ShelfEmpty({ filter, onAdd }: { filter: 'ALL' | 'ROUTINE' | 'RECORDED' | 'UNUSED'; onAdd: () => void }) {
-  const title = filter === 'ROUTINE' ? '현재 루틴에 제품이 없어요' : filter === 'RECORDED' ? '연결된 경험이 아직 없어요' : filter === 'UNUSED' ? '아직 사용 전인 제품이 없어요' : '첫 화장품을 담아볼까요?'
-  const body = filter === 'ROUTINE' ? '루틴 편집에서 실제 사용하는 제품을 골라보세요.' : filter === 'RECORDED' ? '제품을 실제로 사용하고 느낌을 남기면 이곳에 모여요.' : filter === 'UNUSED' ? '새로 추가한 제품은 현재 루틴에\n넣기 전까지 여기에 보여요.' : '제품 하나를 담으면 사용 맥락과 경험을\n연결하는 My Lab이 시작돼요.'
+  const title = filter === 'ROUTINE' ? '현재 루틴에 제품이 없어요' : filter === 'RECORDED' ? '아직 남긴 느낌이 없어요' : filter === 'UNUSED' ? '아직 사용 전인 제품이 없어요' : '첫 화장품을 담아볼까요?'
+  const body = filter === 'ROUTINE' ? '루틴 편집에서 실제 사용하는 제품을 골라보세요.' : filter === 'RECORDED' ? '제품을 실제로 사용하고 느낌을 남기면 이곳에 모여요.' : filter === 'UNUSED' ? '새로 추가한 제품은 현재 루틴에\n넣기 전까지 여기에 보여요.' : '제품 하나를 담으면 루틴과 사용 경험을\n연결하는 My Lab이 시작돼요.'
   return <div className="relative mt-8 px-1 pb-5 text-center"><div aria-hidden className="absolute inset-x-5 bottom-0 top-5 rounded-[24px] bg-[#e7effc]"/><div className="relative overflow-hidden rounded-[24px] border border-[#d9e6ff] bg-[#f7faff] px-5 pb-6 pt-8 shadow-[0_9px_28px_rgba(37,55,92,.08)]"><button type="button" onClick={onAdd} aria-label="탐색에서 화장품 추가하기" className="relative mx-auto block rounded-full"><img src="/skn-assets/ai-drop.png" alt="" className="size-[150px] object-contain"/><span aria-hidden className="absolute left-1/2 top-1/2 grid size-12 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-white text-2xl shadow-[0_7px_22px_rgba(37,55,92,.14)]">+</span></button><h2 className="mt-3 text-2xl font-medium tracking-[-.035em]">{title}</h2><p className="mt-3 whitespace-pre-line text-sm leading-6 text-[#737880]">{body}</p><Button onClick={onAdd} className="mt-6 w-full">화장품 추가하기</Button></div></div>
 }
 
