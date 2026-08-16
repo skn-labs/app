@@ -1,6 +1,6 @@
 import type { ButtonHTMLAttributes, PropsWithChildren, ReactNode } from 'react'
 import { useEffect, useRef, useState } from 'react'
-import { Bot, ChevronLeft, CircleUserRound, FlaskConical, Home, MessageCircle, NotebookText, Sparkles, X } from 'lucide-react'
+import { Bot, ChevronLeft, CircleUserRound, FlaskConical, Home, MessageCircle, NotebookText, Plus, Sparkles, X } from 'lucide-react'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { twMerge } from 'tailwind-merge'
 import { NotificationBell } from './NotificationBell'
@@ -43,6 +43,22 @@ function BottomNav() {
         <Icon size={23} strokeWidth={1.9}/><span className="sr-only">{label}</span>
       </NavLink>)}
     </nav>
+  </div>
+}
+
+type FloatingAddButtonProps = {
+  label: string
+  to?: string
+  onClick?: () => void
+}
+
+export function FloatingAddButton({ label, to, onClick }: FloatingAddButtonProps) {
+  const className = 'pointer-events-auto grid size-14 place-items-center rounded-full bg-[#0a0a0a] text-white shadow-[0_12px_30px_rgba(0,0,0,.28)] transition duration-200 hover:-translate-y-0.5 hover:bg-black hover:shadow-[0_16px_34px_rgba(0,0,0,.32)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-4 active:translate-y-0 active:scale-95'
+  const icon = <Plus size={25} strokeWidth={1.9}/>
+  return <div className="pointer-events-none fixed inset-x-0 bottom-28 z-20 mx-auto flex max-w-[430px] justify-end px-5">
+    {to
+      ? <Link to={to} aria-label={label} className={className}>{icon}</Link>
+      : <button type="button" onClick={onClick} aria-label={label} className={className}>{icon}</button>}
   </div>
 }
 

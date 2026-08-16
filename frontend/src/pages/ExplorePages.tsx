@@ -6,7 +6,7 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { api, ApiError } from '../lib/api'
 import { startChatPath } from '../lib/chat'
 import type { Experience, Product, ProductFact, ProductGuide, Routine, UserProduct } from '../lib/types'
-import { AppHeader, Button, ErrorState, Loading, PageHeading, ProductGlyph, Screen, StickyActionBar, TopBar } from '../components/ui'
+import { AppHeader, BottomSheet, Button, ErrorState, FloatingAddButton, Loading, PageHeading, ProductGlyph, Screen, StickyActionBar, TopBar } from '../components/ui'
 
 export function ExplorePage() {
   const navigate = useNavigate()
@@ -28,7 +28,6 @@ export function ExplorePage() {
   })
   const productItems = products.data?.pages.flatMap(page => page.items) || []
   const { fetchNextPage, hasNextPage, isFetchingNextPage } = products
-  const openRecommendationChat = () => navigate(startChatPath('RECOMMEND', '내가 좋아했던 사용감과 아쉬웠던 경험을 바탕으로 다음에 탐색할 제품 후보를 찾아줘.'))
   const customAdd = useMutation({
     mutationFn: () => api.addCustomProduct(customBrand.trim(), customName.trim(), customCategory.trim()),
     onSuccess: item => {
@@ -84,7 +83,6 @@ export function ExplorePage() {
       <div className="sticky top-[calc(64px+env(safe-area-inset-top))] z-10 -mx-1 mt-6 bg-paper/95 px-1 py-3 backdrop-blur"><label className="flex h-[58px] items-center gap-3 rounded-full bg-[#f3f6fa] px-5 transition focus-within:bg-white focus-within:ring-2 focus-within:ring-black"><input value={query} onChange={e => setQuery(e.target.value)} aria-label="제품 검색" enterKeyHint="search" autoComplete="off" placeholder="브랜드 또는 제품명" className="min-w-0 flex-1 bg-transparent text-base outline-none"/>{searching && <span aria-label="검색 중" className="size-4 animate-spin rounded-full border-2 border-line border-t-ink"/>}{query ? <button type="button" aria-label="검색어 지우기" onClick={() => setQuery('')} className="grid size-9 place-items-center rounded-full bg-white"><X size={17} className="text-muted"/></button> : <Search size={22}/>}</label></div>
       {!deferredQuery && <div className="hide-scrollbar -mx-5 flex gap-2 overflow-x-auto px-5 pb-1">{categoryOptions.map(category => <button type="button" key={category} onClick={() => setQuery(category)} className="min-h-10 shrink-0 rounded-full bg-[#f2f2f2] px-4 text-sm text-black/65 transition hover:bg-black hover:text-white">{category}</button>)}</div>}
       {!deferredQuery && contextualProduct && <section className="mt-8"><div className="flex items-end justify-between"><div><p className="text-xs font-medium tracking-[.08em] text-[#7892bb]">FOR YOU</p><h2 className="mt-1 text-lg font-medium">{hasPersonalContext ? '내 기록에서 다시 보기' : '먼저 둘러볼 제품'}</h2></div></div><Link to={productPath(contextualProduct.id, returnTo)} className="group mt-4 flex min-h-[150px] overflow-hidden rounded-[26px] border border-[#d9e6ff] bg-[#f8fbff] transition hover:-translate-y-0.5 hover:shadow-[0_12px_30px_rgba(68,96,145,.12)] active:scale-[.99]"><span className="grid w-[140px] shrink-0 place-items-center bg-white/70 p-3"><ProductGlyph category={contextualProduct.category} src={contextualProduct.imageUrl}/></span><span className="flex min-w-0 flex-1 flex-col p-4"><span className="text-xs text-[#7892bb]">{contextualProduct.brand} · {contextualProduct.category}</span><strong className="mt-2 line-clamp-2 text-lg font-medium leading-6">{contextualProduct.name}</strong><span className="mt-auto inline-flex items-center gap-1 pt-3 text-xs font-medium text-[#5f7396]">{hasPersonalContext ? `내 기록 ${contextualProduct.personalRecordCount}건과 비교` : '제품 정보 살펴보기'}<ArrowRight size={14} className="transition group-hover:translate-x-0.5"/></span></span></Link></section>}
-      {!deferredQuery && <button type="button" onClick={openRecommendationChat} className="mt-4 flex min-h-[96px] w-full items-center gap-4 rounded-[24px] bg-black px-5 text-left text-white shadow-[0_10px_28px_rgba(0,0,0,.14)] transition active:scale-[.99]"><Sparkles size={28} className="shrink-0 text-[#dce6ff]"/><span className="min-w-0 flex-1"><span className="block text-xs text-white/55">SKN AI · 내 경험과 함께 비교</span><span className="mt-1 block text-base font-medium">나에게 맞는 다음 제품 찾기</span></span><ChevronRight size={21}/></button>}
       <div className="mb-3 mt-10 flex items-center justify-between gap-3"><h2 className="text-lg font-medium">{deferredQuery ? `“${deferredQuery}” 검색 결과` : '전체 제품'}</h2>{!products.isPending && <span className="text-xs text-muted">{productItems.length}개{hasNextPage ? '+' : ''}</span>}</div>
       {products.isPending
         ? <Loading/>
@@ -327,6 +325,7 @@ function formatProductDate(value?: string) {
 export function ShelfPage() {
   const navigate = useNavigate()
   const [filter, setFilter] = useState<'ALL' | 'ROUTINE' | 'RECORDED' | 'UNUSED'>('ALL')
+  const [addOpen, setAddOpen] = useState(false)
   const products = useQuery({ queryKey: ['user-products'], queryFn: api.userProducts })
   const current = useQuery({ queryKey: ['current-routine'], queryFn: api.currentRoutine, retry: false })
   const home = useQuery({ queryKey: ['home'], queryFn: api.home })
@@ -334,8 +333,8 @@ export function ShelfPage() {
   const recordedCount = products.data?.filter(item => item.personalRecordCount > 0).length || 0
   const unusedCount = products.data?.filter(item => !item.inCurrentRoutine && item.personalRecordCount === 0).length || 0
   const currentError = current.error instanceof ApiError && current.error.status === 404 ? null : current.error
-  if (products.isPending || current.isPending || home.isPending) return <Screen><CatalogHeader onAdd={() => navigate('/explore')}/><Loading label="My Lab을 정리하는 중"/></Screen>
-  if (products.isError || currentError || home.error) return <Screen><CatalogHeader onAdd={() => navigate('/explore')}/><ErrorState message={(products.error || currentError || home.error)?.message || 'My Lab을 불러오지 못했어요.'} onRetry={() => { products.refetch(); current.refetch(); home.refetch() }}/></Screen>
+  if (products.isPending || current.isPending || home.isPending) return <Screen><CatalogHeader/><Loading label="My Lab을 정리하는 중"/></Screen>
+  if (products.isError || currentError || home.error) return <Screen><CatalogHeader/><ErrorState message={(products.error || currentError || home.error)?.message || 'My Lab을 불러오지 못했어요.'} onRetry={() => { products.refetch(); current.refetch(); home.refetch() }}/></Screen>
   const routineProducts = products.data.filter(item => item.inCurrentRoutine)
   const recordedProducts = products.data.filter(item => !item.inCurrentRoutine && item.personalRecordCount > 0)
   const unusedProducts = products.data.filter(item => !item.inCurrentRoutine && item.personalRecordCount === 0)
@@ -351,15 +350,48 @@ export function ShelfPage() {
         description: filter === 'ROUTINE' ? '실제 사용 조합에 들어 있는 화장품' : filter === 'RECORDED' ? '하나 이상의 경험 기록이 연결된 제품' : '루틴에 넣기 전 보관 중인 화장품',
         items: filter === 'ROUTINE' ? routineProducts : filter === 'RECORDED' ? products.data.filter(item => item.personalRecordCount > 0) : unusedProducts,
       }]
-  return <Screen className="bg-white">
-    <CatalogHeader onAdd={() => navigate('/explore')}/>
+  const openRecommendationChat = () => {
+    setAddOpen(false)
+    navigate(startChatPath('RECOMMEND', '내가 좋아했던 사용감과 아쉬웠던 경험을 바탕으로 다음에 탐색할 제품 후보를 찾아줘.'))
+  }
+  const openProductSearch = () => {
+    setAddOpen(false)
+    navigate('/explore')
+  }
+  const shelfContent = products.data.length
+    ? groups[0]?.items.length
+      ? <div className="mt-9 space-y-10">{groups.map(group => <section key={group.key} aria-labelledby={`shelf-group-${group.key}`}><div className="mb-4"><h2 id={`shelf-group-${group.key}`} className="text-lg font-medium">{group.title}</h2><p className="mt-1 text-xs text-muted">{group.description}</p></div><div className="grid grid-cols-2 gap-3">{group.items.map(item => <ShelfCard key={item.id} item={item} onStart={() => { if (item.product) navigate(`/products/${item.product.id}`); else navigate(`/my-products/${item.id}`) }}/>)}</div></section>)}</div>
+      : <ShelfEmpty filter={filter} onAdd={() => setAddOpen(true)}/>
+    : <ShelfEmpty filter="ALL" onAdd={() => setAddOpen(true)}/>
+  return <>
+    <Screen className="bg-white">
+    <CatalogHeader/>
     <div className="px-5 pb-8"><PageHeading title="내가 가진 화장품" description="보유 제품을 실제 사용 맥락과 경험에 따라 나눠서 봐요."/>
       {!!products.data.length && <section className="relative mt-7 overflow-hidden rounded-[28px] bg-black p-5 text-white shadow-[0_14px_38px_rgba(0,0,0,.16)]" aria-label={`내 화장품 ${products.data.length}개`}><div aria-hidden className="absolute -right-10 -top-14 size-44 rounded-full border border-white/15 bg-[radial-gradient(circle_at_32%_28%,rgba(255,255,255,.42),rgba(151,184,235,.13)_42%,transparent_70%)]"/><p className="relative text-xs font-medium text-white/50">MY COLLECTION</p><p className="relative mt-3 text-[28px] font-medium tracking-[-.04em]">{products.data.length}개의 화장품</p><div className="relative mt-6 grid grid-cols-3 gap-2 border-t border-white/15 pt-4 text-center"><div><p className="text-lg font-medium">{currentRoutineCount}</p><p className="mt-1 text-xs text-white/45">루틴 사용</p></div><div><p className="text-lg font-medium">{recordedCount}</p><p className="mt-1 text-xs text-white/45">기록 연결</p></div><div><p className="text-lg font-medium">{unusedCount}</p><p className="mt-1 text-xs text-white/45">사용 전</p></div></div></section>}
       {!!products.data.length && <div className="hide-scrollbar -mx-5 mt-7 flex gap-2 overflow-x-auto px-5 pb-1">{([['ALL',`전체 ${products.data.length}`],['ROUTINE',`루틴 ${currentRoutineCount}`],['RECORDED',`기록 있음 ${recordedCount}`],['UNUSED',`사용 전 ${unusedCount}`]] as const).map(([value,label]) => <button type="button" aria-pressed={filter === value} key={value} onClick={() => setFilter(value)} className={`min-h-10 shrink-0 whitespace-nowrap rounded-full px-4 text-sm font-medium transition ${filter === value ? 'bg-black text-white shadow-[0_6px_16px_rgba(0,0,0,.12)]' : 'bg-[#f2f4f7] text-black/55 hover:bg-[#e7ebf1]'}`}>{label}</button>)}</div>}
-      {products.data.length ? groups[0]?.items.length ? <div className="mt-9 space-y-10">{groups.map(group => <section key={group.key} aria-labelledby={`shelf-group-${group.key}`}><div className="mb-4"><h2 id={`shelf-group-${group.key}`} className="text-lg font-medium">{group.title}</h2><p className="mt-1 text-xs text-muted">{group.description}</p></div><div className="grid grid-cols-2 gap-3">{group.items.map(item => <ShelfCard key={item.id} item={item} onStart={() => { if (item.product) navigate(`/products/${item.product.id}`); else navigate(`/my-products/${item.id}`) }}/>)}</div></section>)}</div> : <ShelfEmpty filter={filter} onAdd={() => navigate('/explore')}/> : <ShelfEmpty filter="ALL" onAdd={() => navigate('/explore')}/>}
+      {shelfContent}
       <LabContext experience={home.data.currentExperience} current={current.data} productCount={products.data.length}/>
     </div>
-  </Screen>
+    <FloatingAddButton label="화장품 추가" onClick={() => setAddOpen(true)}/>
+    </Screen>
+    <BottomSheet open={addOpen} onClose={() => setAddOpen(false)} title="새 화장품, 어떻게 찾을까요?">
+      <p className="-mt-1 text-sm leading-6 text-[#747b86]">내가 남긴 경험에서 추천받거나, 원하는 제품을 직접 찾아보세요.</p>
+      <div className="mt-5 space-y-3">
+        <button type="button" onClick={openRecommendationChat} className="group relative flex min-h-[118px] w-full items-center gap-4 overflow-hidden rounded-[24px] bg-[linear-gradient(135deg,#eaf1ff_0%,#f6f3ff_58%,#fff_100%)] px-5 text-left shadow-[inset_0_0_0_1px_rgba(90,119,170,.08)] transition hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(62,82,120,.12)] active:translate-y-0 active:scale-[.99]">
+          <span aria-hidden className="absolute -right-7 -top-10 size-32 rounded-full border border-white/80 bg-white/30"/>
+          <span className="relative grid size-12 shrink-0 place-items-center rounded-[17px] bg-black text-white shadow-[0_8px_20px_rgba(0,0,0,.18)]"><Sparkles size={21}/></span>
+          <span className="relative min-w-0 flex-1"><strong className="block text-[17px] font-semibold tracking-[-.025em]">AI에게 추천받기</strong><span className="mt-1.5 block text-xs leading-5 text-[#697387]">내 루틴과 경험을 근거로<br/>다음 탐색 후보를 함께 찾아요.</span></span>
+          <ChevronRight size={20} className="relative shrink-0 text-[#7b8493] transition group-hover:translate-x-0.5"/>
+        </button>
+        <button type="button" onClick={openProductSearch} className="group flex min-h-[104px] w-full items-center gap-4 rounded-[24px] border border-black/[.065] bg-[#fafafa] px-5 text-left transition hover:-translate-y-0.5 hover:border-black/10 hover:bg-white hover:shadow-[0_10px_25px_rgba(0,0,0,.07)] active:translate-y-0 active:scale-[.99]">
+          <span className="grid size-12 shrink-0 place-items-center rounded-[17px] bg-white text-black shadow-[0_6px_18px_rgba(0,0,0,.08)]"><Search size={21}/></span>
+          <span className="min-w-0 flex-1"><strong className="block text-[17px] font-semibold tracking-[-.025em]">직접 검색하기</strong><span className="mt-1.5 block text-xs leading-5 text-[#747b86]">브랜드나 제품명으로 정확히 찾아요.</span></span>
+          <ChevronRight size={20} className="shrink-0 text-[#9298a1] transition group-hover:translate-x-0.5"/>
+        </button>
+      </div>
+      <p className="px-2 pb-1 pt-4 text-center text-[11px] leading-5 text-[#9298a1]">어떤 방법을 골라도 담기 전까지 현재 루틴은 바뀌지 않아요.</p>
+    </BottomSheet>
+  </>
 }
 
 function LabContext({ experience, current, productCount }: { experience?: Experience | null; current?: Routine; productCount: number }) {
@@ -390,6 +422,6 @@ function ShelfEmpty({ filter, onAdd }: { filter: 'ALL' | 'ROUTINE' | 'RECORDED' 
   return <div className="relative mt-8 px-1 pb-5 text-center"><div aria-hidden className="absolute inset-x-5 bottom-0 top-5 rounded-[24px] bg-[#e7effc]"/><div className="relative overflow-hidden rounded-[24px] border border-[#d9e6ff] bg-[#f7faff] px-5 pb-6 pt-8 shadow-[0_9px_28px_rgba(37,55,92,.08)]"><button type="button" onClick={onAdd} aria-label="탐색에서 화장품 추가하기" className="relative mx-auto block rounded-full"><img src="/skn-assets/ai-drop.png" alt="" className="size-[150px] object-contain"/><span aria-hidden className="absolute left-1/2 top-1/2 grid size-12 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-white text-2xl shadow-[0_7px_22px_rgba(37,55,92,.14)]">+</span></button><h2 className="mt-3 text-2xl font-medium tracking-[-.035em]">{title}</h2><p className="mt-3 whitespace-pre-line text-sm leading-6 text-[#737880]">{body}</p><Button onClick={onAdd} className="mt-6 w-full">화장품 추가하기</Button></div></div>
 }
 
-function CatalogHeader({ onBack, onAdd }: { onBack?: () => void; onAdd: () => void }) {
-  return <AppHeader back={Boolean(onBack)} onBack={onBack} profile={false} sticky right={<button type="button" onClick={onAdd} aria-label="화장품 추가" className="grid size-11 place-items-center rounded-full border border-line bg-white transition hover:bg-soft active:scale-95"><Plus size={21}/></button>}/>
+function CatalogHeader({ onBack, onAdd }: { onBack?: () => void; onAdd?: () => void }) {
+  return <AppHeader back={Boolean(onBack)} onBack={onBack} profile={!onBack && !onAdd} notifications={!onBack && !onAdd} sticky right={onAdd ? <button type="button" onClick={onAdd} aria-label="화장품 추가" className="grid size-11 place-items-center rounded-full border border-line bg-white transition hover:bg-soft active:scale-95"><Plus size={21}/></button> : undefined}/>
 }
