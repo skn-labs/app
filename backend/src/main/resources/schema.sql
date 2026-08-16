@@ -227,6 +227,35 @@ ON CONFLICT(brand) DO UPDATE SET
   logo_url = excluded.logo_url,
   source_url = excluded.source_url;
 
+INSERT INTO brand_asset (brand, logo_url, source_url) VALUES
+  ('넘버즈인', '/manufacturer-logos/numbuzin.png', 'https://us.numbuzin.com/cdn/shop/files/250304_______US__04.png?v=1748827912&width=1200'),
+  ('홀리카홀리카', '/manufacturer-logos/holika-holika.png', 'https://holikaholika.com/cdn/shop/files/Frame.png?v=1730447758&width=500'),
+  ('이자녹스', '/manufacturer-logos/isaknox.png', 'https://contents.lgcare.com/lgcareWebSrc/upload/company/attach_file_20200824132862403.png'),
+  ('그레이스데이', '/manufacturer-logos/grace-day.jpg', 'https://sindopng.com/?page_id=629'),
+  ('비욘드', '/manufacturer-logos/beyond.png', 'https://contents.lgcare.com/lgcareWebSrc/upload/company/attach_file_20180627142811622.png'),
+  ('센텔리안24', '/manufacturer-logos/centellian24.png', 'https://centellian24.com/cdn/shop/files/logo-transparent-crop.png?v=1729224346&width=1042'),
+  ('시오리스', '/manufacturer-logos/sioris.png', 'https://en.sioris.co.kr/design/en/sioris_logo_en.png'),
+  ('프루디아', '/manufacturer-logos/frudia.svg', 'https://www.frudia.com/en/'),
+  ('라비오뜨', '/manufacturer-logos/labiotte.png', 'https://www.labiotte.com/web/upload/category/logo/v2_1375e98e4d54661d5795af5b75bdcacb_7dqB9gKPe_top.jpg'),
+  ('아토팜', '/manufacturer-logos/atopalm.svg', 'https://www.neopharmshop.co.kr/upload/brandstory/atopalm-logo.svg'),
+  ('코드글로컬러', '/manufacturer-logos/code-glokolor.png', 'https://contents.lgcare.com/lgcareWebSrc/upload/company/attach_file_20230628101669417.png'),
+  ('루메네', '/manufacturer-logos/lumene.svg', 'https://www.lumene.com/'),
+  ('랩클', '/manufacturer-logos/labcle.jpg', 'https://ecimg.cafe24img.com/pg504b72581267063/myhdpharm01/web/brand/br01.jpg'),
+  ('닥터블레딕', '/manufacturer-logos/dr-bledik.png', 'https://drbledik.co.kr/web/upload/appfiles/ZaReJam3QiELznoZeGGkMG/788fbc18f4394abe4cce9ecfcaed994d.png'),
+  ('닥터더마퍼트', '/manufacturer-logos/dr-dermapert.png', 'https://contents.sixshop.com/uploadedFiles/163535/default/image_1618536902528.png'),
+  ('아이소브', '/manufacturer-logos/isov.png', 'https://ecimg.cafe24img.com/pg813b45734152063/isov/web/upload/appfiles/AIFBrluHGdhkEsW6ewuLoA/629216b00bfbdad72fa343a5f00561c2.png'),
+  ('앰플엔', '/manufacturer-logos/ample-n.png', 'https://www.coreana.com/content/images/brand/b1/img_brand_b1_logo.png'),
+  ('어나더페이스', '/manufacturer-logos/another-face.svg', 'https://ecimg.cafe24img.com/pg797b53790262094/anotherface/web/upload/_dj/img/AF_logo2.svg'),
+  ('닥터멜락신', '/manufacturer-logos/dr-melaxin.png', 'https://m.melaxin.com/img/logo_melaxin_black.png'),
+  ('닥터아토', '/manufacturer-logos/dr-ato.jpg', 'https://www.medience.co.kr/images/product/eng/brand_drato.jpg'),
+  ('셀라피', '/manufacturer-logos/cellapy.png', 'https://static.ableshop.kr/web/fo/static/images/main/brand-cellapy.png'),
+  ('마데카21', '/manufacturer-logos/madeca21.png', 'https://madeca21.com/cdn/shop/files/madeca21_logo.png?v=1750317927&width=360'),
+  ('메디플라워', '/manufacturer-logos/mediflower.png', 'https://www.medi-flower.com/img/main/main_logo.png'),
+  ('아임미미', '/manufacturer-logos/im-meme.png', 'https://www.memebox.com/renew/pc/im_meme_logo_white.png')
+ON CONFLICT(brand) DO UPDATE SET
+  logo_url = excluded.logo_url,
+  source_url = excluded.source_url;
+
 -- 제품별 사용 가이드다. description/facts_json은 출처 미확인 카탈로그 입력으로
 -- 가이드 생성에만 사용하며, 확인 사실·추천·Rescue 근거로 승격하지 않는다.
 CREATE TABLE IF NOT EXISTS product_catalog_content (

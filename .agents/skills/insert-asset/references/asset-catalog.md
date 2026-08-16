@@ -98,7 +98,7 @@ SKN의 모든 애셋은 하나의 시각 언어를 공유한다: **맑은 물방
 
 ### 2026-08-16 전수 보강
 
-실제 카탈로그 2,654개·원문 브랜드 157종을 전수 감사해 공식 1차 출처 로고 **111파일**을 확보하고, 검증한 한글·영문 별칭을 포함한 **126개 exact-match 값**에 연결했다. 제품 행 기준 2,517개(94.8%)가 공식 로고를 사용한다. 전체 런타임 매핑과 각 `source_url`의 권위 원본은 `backend/src/main/resources/schema.sql`의 `brand_asset` seed가 단일 기준이며, 같은 내용은 운영 마이그레이션 `deploy/oci/migrations/20260816_04_add_brand_assets.sql`에 복제한다.
+실제 카탈로그 2,654개·원문 브랜드 157종을 전수 감사해 공식 1차 출처 로고 **135파일**을 확보했다. 제품 패키지와 이름으로 임시 제조사명 27행을 교정하고 **150개 exact-match 값**에 연결해, 제품 행 기준 **2,654개(100%)**가 검증한 로고를 사용한다. 전체 런타임 매핑과 각 `source_url`의 권위 원본은 `backend/src/main/resources/schema.sql`의 `brand_asset` seed가 단일 기준이며, 추가 매핑과 교정은 운영 마이그레이션 `deploy/oci/migrations/20260816_05_complete_brand_assets.sql`에 복제한다.
 
 위 상세 표 이후 추가한 파일은 다음과 같다.
 
@@ -108,7 +108,10 @@ SKN의 모든 애셋은 하나의 시각 언어를 공유한다: **맑은 물방
 - `melixir.png`, `dr-ceuracle.png`, `snp.png`는 공식 사이트가 직접 지정한 브랜드 아이콘·공유 이미지를 사용한다.
 - `acwell.png`, `hanyul.png`는 밝은 워드마크이므로 공통 `BrandIdentity`가 어두운 전용 프레임을 적용한다.
 - DB 원문 `닥터방기순`은 공식 브랜드 `닥터방기원`의 오기임을 확인하고 공식 로고를 명시적으로 연결한다. 표시 원문은 호환성을 위해 이 작업에서 바꾸지 않는다.
-- 공식 원본 또는 브랜드 실체를 검증하지 못한 31개 값(`넘버즈인`, `홀리카홀리카`, `이자녹스`, `그레이스데이`, `더마리브`, `뉴트리랩`, `닥터오트`, `비욘드`, `센텔리안24`, `솔라핏`, `시오리스`, `일리`, `클린잇제로`, `프루디아`, `닥터메디아`, `닥터스킨`, `데이지코`, `라베이지`, `라비오뜨`, `라이크바이`, `미미박스`, `바이옴`, `아토팜`, `애니레이`, `어퀴즈`, `오브리에`, `케어존`, `코드글로컬러`, `크레이버`, `클렌즈업`, `티엔지`)은 다른 회사 로고를 추론하지 않고 중립 문자 마크를 사용한다.
+- 추가 원본은 `numbuzin.png`, `holika-holika.png`, `isaknox.png`, `grace-day.jpg`, `beyond.png`, `centellian24.png`, `sioris.png`, `frudia.svg`, `labiotte.png`, `atopalm.svg`, `code-glokolor.png`, `lumene.svg`, `labcle.jpg`, `dr-bledik.png`, `dr-dermapert.png`, `isov.png`, `ample-n.png`, `another-face.svg`, `dr-melaxin.png`, `dr-ato.jpg`, `cellapy.png`, `madeca21.png`, `mediflower.png`, `im-meme.png`이다.
+- 프루디아와 루메네는 공식 사이트 헤더의 inline SVG를 형태 변경 없이 보존했다. 그레이스데이는 공식 브랜드 계정의 제조사(Sindo P&G) 프로필 원본, 랩클과 닥터아토는 공식 제조사 브랜드 배너 원본을 가공 없이 사용한다.
+- `ample-n.png`, `atopalm.svg`, `im-meme.png`는 밝은 워드마크이므로 공통 `BrandIdentity`가 어두운 전용 프레임을 적용한다.
+- 이전 미확인 31개 중 20개는 실제 패키지의 브랜드 워드마크가 DB 임시명과 달랐다. 마이그레이션 `_05`가 ID와 기존 값을 함께 조건으로 사용해 해당 27행만 안전하게 교정하며, 나머지 실재 브랜드 11개에는 공식 로고를 직접 연결한다.
 
 ---
 

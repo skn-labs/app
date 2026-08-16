@@ -23,7 +23,10 @@ const textSizes = {
 
 const lightLogoUrls = new Set([
   '/manufacturer-logos/acwell.png',
+  '/manufacturer-logos/ample-n.png',
+  '/manufacturer-logos/atopalm.svg',
   '/manufacturer-logos/hanyul.png',
+  '/manufacturer-logos/im-meme.png',
 ])
 
 /** 브랜드명 옆에 저장소 내 로고를 일관되게 표시하고, 미등록 로고는 문자 마크로 대체한다. */
