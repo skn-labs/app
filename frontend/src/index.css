@@ -136,6 +136,20 @@ video:not([controls])::-webkit-media-controls { display: none !important; }
   background: #fff;
   box-shadow: 0 0 0 4px #eef0ff;
 }
+.auth-field {
+  border: 1px solid #dce5f2;
+  border-radius: 18px;
+  background: #f7f9fd;
+  outline: none;
+  transition: border-color 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
+}
+.auth-field:hover { border-color: #cad8eb; }
+.auth-field:focus,
+.auth-field:focus-within {
+  border-color: #95add7;
+  background: #fff;
+  box-shadow: 0 0 0 4px #edf3ff;
+}
 .interactive-card {
   transition-property: border-color, background-color, box-shadow, color, opacity, transform;
   transition-duration: 180ms;
