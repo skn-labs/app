@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { ArrowRight, ChevronRight, Search } from 'lucide-react'
+import { ArrowRight, ChevronRight } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { api } from '../lib/api'
 import { startChatPath } from '../lib/chat'
@@ -44,12 +44,12 @@ export function HomePage() {
 
       <section className="mt-5" aria-label="AI와 화장품 탐색">
         <button type="button" onClick={() => navigate('/ai')} className="group flex min-h-[74px] w-full items-center gap-3.5 overflow-hidden rounded-[20px] bg-[#050505] px-4 py-3.5 text-left text-white shadow-[0_8px_22px_rgba(0,0,0,.14)] transition hover:bg-black active:scale-[.99]">
-          <span className="grid size-11 shrink-0 place-items-center overflow-hidden rounded-[15px] bg-white/[.08]"><AssetMotion name="ai-drop-motion" poster="/skn-assets/ai-drop-motion-poster.png" loop className="size-12 rounded-[14px]"/></span>
+          <span className="grid size-11 shrink-0 place-items-center overflow-hidden rounded-[15px] bg-white/[.08]"><img src="/skn-assets/icon-ai-sparkle.png" alt="" className="size-11 rounded-[15px] object-cover"/></span>
           <span className="min-w-0 flex-1"><strong className="block text-[14px] font-semibold leading-5 tracking-[-.025em]">피부에 대해 궁금한 게 있나요?</strong><span className="mt-1 block text-[11px] leading-4 text-[#cdd0d6]">SKN AI에게 편하게 물어보세요.</span></span>
           <ChevronRight size={18} strokeWidth={1.8} className="shrink-0 text-white/70 transition group-hover:translate-x-0.5"/>
         </button>
         <button type="button" onClick={() => setProductAddOpen(true)} className="group mt-3 flex min-h-[74px] w-full items-center gap-3.5 rounded-[20px] border border-[#dfe6f2] bg-[#f8faff] px-4 py-3.5 text-left shadow-[0_5px_18px_rgba(49,73,115,.05)] transition hover:border-[#ccd8e9] hover:bg-white active:scale-[.99]">
-          <span className="grid size-11 shrink-0 place-items-center rounded-[15px] bg-white text-[#657a9d] shadow-[inset_0_0_0_1px_rgba(215,225,241,.9)] transition group-hover:bg-[#edf3ff]"><Search size={19} strokeWidth={1.8}/></span>
+          <span className="grid size-11 shrink-0 place-items-center overflow-hidden rounded-[15px] shadow-[inset_0_0_0_1px_rgba(215,225,241,.9)]"><img src="/skn-assets/icon-search.png" alt="" className="size-11 rounded-[15px] object-cover"/></span>
           <span className="min-w-0 flex-1"><strong className="block text-[14px] font-semibold leading-5 tracking-[-.025em] text-[#1a2230]">궁금한 제품이 있나요?</strong><span className="mt-1 block text-[11px] leading-4 text-[#7b8290]">추천받거나 직접 검색해보세요.</span></span>
           <ChevronRight size={18} strokeWidth={1.8} className="shrink-0 text-[#8290a5] transition group-hover:translate-x-0.5 group-hover:text-[#5f7396]"/>
         </button>
@@ -174,7 +174,7 @@ function EmptyExperienceCard({ productCount }: { productCount: number }) {
         </span>
       </div>
       <div className="mt-4 max-w-[300px]"><h2 className="text-[25px] font-semibold leading-[1.16] tracking-[-.047em] [text-wrap:balance]">{title}</h2><p className="mt-2.5 max-w-[285px] text-[12px] font-medium leading-[1.65] tracking-[-.018em] text-[#687386]">{description}</p></div>
-      <Link to="/routine/new" className="mt-auto flex h-[49px] w-full items-center justify-center gap-1.5 rounded-full bg-[#111722] text-[12px] font-semibold leading-none tracking-[-.012em] text-white shadow-[0_9px_24px_rgba(0,0,0,.18)] transition hover:bg-black active:scale-[.98]">첫 루틴 만들기<ArrowRight size={16}/></Link>
+      <Link to="/routine/new" className="mt-auto flex min-h-[74px] w-full items-center justify-center gap-1.5 rounded-[20px] bg-[#111722] text-[12px] font-semibold leading-none tracking-[-.012em] text-white shadow-[0_9px_24px_rgba(0,0,0,.18)] transition hover:bg-black active:scale-[.98]">첫 루틴 만들기<ArrowRight size={16}/></Link>
     </div>
   </section>
 }
