@@ -104,7 +104,7 @@ export function ExplorePage() {
   </Screen>
 
   return <>
-    <Screen nav={false} className="bg-white">
+    <Screen nav={false} className="bg-white [touch-action:pan-y] [-webkit-overflow-scrolling:touch]">
       <AppHeader back onBack={() => navigate(-1)} profile={false} sticky right={<Link to="/my-products" className="inline-flex min-h-10 items-center whitespace-nowrap rounded-full px-3 text-xs font-semibold text-[#667085] transition hover:bg-soft">My</Link>}/>
       <div className="px-5 pb-8 pt-3">
         <PageHeading title="화장품 찾기" description="브랜드나 제품명을 검색해 내 화장품에 담아보세요."/>
@@ -126,7 +126,7 @@ export function ExplorePage() {
           : products.isError && !productItems.length
             ? <ErrorState message={products.error.message} onRetry={() => products.refetch()}/>
             : productItems.length
-              ? <><div className="grid grid-cols-2 gap-x-3 gap-y-4">{productItems.map(product => <CatalogProductCard key={product.id} product={product} returnTo={returnTo}/>)}</div><div ref={loadMoreRef} className="min-h-24 pb-4 pt-3" aria-live="polite">{isFetchingNextPage ? <CatalogGridSkeleton count={2}/> : products.isFetchNextPageError ? <div className="grid min-h-20 place-items-center"><button type="button" onClick={() => fetchNextPage()} className="rounded-full border border-line bg-white px-4 py-2 text-xs font-medium">다시 불러오기</button></div> : !hasNextPage ? <p className="pt-8 text-center text-xs text-muted">{catalogQuery ? '검색된 제품을 모두 봤어요.' : '모든 제품을 봤어요.'}</p> : null}</div></>
+              ? <><div className="grid grid-cols-2 gap-x-3 gap-y-4 [touch-action:pan-y]">{productItems.map(product => <CatalogProductCard key={product.id} product={product} returnTo={returnTo}/>)}</div><div ref={loadMoreRef} className="min-h-24 pb-4 pt-3" aria-live="polite">{isFetchingNextPage ? <CatalogGridSkeleton count={2}/> : products.isFetchNextPageError ? <div className="grid min-h-20 place-items-center"><button type="button" onClick={() => fetchNextPage()} className="rounded-full border border-line bg-white px-4 py-2 text-xs font-medium">다시 불러오기</button></div> : !hasNextPage ? <p className="pt-8 text-center text-xs text-muted">{catalogQuery ? '검색된 제품을 모두 봤어요.' : '모든 제품을 봤어요.'}</p> : null}</div></>
               : <div className="rounded-[24px] border border-[#e1e6ed] bg-[#f7f9fc] px-5 py-9 text-center"><span className="mx-auto grid size-11 place-items-center rounded-full bg-white text-[#7084a3] shadow-[0_5px_16px_rgba(45,61,87,.08)]"><Search size={19}/></span><h2 className="mt-4 text-xl font-semibold tracking-[-.03em]">검색 결과가 없어요</h2><p className="mt-2 text-sm leading-6 text-muted">목록에 없는 제품이라면<br/>확인한 이름으로 직접 등록할 수 있어요.</p><Button onClick={openCustomProduct} className="mt-6 w-full">{query.trim() ? '이 이름으로 직접 등록' : '제품 직접 등록하기'}</Button></div>}
         {!products.isPending && !products.isError && productItems.length > 0 && <button type="button" onClick={openCustomProduct} className="mb-5 mt-3 flex min-h-[68px] w-full items-center justify-between rounded-[18px] border border-dashed border-[#c7d3e4] bg-[#fafbfc] px-4 text-left transition hover:border-[#91a6c5] active:scale-[.99]"><span><span className="block text-[13px] font-semibold tracking-[-.02em]">찾는 제품이 목록에 없나요?</span><span className="mt-1 block text-[10px] text-[#818995]">이름과 유형만 확인해 직접 등록할 수 있어요.</span></span><span className="grid size-9 place-items-center rounded-full bg-white text-[#607493] shadow-[inset_0_0_0_1px_rgba(218,225,235,.9)]"><Plus size={17}/></span></button>}
       </div>
@@ -155,13 +155,13 @@ function ProductCategoryIcon({ icon, className = '' }: { icon: string; className
 
 function CatalogProductCard({ product, returnTo }: { product: Product; returnTo?: string }) {
   const details = [product.category, product.volume].filter(Boolean).join(' · ')
-  return <Link to={productPath(product.id, returnTo)} aria-label={`${product.brand} ${product.name} 상세 보기`} className="group block min-w-0 rounded-[26px] outline-none transition active:scale-[.985] focus-visible:ring-2 focus-visible:ring-[#202733] focus-visible:ring-offset-4">
-    <span className="relative grid h-[184px] place-items-center overflow-hidden rounded-[26px] border border-black/[.035] bg-[linear-gradient(145deg,#f7f7f4_0%,#efefec_62%,#e9eae7_100%)] shadow-[0_1px_0_rgba(255,255,255,.85)_inset] transition duration-300 group-hover:-translate-y-1 group-hover:shadow-[0_18px_35px_rgba(29,35,44,.11)]">
+  return <Link to={productPath(product.id, returnTo)} draggable={false} aria-label={`${product.brand} ${product.name} 상세 보기`} className="group block min-w-0 select-none rounded-[26px] outline-none transition [touch-action:pan-y] [-webkit-user-drag:none] active:scale-[.985] focus-visible:ring-2 focus-visible:ring-[#202733] focus-visible:ring-offset-4">
+    <span className="pointer-events-none relative grid h-[184px] place-items-center overflow-hidden rounded-[26px] border border-black/[.035] bg-[linear-gradient(145deg,#f7f7f4_0%,#efefec_62%,#e9eae7_100%)] shadow-[0_1px_0_rgba(255,255,255,.85)_inset] transition duration-300 group-hover:-translate-y-1 group-hover:shadow-[0_18px_35px_rgba(29,35,44,.11)]">
       <span aria-hidden className="absolute inset-x-8 top-1/2 h-16 -translate-y-1/2 rounded-full bg-white/60 blur-2xl"/>
       <span className="relative transition duration-500 ease-out group-hover:-translate-y-1 group-hover:scale-[1.04]"><CatalogProductVisual product={product}/></span>
       {product.personalRecordCount > 0 ? <span className="absolute left-3 top-3 rounded-full border border-black/[.045] bg-white/90 px-2.5 py-1.5 text-[9px] font-semibold tracking-[-.01em] text-[#354052] shadow-[0_4px_12px_rgba(25,31,40,.06)] backdrop-blur-md">내 기록 {product.personalRecordCount}</span> : product.owned ? <span className="absolute left-3 top-3 rounded-full border border-black/[.045] bg-white/90 px-2.5 py-1.5 text-[9px] font-semibold tracking-[.04em] text-[#434b56] shadow-[0_4px_12px_rgba(25,31,40,.06)] backdrop-blur-md">MY</span> : null}
     </span>
-    <span className="block px-1 pb-3 pt-3.5">
+    <span className="pointer-events-none block px-1 pb-3 pt-3.5">
       <span className="flex min-w-0 items-center gap-1.5"><BrandIdentity name={product.brand} logoUrl={product.brandLogoUrl} size="xs" className="min-w-0" nameClassName="text-[9px] font-semibold uppercase tracking-[.055em] text-[#7d8591]"/>{product.verified && <BadgeCheck size={12} className="shrink-0 text-[#657d54]"/>}</span>
       <strong className="mt-1.5 block min-h-10 line-clamp-2 text-[14px] font-semibold leading-5 tracking-[-.03em] text-[#171b22]">{product.name}</strong>
       <span className="mt-1.5 block truncate text-[10px] font-medium tracking-[-.01em] text-[#969ba3]">{details}</span>
