@@ -1,5 +1,24 @@
+import { useEffect, useState } from 'react'
 import type { PropsWithChildren } from 'react'
+import { formatKstTime } from '../lib/kstTime'
 import { SknMark } from './ui'
+
+function KstClock() {
+  const [time, setTime] = useState(() => formatKstTime(new Date()))
+
+  useEffect(() => {
+    let timeoutId: number
+    const updateAtMinuteBoundary = () => {
+      const now = new Date()
+      setTime(formatKstTime(now))
+      timeoutId = window.setTimeout(updateAtMinuteBoundary, 60_000 - (now.getTime() % 60_000) + 25)
+    }
+    updateAtMinuteBoundary()
+    return () => window.clearTimeout(timeoutId)
+  }, [])
+
+  return <span>{time}</span>
+}
 
 /** 데스크톱에서는 실제 앱을 iPhone 프레임 안에, 모바일에서는 화면 전체에 표시한다. */
 export function AppViewport({ children }: PropsWithChildren) {
@@ -14,7 +33,7 @@ export function AppViewport({ children }: PropsWithChildren) {
     <div className="skn-device-frame">
       <div className="skn-device-screen">
         <div aria-hidden="true" className="skn-device-status">
-          <span>9:41</span>
+          <KstClock/>
           <span className="skn-device-status-icons">
             <svg viewBox="0 0 18 12"><rect x="1" y="8.5" width="3" height="3.5" rx="1"/><rect x="5.5" y="6" width="3" height="6" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="14.5" width="3" height="12" rx="1"/></svg>
             <svg viewBox="0 0 18 13"><path d="M1.2 4.6a11.2 11.2 0 0 1 15.6 0M4.1 7.6a7 7 0 0 1 9.8 0M7.2 10.7a2.6 2.6 0 0 1 3.6 0" fill="none" stroke="currentColor" strokeWidth="1.65" strokeLinecap="round"/></svg>
@@ -40,7 +59,7 @@ export function PrototypePhone({ children }: PropsWithChildren) {
 
 export function PrototypeStatusBar() {
   return <div aria-hidden="true" className="skn-legacy-status hidden shrink-0 items-center justify-between px-7 pb-1 pt-3 text-sm font-medium sm:flex">
-    <span>12:06</span>
+    <KstClock/>
     <div className="flex items-center gap-1.5">
       <svg width="17" height="11" viewBox="0 0 17 11"><rect y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.5" width="3" height="11" rx="1"/></svg>
       <svg width="25" height="12" viewBox="0 0 25 12"><rect x=".5" y=".5" width="21" height="11" rx="3.5" fill="none" stroke="currentColor" opacity=".4"/><rect x="2" y="2" width="16" height="8" rx="2"/></svg>
