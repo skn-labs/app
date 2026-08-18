@@ -1,8 +1,12 @@
 import type { ButtonHTMLAttributes, ImgHTMLAttributes, PropsWithChildren, ReactNode, SyntheticEvent } from 'react'
 import { useEffect, useRef, useState } from 'react'
-import { Bot, ChevronLeft, CircleUserRound, FlaskConical, Home, MessageCircle, NotebookText, Sparkles, X } from 'lucide-react'
+import { Bot, ChevronLeft, CircleUserRound, Plus, Sparkles, X } from 'lucide-react'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { twMerge } from 'tailwind-merge'
+import navHome from '../assets/figma/nav-home.svg'
+import navLab from '../assets/figma/nav-lab.svg'
+import navRoutine from '../assets/figma/nav-routine.svg'
+import navChat from '../assets/figma/nav-chat.svg'
 import { ActionIcon } from './ActionIcon'
 import { NotificationBell } from './NotificationBell'
 import { PageSkeleton as PageSkeletonView, type SkeletonVariant } from './Skeleton'
@@ -38,15 +42,15 @@ export function AppHeader({ back = false, backTo, onBack, left, right, profile =
 
 export function BottomNav() {
   const items = [
-    { to: '/', label: '홈', icon: Home, end: true },
-    { to: '/my-products', label: '화장품', icon: FlaskConical },
-    { to: '/routines', label: '루틴', icon: NotebookText },
-    { to: '/ai', label: 'AI', icon: MessageCircle },
+    { to: '/', label: '홈', icon: navHome, end: true },
+    { to: '/my-products', label: '내 연구실', icon: navLab },
+    { to: '/routines', label: '루틴', icon: navRoutine },
+    { to: '/ai', label: 'AI', icon: navChat },
   ]
   return <div className="safe-bottom pointer-events-none fixed inset-x-0 bottom-0 z-30 mx-auto flex max-w-[430px] justify-center px-7">
     <nav aria-label="주요 메뉴" className="pointer-events-auto flex h-[66px] w-full max-w-[334px] items-center justify-around rounded-[40px] border border-black/[.035] bg-white/96 px-2 shadow-[0_12px_36px_rgba(0,0,0,.13)] backdrop-blur-xl">
-      {items.map(({ to, label, icon: Icon, end }) => <NavLink key={to} to={to} end={end} aria-label={label} className={({ isActive }) => twMerge('grid size-11 place-items-center rounded-full text-[#c7c9c4] transition-[color,background-color,transform,box-shadow] duration-150 active:scale-95', isActive && 'bg-[#f2f6fc] text-[#111722] shadow-[inset_0_0_0_1px_rgba(180,199,229,.2)]')}>
-        <Icon size={23} strokeWidth={1.9}/><span className="sr-only">{label}</span>
+      {items.map(({ to, label, icon, end }) => <NavLink key={to} to={to} end={end} aria-label={label} className="grid size-11 place-items-center rounded-full transition-transform duration-150 active:scale-95">
+        {({ isActive }) => <><img src={icon} alt="" aria-hidden className={twMerge('h-[23px] w-[23px] object-contain transition-opacity duration-150', isActive ? 'opacity-100' : 'opacity-20')}/><span className="sr-only">{label}</span></>}
       </NavLink>)}
     </nav>
   </div>
@@ -60,11 +64,11 @@ type FloatingAddButtonProps = {
 }
 
 export function FloatingAddButton({ label, kind, to, onClick }: FloatingAddButtonProps) {
-  const common = 'pointer-events-auto bg-[#0a0a0a] text-white shadow-[0_12px_30px_rgba(0,0,0,.28)] transition duration-200 hover:-translate-y-0.5 hover:bg-black hover:shadow-[0_16px_34px_rgba(0,0,0,.32)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-4 active:translate-y-0 active:scale-95'
+  const common = 'pointer-events-auto bg-cta text-white shadow-[0_12px_30px_rgba(17,23,34,.28)] transition duration-200 hover:-translate-y-0.5 hover:bg-black hover:shadow-[0_16px_34px_rgba(17,23,34,.32)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-4 active:translate-y-0 active:scale-95'
   const className = `${common} flex h-14 items-center gap-2 rounded-full px-5`
-  const textClassName = 'text-[13px] font-[600] leading-none tracking-[-.02em]'
+  const textClassName = 'text-[14px] font-[600] leading-none tracking-[-.02em]'
   const content = kind === 'product'
-    ? <><ActionIcon name="product-add" className="size-[22px]"/><span className={textClassName}>화장품 추가</span></>
+    ? <><Plus size={22} strokeWidth={2.4}/><span className={textClassName}>화장품 추가</span></>
     : <><ActionIcon name="routine-add" className="size-[22px]"/><span className={textClassName}>새 루틴</span></>
   return <div className="pointer-events-none fixed inset-x-0 bottom-28 z-20 mx-auto flex max-w-[430px] justify-end px-5">
     {to
@@ -98,7 +102,7 @@ export function SknMark({ className = '' }: { className?: string }) {
 
 export function Button({ className, variant = 'primary', type = 'button', ...props }: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'secondary' | 'ghost' | 'danger' }) {
   const variants = {
-    primary: 'bg-ink text-white shadow-[0_6px_18px_rgba(23,24,22,.12)] hover:bg-black disabled:bg-[#a9aba6] disabled:shadow-none',
+    primary: 'bg-cta text-white shadow-[0_6px_18px_rgba(17,23,34,.16)] hover:bg-black disabled:bg-[#a9aba6] disabled:shadow-none',
     secondary: 'border border-line bg-white text-ink hover:border-[#d4d8cf] hover:bg-soft',
     ghost: 'bg-transparent text-ink hover:bg-soft',
     danger: 'bg-[#fff0f0] text-danger hover:bg-[#ffe8e8]',

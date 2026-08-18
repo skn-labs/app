@@ -18,13 +18,29 @@
   --color-line: #e7e9e3;
   --color-paper: #fff;
   --color-soft: #f2f4ef;
-  --color-accent: #5365f5;
-  --color-accent-soft: #eef0ff;
+  /* Canonical blue ramp — single hue (~219°). Light steps use the approved palette swatches. */
+  --color-blue-50: #f6f9ff;   /* 스펙: 가장 밝은 서피스 */
+  --color-blue-100: #eaf1ff;
+  --color-blue-200: #d9e6ff;  /* 스펙: 라이트 블루 (선·보더) */
+  --color-blue-300: #c6d8ff;
+  --color-blue-400: #b2ccff;  /* 스펙: 강한 블루 (강조선·점) */
+  --color-blue-500: #9fb1cd;
+  --color-blue-600: #7789a6;
+  --color-blue-700: #5f7396;
+  --color-blue-800: #4b5f80;
+  --color-blue-900: #354052;
+  --color-blue-ink: #172033;
+  --color-field-text: #a1adc4; /* 스펙: 입력창 텍스트 */
+  /* Canonical CTA "black box" — one cool blue-black for every primary button, app-wide. */
+  --color-cta: #111722;
+  /* Accent = the loud end of the same blue hue, so it pops by saturation, not by shifting to violet. */
+  --color-accent: #3d6fd6;
+  --color-accent-soft: #e7eefb;
   --color-lime: #dff5a7;
   --color-danger: #d65454;
   --color-canvas: #fff;
   --color-surface-subtle: #f7f8f5;
-  --color-surface-blue: #f6f9ff;
+  --color-surface-blue: #f5f8ff;
 }
 
 :root {
@@ -59,7 +75,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
 button { touch-action: manipulation; }
 button:enabled, a[href] { cursor: pointer; }
 :focus-visible {
-  outline: 2px solid #5365f5;
+  outline: 2px solid #3d6fd6;
   outline-offset: 2px;
 }
 /* 포커스 링은 키보드 탐색 버튼·링크에만. 폼 컨트롤은 자체 포커스 스타일(테두리/링)에 맡기고 아웃라인 제거 */
@@ -80,8 +96,8 @@ input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:foc
 }
 img, svg, video { -webkit-user-drag: none; user-select: none; }
 html, body { overscroll-behavior-y: none; }
-::selection { background: #dce8ff; color: #171816; }
-input::placeholder, textarea::placeholder { color: #a5a8a2; opacity: 1; }
+::selection { background: #dbe6f7; color: #171816; }
+input::placeholder, textarea::placeholder { color: #a1adc4; opacity: 1; }
 button, a, input, textarea, select { transition-timing-function: cubic-bezier(.2, .75, .2, 1); }
 video {
   display: block;
@@ -400,9 +416,9 @@ video:not([controls])::-webkit-media-controls { display: none !important; }
 }
 .field-control:focus-within,
 .field-control:focus {
-  border-color: #9aa8ff;
+  border-color: #3d6fd6;
   background: #fff;
-  box-shadow: 0 0 0 4px #eef0ff;
+  box-shadow: 0 0 0 4px #e7eefb;
 }
 .auth-field {
   border: 1px solid #dce5f2;

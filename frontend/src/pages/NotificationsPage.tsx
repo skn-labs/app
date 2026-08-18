@@ -8,14 +8,14 @@ import type { AppNotification } from '../lib/types'
 
 type NotificationMeta = { Icon: LucideIcon; tint: string; glow: string }
 const TYPE_META: Record<AppNotification['type'], NotificationMeta> = {
-  EXPERIENCE_CHECK_IN: { Icon: NotebookPen, tint: '#5365f5', glow: 'rgba(83,101,245,.24)' },
-  EXPERIENCE_REVIEW_DUE: { Icon: CalendarClock, tint: '#5365f5', glow: 'rgba(83,101,245,.24)' },
+  EXPERIENCE_CHECK_IN: { Icon: NotebookPen, tint: '#3d6fd6', glow: 'rgba(61,111,214,.24)' },
+  EXPERIENCE_REVIEW_DUE: { Icon: CalendarClock, tint: '#3d6fd6', glow: 'rgba(61,111,214,.24)' },
   PATTERN_READY: { Icon: Sparkles, tint: '#7b5bd6', glow: 'rgba(123,91,214,.24)' },
   PROFILE_READY: { Icon: Hexagon, tint: '#3f9d6b', glow: 'rgba(63,157,107,.24)' },
   PROFILE_UPDATED: { Icon: TrendingUp, tint: '#3f9d6b', glow: 'rgba(63,157,107,.24)' },
   PRODUCT_DISCOVERY: { Icon: Compass, tint: '#d1873a', glow: 'rgba(209,135,58,.24)' },
 }
-const FALLBACK_META: NotificationMeta = { Icon: Bell, tint: '#5365f5', glow: 'rgba(83,101,245,.24)' }
+const FALLBACK_META: NotificationMeta = { Icon: Bell, tint: '#3d6fd6', glow: 'rgba(61,111,214,.24)' }
 
 export function NotificationsPage() {
   const navigate = useNavigate()

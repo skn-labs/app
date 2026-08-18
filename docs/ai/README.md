@@ -90,17 +90,19 @@ P4는 식별·사용 맥락 보조로만 쓰고 안전·효능·원인 판단에
 
 ## 모델·비용·실패 정책
 
-- 기본 모델: `gpt-5.6-terra`
+- 모델 우선순위: `gpt-5.6-terra` → `gpt-5.6-luna` → `gpt-5.6-sol`
 - reasoning effort: `low`
 - 최대 출력: 1,800 tokens. 검색·추론 뒤 구조화 JSON이 잘리지 않게 확보한 예산이며, 사용자에게 보이는 답변 길이는 schema와 프롬프트로 별도 제한한다.
 - web search: Responses API `web_search`, 제품·추천·Rescue 판단 단계는 `tool_choice: required`
 - source include: `web_search_call.action.sources`
-- 재시도: 429·5xx·timeout에만 1회
+- 모델별 rate limit 429: 응답의 `x-ratelimit-remaining-*`, `x-ratelimit-reset-*`, `Retry-After` 순서로 reset까지 해당 모델을 건너뛰고 다음 모델로 즉시 전환
+- 계정 전체 429: `credit_balance_exhausted`, 조직·프로젝트 지출 한도, 조직 사용 한도는 모델 전환 없이 실패 처리
+- 재시도: 5xx·timeout은 같은 모델에서만 1회
 - 저장: OpenAI `store: false`
 - 실패: 사용자 메시지를 먼저 DB에 저장한 뒤 일반은 현재 루틴·최근 결과, 제품은 식별정보·보유 여부·연결 기록, 추천은 카탈로그 후보, 패턴은 반복 근거, Rescue는 변경점·서버 계획으로 직접 답한다. 일반 장애 문구만 사용자 답변으로 저장하지 않는다.
 
-Luna 하나로 일반 대화와 검색 대화를 운영한다. 모델 전환 분기는 두지 않고, 서버의 근거 검증과 실패 시 직접 응답으로 신뢰성과 가용성을 보완한다. 최신 가격과 모델은 [OpenAI API 가격](https://developers.openai.com/api/docs/pricing)에서 확인한다.
+일반 대화·검색 대화·루틴 AI 생성은 같은 모델 라우터를 사용한다. 소진된 모델의 reset 시각은 서버 메모리에 보존하므로 그동안 매 요청마다 같은 429를 반복하지 않으며, 서버 재시작 뒤에는 우선 모델부터 다시 확인한다. 세 모델이 모두 소진됐거나 계정 전체 한도에 걸리면 서버의 근거 검증과 모드별 직접 응답으로 종착점을 보장한다. 최신 가격과 모델은 [OpenAI API 가격](https://developers.openai.com/api/docs/pricing)에서 확인한다.
 
 ## 비밀값
 
-`OPENAI_API_KEY`는 루트 `.env`에만 두고 Spring 서버가 읽는다. 프론트엔드 번들·Git·로그에는 포함하지 않는다.
+`OPENAI_API_KEY`는 루트 `.env`에만 두고 Spring 서버가 읽는다. `OPENAI_MODEL`은 첫 모델, `OPENAI_FALLBACK_MODELS`는 쉼표로 구분한 후속 모델 목록이며 기본값은 각각 `gpt-5.6-terra`, `gpt-5.6-luna,gpt-5.6-sol`이다. 비밀값은 프론트엔드 번들·Git·로그에 포함하지 않는다.

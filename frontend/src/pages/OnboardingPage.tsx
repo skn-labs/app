@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Check, ChevronLeft, ChevronRight, LoaderCircle } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
@@ -68,12 +68,12 @@ const CONDITION_LABELS: Record<number, string> = {
   4: '대체로 편안하고 안정적이에요',
   5: '아주 편안하고 안정적이에요',
 }
-const STEPS: { key: StepKey; title: string; subtitle: string }[] = [
+const STEPS: { key: StepKey; title: string; subtitle: ReactNode }[] = [
   { key: 'ageRange', title: '현재 연령대를 알려주세요.', subtitle: '피부 변화의 맥락을 이해하는 참고 정보로만 활용해요.' },
   { key: 'gender', title: '성별을 선택해주세요.', subtitle: '직접 선택한 정보는 개인화의 참고 정보로만 활용해요.' },
   { key: 'skinType', title: '피부 타입은 어떻게 알고 있나요?', subtitle: '정확하지 않아도 괜찮아요. 나중에 다시 바꿀 수 있어요.' },
   { key: 'skinCondition', title: '지금 피부 상태는 어떤가요?', subtitle: '최근 2주 정도의 컨디션을 기준으로 골라주세요.' },
-  { key: 'concerns', title: '요즘 가장 신경 쓰이는 부분은?', subtitle: '해당하는 고민을 하나 이상 골라주세요. 여러 개 선택할 수 있어요.' },
+  { key: 'concerns', title: '요즘 가장 신경 쓰이는 부분은?', subtitle: <>해당하는 고민을 하나 이상 골라주세요.<br/>여러 개 선택할 수 있어요.</> },
   { key: 'textures', title: '어떤 사용감을 선호하시나요?', subtitle: '편하게 느꼈던 발림·마무리·향을 떠올려주세요.' },
   { key: 'avoids', title: '사용하면서 피하고 싶은 것이 있나요?', subtitle: '피하고 싶은 요소는 개인화 참고 정보로 활용해요.' },
   { key: 'trialFrequency', title: '새로운 제품을 얼마나 자주 시도하시나요?', subtitle: '새 제품을 탐색하는 성향의 참고 정보로만 활용해요.' },
@@ -143,14 +143,14 @@ export function OnboardingPage({ auth }: { auth: Auth }) {
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-7">
       <div className="flex items-center justify-between pt-5">
         <ProgressDashes current={step} total={STEPS.length}/>
-        <span className="rounded-full bg-[#f2f2f7] px-2.5 py-1 text-xs font-medium tabular-nums text-[#636366]">{step + 1} / {STEPS.length}</span>
+        <span className="rounded-full bg-[#eff2f7] px-2.5 py-1 text-xs font-medium tabular-nums text-[#636366]">{step + 1} / {STEPS.length}</span>
       </div>
       <header key={`heading-${current.key}`} className={`${direction === 'forward' ? 'animate-onboard-forward' : 'animate-onboard-back'} pt-6`}>
-        {current.key === 'avoids' && <span className="mb-2 inline-flex rounded-full bg-[#f2f2f7] px-2.5 py-1 text-xs font-medium text-[#8e8e93]">선택 사항</span>}
+        {current.key === 'avoids' && <span className="mb-2 inline-flex rounded-full bg-[#eff2f7] px-2.5 py-1 text-xs font-medium text-[#8e8e93]">선택 사항</span>}
         <h1 ref={heading} tabIndex={-1} className="text-2xl font-medium leading-[1.35] tracking-[-.035em] outline-none">{current.title}</h1>
         <p className="mt-2.5 text-sm leading-[1.65] text-[#73766f]">{current.subtitle}</p>
         <div aria-live="polite" className="mt-3 min-h-7">
-          {selectionSummary && <span className="inline-flex max-w-full items-center gap-1.5 rounded-full bg-[#f2f2f7] px-3 py-1.5 text-xs font-medium text-[#3a3a3c]"><Check size={12} strokeWidth={2.5}/><span className="truncate">{selectionSummary}</span></span>}
+          {selectionSummary && <span className="inline-flex max-w-full items-center gap-1.5 rounded-full bg-[#eff2f7] px-3 py-1.5 text-xs font-medium text-[#3a3a3c]"><Check size={12} strokeWidth={2.5}/><span className="truncate">{selectionSummary}</span></span>}
         </div>
       </header>
 
@@ -161,14 +161,14 @@ export function OnboardingPage({ auth }: { auth: Auth }) {
         {current.key === 'skinCondition' && <ConditionScale value={profile.skinCondition} onChange={value => patch({ skinCondition: value })}/>}
         {current.key === 'concerns' && <ChipGroups groups={CONCERN_GROUPS} selected={profile.concerns} onToggle={value => toggle('concerns', value)}/>}
         {current.key === 'textures' && <ChipGroups groups={TEXTURE_GROUPS} selected={profile.textures} onToggle={value => toggle('textures', value)}/>}
-        {current.key === 'avoids' && <><ChipGroups groups={AVOID_GROUPS} selected={profile.avoids} onToggle={value => toggle('avoids', value)}/><label className="mt-6 block"><span className="mb-2 block text-xs font-medium text-[#8e8e93]">직접 입력 <span className="font-normal text-[#c7c7cc]">· 선택</span></span><textarea value={profile.avoidNote} maxLength={300} rows={3} onChange={event => patch({ avoidNote: event.target.value })} placeholder="목록에 없는 성분이나 사용감을 적어주세요" className="w-full resize-none rounded-[16px] border border-transparent bg-[#f2f2f7] p-4 text-sm leading-[1.6] outline-none transition placeholder:text-[#a1a1a6] focus:border-[#0a0a0a] focus:bg-white focus:ring-4 focus:ring-black/5"/><span className="mt-1.5 block text-right text-xs tabular-nums text-[#c7c7cc]">{profile.avoidNote.length} / 300</span></label></>}
+        {current.key === 'avoids' && <><ChipGroups groups={AVOID_GROUPS} selected={profile.avoids} onToggle={value => toggle('avoids', value)}/><label className="mt-6 block"><span className="mb-2 block text-xs font-medium text-[#8e8e93]">직접 입력 <span className="font-normal text-[#c7c7cc]">· 선택</span></span><textarea value={profile.avoidNote} maxLength={300} rows={3} onChange={event => patch({ avoidNote: event.target.value })} placeholder="목록에 없는 성분이나 사용감을 적어주세요" className="w-full resize-none rounded-[16px] border border-transparent bg-[#eff2f7] p-4 text-sm leading-[1.6] outline-none transition placeholder:text-[#a1a1a6] focus:border-[#0a0a0a] focus:bg-white focus:ring-4 focus:ring-black/5"/><span className="mt-1.5 block text-right text-xs tabular-nums text-[#c7c7cc]">{profile.avoidNote.length} / 300</span></label></>}
         {current.key === 'trialFrequency' && <OptionList options={TRIAL_FREQUENCIES} value={profile.trialFrequency} onChange={value => patch({ trialFrequency: value })}/>}
       </div>
 
       {complete.error && <p role="alert" className="mb-3 text-xs text-danger">{complete.error.message}</p>}
-      <div className="safe-bottom -mx-1 flex shrink-0 gap-2 border-t border-[#f2f2f7] bg-white px-1 pt-3">
-        <button type="button" aria-label="이전 단계" onClick={() => move(Math.max(0, step - 1), 'back')} disabled={step === 0 || complete.isPending} className="grid size-[52px] shrink-0 place-items-center rounded-full bg-[#f2f2f7] text-[#0a0a0a] transition active:scale-[.96] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:text-[#c7c7cc] disabled:active:scale-100"><ChevronLeft size={21}/></button>
-        <button type="button" disabled={!canProceed || complete.isPending} onClick={() => step === STEPS.length - 1 ? complete.mutate() : move(step + 1, 'forward')} className="flex h-[52px] flex-1 items-center justify-center gap-1.5 rounded-full bg-[#0a0a0a] px-5 text-base font-[600] text-white shadow-[0_8px_20px_rgba(0,0,0,.12)] transition active:scale-[.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:bg-[#e5e5ea] disabled:text-[#a1a1a6] disabled:shadow-none disabled:active:scale-100">{complete.isPending ? <><LoaderCircle size={17} className="animate-spin"/>프로필 저장 중…</> : step === STEPS.length - 1 ? <>프로필 완성하기<ChevronRight size={17}/></> : <>{optionalEmpty ? '건너뛰기' : '다음'}<ChevronRight size={17}/></>}</button>
+      <div className="safe-bottom -mx-1 flex shrink-0 gap-2 border-t border-[#eff2f7] bg-white px-1 pt-3">
+        <button type="button" aria-label="이전 단계" onClick={() => move(Math.max(0, step - 1), 'back')} disabled={step === 0 || complete.isPending} className="grid size-[52px] shrink-0 place-items-center rounded-full bg-[#eff2f7] text-[#0a0a0a] transition active:scale-[.96] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:text-[#c7c7cc] disabled:active:scale-100"><ChevronLeft size={21}/></button>
+        <button type="button" disabled={!canProceed || complete.isPending} onClick={() => step === STEPS.length - 1 ? complete.mutate() : move(step + 1, 'forward')} className="flex h-[52px] flex-1 items-center justify-center gap-1.5 rounded-full bg-cta px-5 text-base font-[600] text-white shadow-[0_8px_20px_rgba(17,23,34,.14)] transition active:scale-[.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:bg-[#e4e7ee] disabled:text-[#a1a1a6] disabled:shadow-none disabled:active:scale-100">{complete.isPending ? <><LoaderCircle size={17} className="animate-spin"/>프로필 저장 중…</> : step === STEPS.length - 1 ? <>프로필 완성하기<ChevronRight size={17}/></> : <>{optionalEmpty ? '건너뛰기' : '다음'}<ChevronRight size={17}/></>}</button>
       </div>
     </div>
     <PrototypeHomeIndicator/>
@@ -237,7 +237,7 @@ function OnboardingWelcome({ onDone }: { onDone: () => void }) {
 
 function ProgressDashes({ current, total }: { current: number; total: number }) {
   return <div role="progressbar" aria-valuemin={1} aria-valuemax={total} aria-valuenow={current + 1} aria-label={`${total}단계 중 ${current + 1}단계`} className="flex min-w-0 flex-1 shrink-0 gap-1.5 pr-4">
-    {Array.from({ length: total }, (_, index) => <i key={index} className={`h-1 min-w-0 flex-1 rounded-full transition-all duration-300 ${index <= current ? 'bg-[#0a0a0a]' : 'bg-[#e5e5ea]'}`}/>) }
+    {Array.from({ length: total }, (_, index) => <i key={index} className={`h-1 min-w-0 flex-1 rounded-full transition-all duration-300 ${index <= current ? 'bg-[#0a0a0a]' : 'bg-[#e4e7ee]'}`}/>) }
   </div>
 }
 
@@ -262,7 +262,7 @@ function AgeWheel({ value, onChange }: { value: DraftProfile['ageRange']; onChan
   }
 
   return <div><p className="mb-2 text-center text-xs text-[#8e8e93]">위아래로 움직이거나 나이대를 눌러주세요</p><div className="relative h-[280px]">
-    <div aria-hidden="true" className="absolute left-7 right-7 top-1/2 h-[54px] -translate-y-1/2 rounded-[16px] border border-[#e5e5ea] bg-[#f7f7f8] shadow-[0_5px_18px_rgba(0,0,0,.04)]"/>
+    <div aria-hidden="true" className="absolute left-7 right-7 top-1/2 h-[54px] -translate-y-1/2 rounded-[16px] border border-[#e4e7ee] bg-[#f7f7f8] shadow-[0_5px_18px_rgba(0,0,0,.04)]"/>
     <div ref={list} onScroll={handleScroll} role="radiogroup" aria-label="연령대" className="hide-scrollbar relative h-full snap-y snap-mandatory overflow-y-auto py-[112px]">
       {AGE_RANGES.map(([code, label]) => <button type="button" role="radio" key={code} onClick={() => onChange(code)} aria-checked={value === code} className={`block h-14 w-full snap-center bg-transparent text-center transition-all ${value === code ? 'scale-105 text-2xl font-semibold text-[#0a0a0a]' : 'text-2xl font-medium text-[#c7c7cc]'}`}>{label}</button>)}
     </div>
@@ -272,7 +272,7 @@ function AgeWheel({ value, onChange }: { value: DraftProfile['ageRange']; onChan
 
 function GenderPicker({ value, onChange }: { value: DraftProfile['gender']; onChange: (value: SkinProfile['gender']) => void }) {
   return <div role="radiogroup" aria-label="성별" className="grid grid-cols-2 gap-3 pt-2">
-    {GENDERS.map(([code, label]) => { const asset = `onboarding-gender-${code === 'MALE' ? 'male' : 'female'}`; const selected = value === code; return <button type="button" role="radio" aria-checked={selected} key={code} onClick={() => onChange(code)} className={`relative flex min-w-0 flex-col items-center gap-2 rounded-[24px] border bg-[#fff] px-2 pb-4 pt-2 transition-all duration-200 active:scale-[.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 ${selected ? 'border-[#0a0a0a] shadow-[0_10px_28px_rgba(0,0,0,.09)]' : 'border-[#e5e5ea]'}`}>
+    {GENDERS.map(([code, label]) => { const asset = `onboarding-gender-${code === 'MALE' ? 'male' : 'female'}`; const selected = value === code; return <button type="button" role="radio" aria-checked={selected} key={code} onClick={() => onChange(code)} className={`relative flex min-w-0 flex-col items-center gap-2 rounded-[24px] border bg-[#fff] px-2 pb-4 pt-2 transition-all duration-200 active:scale-[.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 ${selected ? 'border-[#0a0a0a] shadow-[0_10px_28px_rgba(0,0,0,.09)]' : 'border-[#e4e7ee]'}`}>
       <AssetMotion name={asset} poster={`/skn-assets/${asset}-poster.png`} loop playing={selected} className={`size-[128px] transition-all duration-200 ${value && !selected ? 'scale-[.94] opacity-40 grayscale-[.2]' : 'scale-100 opacity-100'}`}/>
       <span className={`text-base font-medium ${selected ? 'text-[#0a0a0a]' : 'text-[#636366]'}`}>{label}</span>
       <span aria-hidden="true" className={`absolute right-3 top-3 grid size-6 place-items-center rounded-full border transition-all ${selected ? 'scale-100 border-[#0a0a0a] bg-[#0a0a0a] text-white' : 'scale-90 border-[#d1d1d6] bg-white text-transparent'}`}><Check size={13} strokeWidth={3}/></span>
@@ -307,7 +307,7 @@ function SkinTypePicker({ value, onChange }: { value: DraftProfile['skinType']; 
 function ConditionScale({ value, onChange }: { value: number | null; onChange: (value: number) => void }) {
   const progress = value ? (value - 1) / 4 : 0
   return <div className="pt-3"><div className="mb-4 flex justify-between text-xs font-medium text-[#8e8e93]"><span>불안정</span><span>보통</span><span>안정적</span></div><div role="radiogroup" aria-label="현재 피부 상태" className="relative flex justify-between">
-    <span aria-hidden="true" className="absolute left-[22px] right-[22px] top-1/2 h-1 -translate-y-1/2 rounded-full bg-[#e5e5ea]"/>
+    <span aria-hidden="true" className="absolute left-[22px] right-[22px] top-1/2 h-1 -translate-y-1/2 rounded-full bg-[#e4e7ee]"/>
     <span aria-hidden="true" style={{ transform: `translateY(-50%) scaleX(${progress})`, transformOrigin: 'left center' }} className="absolute left-[22px] right-[22px] top-1/2 h-1 rounded-full bg-[#0a0a0a] transition-transform duration-300"/>
     {[1, 2, 3, 4, 5].map(number => { const selected = value === number; const reached = value !== null && number <= value; return <button type="button" role="radio" aria-checked={selected} aria-label={`${number}점, ${CONDITION_LABELS[number]}`} key={number} onClick={() => onChange(number)} className={`relative z-10 size-11 rounded-full border text-sm transition-all active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 ${selected ? 'scale-110 border-[#0a0a0a] bg-[#0a0a0a] font-semibold text-white shadow-[0_5px_16px_rgba(0,0,0,.18)]' : reached ? 'border-[#0a0a0a] bg-white font-medium text-[#0a0a0a]' : 'border-[#d1d1d6] bg-white text-[#8e8e93]'}`}>{number}</button>})}
   </div><div aria-live="polite" className="mt-9 min-h-[52px] text-center">{value
@@ -366,7 +366,7 @@ function CompleteStep({ profile, onDone }: { profile: SkinProfile; onDone: () =>
   }, [exiting])
 
   const summary = [labelFor(AGE_RANGES, profile.ageRange), labelFor(GENDERS, profile.gender), labelFor(SKIN_TYPES, profile.skinType)].join(' · ')
-  return <PrototypePhone><button type="button" onClick={beginExit} aria-label="완료 화면을 닫고 메인으로 이동" className={`flex min-h-0 flex-1 flex-col text-[#0a0a0a] transition-opacity duration-[600ms] ease-out ${exiting ? 'pointer-events-none opacity-0' : 'opacity-100'}`}><PrototypeStatusBar/><PrototypeTopMark/><div className="safe-bottom flex min-h-0 flex-1 flex-col px-7"><div className="pt-14 text-center"><h1 className="text-2xl font-semibold leading-[1.4] tracking-[-.02em]">당신을 위한 스킨케어를<br/>시작할 준비가 됐어요</h1><p className="mt-3 text-sm text-[#8e8e93]">{summary}</p></div><div className="flex flex-1 items-center justify-center"><AssetMotion name="check-motion" poster="/skn-assets/check-motion.png" alt="프로필 설정 완료" className="size-[240px]"/></div><p className="pb-6 text-center text-xs font-medium text-[#9da3ad]">화면을 눌러 내 연구를 시작해보세요</p></div><PrototypeHomeIndicator/></button></PrototypePhone>
+  return <PrototypePhone><button type="button" onClick={beginExit} aria-label="완료 화면을 닫고 메인으로 이동" className={`flex min-h-0 flex-1 flex-col text-[#0a0a0a] transition-opacity duration-[600ms] ease-out ${exiting ? 'pointer-events-none opacity-0' : 'opacity-100'}`}><PrototypeStatusBar/><PrototypeTopMark/><div className="safe-bottom flex min-h-0 flex-1 flex-col px-7"><div className="pt-14 text-center"><h1 className="text-2xl font-semibold leading-[1.4] tracking-[-.02em]">당신을 위한 스킨케어를<br/>시작할 준비가 됐어요</h1><p className="mt-3 text-sm text-[#8e8e93]">{summary}</p></div><div className="flex flex-1 items-center justify-center pb-12"><AssetMotion name="check-motion" poster="/skn-assets/check-motion.png" alt="프로필 설정 완료" className="size-[240px]"/></div><p className="pb-6 text-center text-xs font-medium text-[#9da3ad]">화면을 눌러 내 연구를 시작해보세요</p></div><PrototypeHomeIndicator/></button></PrototypePhone>
 }
 
 function labelFor<T extends string>(options: readonly (readonly [T, string])[], value: T) {

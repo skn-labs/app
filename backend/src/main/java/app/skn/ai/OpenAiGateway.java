@@ -6,6 +6,7 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
@@ -23,6 +24,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.LongSupplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -33,19 +36,42 @@ public class OpenAiGateway {
     private static final Pattern ANSWER_FIELD = Pattern.compile("\\\"answer\\\"\\s*:\\s*\\\"");
     private static final Pattern OPENAI_CITATION_MARKER = Pattern.compile("\\uE200cite\\uE202[^\\uE201]+\\uE201");
     private static final Pattern RETRY_SECONDS = Pattern.compile("try again in ([0-9]+(?:\\.[0-9]+)?)s", Pattern.CASE_INSENSITIVE);
+    private static final Pattern DURATION_PART = Pattern.compile("([0-9]+(?:\\.[0-9]+)?)(ms|d|h|m|s)", Pattern.CASE_INSENSITIVE);
     private static final Set<String> SOURCE_TIERS = Set.of("P1", "P2", "P3", "P4");
+    private static final Set<String> NON_ROUTABLE_429_CODES = Set.of(
+            "credit_balance_exhausted",
+            "organization_spend_limit_exceeded",
+            "project_spend_limit_exceeded",
+            "organization_usage_limit_exceeded",
+            "billing_hard_limit_reached",
+            "insufficient_quota"
+    );
+    private static final long DEFAULT_RATE_LIMIT_COOLDOWN_MILLIS = 60_000;
 
     private final OpenAiProperties properties;
     private final RestClient client;
     private final ObjectMapper objectMapper;
+    private final LongSupplier currentTimeMillis;
+    private final Map<String, Long> rateLimitedUntil = new ConcurrentHashMap<>();
 
+    @Autowired
     public OpenAiGateway(OpenAiProperties properties, ObjectMapper objectMapper) {
+        this(properties, objectMapper, createClient(properties), System::currentTimeMillis);
+    }
+
+    OpenAiGateway(OpenAiProperties properties, ObjectMapper objectMapper, RestClient client,
+                  LongSupplier currentTimeMillis) {
         this.properties = properties;
         this.objectMapper = objectMapper;
+        this.client = client;
+        this.currentTimeMillis = currentTimeMillis;
+    }
+
+    private static RestClient createClient(OpenAiProperties properties) {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(properties.connectTimeout());
         factory.setReadTimeout(properties.readTimeout());
-        this.client = RestClient.builder()
+        return RestClient.builder()
                 .baseUrl("https://api.openai.com/v1")
                 .requestFactory(factory)
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
@@ -69,7 +95,6 @@ public class OpenAiGateway {
                 """.formatted(context, userMessage);
         Map<String, Object> schema = responseSchema();
         Map<String, Object> request = new LinkedHashMap<>();
-        request.put("model", properties.model());
         request.put("instructions", instructions);
         request.put("input", input);
         request.put("reasoning", Map.of("effort", properties.reasoningEffort()));
@@ -95,37 +120,23 @@ public class OpenAiGateway {
             request.put("include", List.of("web_search_call.action.sources"));
         }
 
-        for (int attempt = 1; attempt <= 2; attempt++) {
-            try {
-                String body = client.post()
-                        .uri("/responses")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + properties.apiKey())
-                        .body(request)
-                        .retrieve()
-                        .body(String.class);
-                ParsedResponse parsed = parseResponse(body, context);
-                if (parsed.answer().isBlank()) {
-                    throw new IllegalStateException("OpenAI 구조화 응답의 답변이 비어 있습니다.");
-                }
-                return new AiResult(
-                        parsed.answer(),
-                        "READY",
-                        parsed.suggestedReplies(),
-                        parsed.evidenceRefs(),
-                        parsed.webSources()
-                );
-            } catch (RestClientResponseException error) {
-                boolean retryable = error.getStatusCode().value() == 429 || error.getStatusCode().is5xxServerError();
-                log.warn("OpenAI request failed: status={}, attempt={}", error.getStatusCode().value(), attempt);
-                if (!retryable || attempt == 2) break;
-                if (!waitBeforeRetry(error)) break;
-            } catch (ResourceAccessException error) {
-                log.warn("OpenAI request timed out: attempt={}", attempt);
-                if (attempt == 2) break;
-            } catch (Exception error) {
-                log.warn("OpenAI response could not be parsed: type={}", error.getClass().getSimpleName());
-                break;
+        ModelResponse response = executeWithModelFailover(request, "chat");
+        if (response == null) return fallback(mode);
+        try {
+            ParsedResponse parsed = parseResponse(response.body(), context);
+            if (parsed.answer().isBlank()) {
+                throw new IllegalStateException("OpenAI 구조화 응답의 답변이 비어 있습니다.");
             }
+            return new AiResult(
+                    parsed.answer(),
+                    "READY",
+                    parsed.suggestedReplies(),
+                    parsed.evidenceRefs(),
+                    parsed.webSources()
+            );
+        } catch (Exception error) {
+            log.warn("OpenAI response could not be parsed: model={}, type={}",
+                    response.model(), error.getClass().getSimpleName());
         }
         return fallback(mode);
     }
@@ -160,7 +171,6 @@ public class OpenAiGateway {
                 "additionalProperties", false
         );
         Map<String, Object> request = new LinkedHashMap<>();
-        request.put("model", properties.model());
         request.put("instructions", instructions);
         request.put("input", input);
         request.put("reasoning", Map.of("effort", properties.reasoningEffort()));
@@ -173,40 +183,26 @@ public class OpenAiGateway {
         request.put("max_output_tokens", Math.min(properties.maxOutputTokens(), 900));
         request.put("store", false);
 
-        for (int attempt = 1; attempt <= 2; attempt++) {
-            try {
-                String body = client.post()
-                        .uri("/responses")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + properties.apiKey())
-                        .body(request)
-                        .retrieve()
-                        .body(String.class);
-                RoutineIdentityResult parsed = parseRoutineIdentity(body);
-                if (parsed.name().isBlank() || parsed.insight().isBlank() || parsed.keywords().size() < 2) {
-                    throw new IllegalStateException("OpenAI 루틴 문장이 비어 있습니다.");
-                }
-                return new RoutineIdentityResult(
-                        parsed.name(), parsed.insight(), parsed.keywords(), "READY", properties.model()
-                );
-            } catch (RestClientResponseException error) {
-                boolean retryable = error.getStatusCode().value() == 429 || error.getStatusCode().is5xxServerError();
-                log.warn("OpenAI routine identity request failed: status={}, attempt={}",
-                        error.getStatusCode().value(), attempt);
-                if (!retryable || attempt == 2) break;
-                if (!waitBeforeRetry(error)) break;
-            } catch (ResourceAccessException error) {
-                log.warn("OpenAI routine identity request timed out: attempt={}", attempt);
-                if (attempt == 2) break;
-            } catch (Exception error) {
-                log.warn("OpenAI routine identity response could not be parsed: type={}",
-                        error.getClass().getSimpleName());
-                break;
+        ModelResponse response = executeWithModelFailover(request, "routine_identity");
+        if (response == null) return routineIdentityFallback();
+        try {
+            RoutineIdentityResult parsed = parseRoutineIdentity(response.body(), response.model());
+            if (parsed.name().isBlank() || parsed.insight().isBlank() || parsed.keywords().size() < 2) {
+                throw new IllegalStateException("OpenAI 루틴 문장이 비어 있습니다.");
             }
+            return parsed;
+        } catch (Exception error) {
+            log.warn("OpenAI routine identity response could not be parsed: model={}, type={}",
+                    response.model(), error.getClass().getSimpleName());
         }
         return routineIdentityFallback();
     }
 
     RoutineIdentityResult parseRoutineIdentity(String body) throws Exception {
+        return parseRoutineIdentity(body, properties.model());
+    }
+
+    private RoutineIdentityResult parseRoutineIdentity(String body, String model) throws Exception {
         JsonNode root = objectMapper.readTree(body);
         String outputText = null;
         for (JsonNode output : root.path("output")) {
@@ -226,7 +222,7 @@ public class OpenAiGateway {
                 structured.path("insight").asText().trim(),
                 stringArray(structured.path("keywords"), 3, 30),
                 "READY",
-                properties.model()
+                model
         );
     }
 
@@ -527,15 +523,169 @@ public class OpenAiGateway {
         return Set.of("low", "medium", "high").contains(value) ? value : "low";
     }
 
-    private boolean waitBeforeRetry(RestClientResponseException error) {
-        long delayMillis = 500;
-        if (error.getStatusCode().value() == 429) {
-            String retryAfter = error.getResponseHeaders() == null
-                    ? null : error.getResponseHeaders().getFirst("Retry-After");
-            delayMillis = parseRetryMillis(retryAfter, error.getResponseBodyAsString());
+    private ModelResponse executeWithModelFailover(Map<String, Object> requestTemplate, String operation) {
+        List<String> models = properties.modelPriority();
+        if (models.isEmpty()) {
+            log.warn("OpenAI {} has no configured model", operation);
+            return null;
+        }
+
+        boolean attempted = false;
+        for (String model : models) {
+            long now = currentTimeMillis.getAsLong();
+            Long blockedUntil = rateLimitedUntil.get(model);
+            if (blockedUntil != null && blockedUntil > now) continue;
+            if (blockedUntil != null) rateLimitedUntil.remove(model, blockedUntil);
+
+            attempted = true;
+            Map<String, Object> request = new LinkedHashMap<>(requestTemplate);
+            request.put("model", model);
+            for (int attempt = 1; attempt <= 2; attempt++) {
+                try {
+                    String body = client.post()
+                            .uri("/responses")
+                            .header(HttpHeaders.AUTHORIZATION, "Bearer " + properties.apiKey())
+                            .body(request)
+                            .retrieve()
+                            .body(String.class);
+                    return new ModelResponse(body, model);
+                } catch (RestClientResponseException error) {
+                    int status = error.getStatusCode().value();
+                    String errorCode = errorCode(error);
+                    if (status == 429) {
+                        if (isNonRoutable429(errorCode, error)) {
+                            log.warn("OpenAI {} stopped by account quota: model={}, status={}, code={}",
+                                    operation, model, status, displayErrorCode(errorCode));
+                            return null;
+                        }
+                        long cooldownMillis = rateLimitCooldownMillis(error);
+                        long until = nowPlus(cooldownMillis);
+                        rateLimitedUntil.merge(model, until, Math::max);
+                        log.warn("OpenAI {} model rate limited; switching model: model={}, status={}, code={}, cooldown_ms={}",
+                                operation, model, status, displayErrorCode(errorCode), cooldownMillis);
+                        break;
+                    }
+                    boolean retryable = error.getStatusCode().is5xxServerError();
+                    log.warn("OpenAI {} request failed: model={}, status={}, attempt={}",
+                            operation, model, status, attempt);
+                    if (!retryable || attempt == 2 || !waitBeforeRetry(500)) return null;
+                } catch (ResourceAccessException error) {
+                    log.warn("OpenAI {} request timed out: model={}, attempt={}", operation, model, attempt);
+                    if (attempt == 2 || !waitBeforeRetry(500)) return null;
+                } catch (Exception error) {
+                    log.warn("OpenAI {} request could not be completed: model={}, type={}",
+                            operation, model, error.getClass().getSimpleName());
+                    return null;
+                }
+            }
+        }
+        if (!attempted) {
+            long earliestReset = models.stream()
+                    .map(rateLimitedUntil::get)
+                    .filter(java.util.Objects::nonNull)
+                    .min(Long::compareTo)
+                    .orElse(currentTimeMillis.getAsLong());
+            log.warn("OpenAI {} skipped because every configured model is rate limited: retry_in_ms={}",
+                    operation, Math.max(0, earliestReset - currentTimeMillis.getAsLong()));
+        }
+        return null;
+    }
+
+    private long nowPlus(long durationMillis) {
+        long now = currentTimeMillis.getAsLong();
+        try {
+            return Math.addExact(now, durationMillis);
+        } catch (ArithmeticException ignored) {
+            return Long.MAX_VALUE;
+        }
+    }
+
+    private boolean isNonRoutable429(String errorCode, RestClientResponseException error) {
+        if (errorCode != null && !errorCode.isBlank()) {
+            return NON_ROUTABLE_429_CODES.contains(errorCode.toLowerCase(Locale.ROOT));
         }
         try {
-            Thread.sleep(Math.min(delayMillis, 25_000));
+            JsonNode root = objectMapper.readTree(error.getResponseBodyAsString());
+            return "insufficient_quota".equalsIgnoreCase(root.path("error").path("type").asText());
+        } catch (Exception ignored) {
+            return false;
+        }
+    }
+
+    private String errorCode(RestClientResponseException error) {
+        try {
+            String code = objectMapper.readTree(error.getResponseBodyAsString())
+                    .path("error").path("code").asText();
+            return code.isBlank() ? null : code;
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private String displayErrorCode(String code) {
+        return code == null || code.isBlank() ? "unknown" : code;
+    }
+
+    private long rateLimitCooldownMillis(RestClientResponseException error) {
+        HttpHeaders headers = error.getResponseHeaders();
+        long resetMillis = 0;
+        if (headers != null) {
+            resetMillis = Math.max(resetMillis, resetForExhaustedLimit(headers,
+                    "x-ratelimit-remaining-requests", "x-ratelimit-reset-requests"));
+            resetMillis = Math.max(resetMillis, resetForExhaustedLimit(headers,
+                    "x-ratelimit-remaining-tokens", "x-ratelimit-reset-tokens"));
+            resetMillis = Math.max(resetMillis, resetForExhaustedLimit(headers,
+                    "x-ratelimit-remaining-project-tokens", "x-ratelimit-reset-project-tokens"));
+            if (resetMillis == 0) {
+                resetMillis = parseRetryMillis(headers.getFirst("Retry-After"), error.getResponseBodyAsString());
+            }
+        } else {
+            resetMillis = parseRetryMillis(null, error.getResponseBodyAsString());
+        }
+        return resetMillis == 0 ? DEFAULT_RATE_LIMIT_COOLDOWN_MILLIS : resetMillis + 250;
+    }
+
+    private long resetForExhaustedLimit(HttpHeaders headers, String remainingHeader, String resetHeader) {
+        String remaining = headers.getFirst(remainingHeader);
+        if (remaining == null) return 0;
+        try {
+            if (Double.parseDouble(remaining) > 0) return 0;
+        } catch (NumberFormatException ignored) {
+            return 0;
+        }
+        return parseDurationMillis(headers.getFirst(resetHeader));
+    }
+
+    long parseDurationMillis(String value) {
+        if (value == null || value.isBlank()) return 0;
+        Matcher matcher = DURATION_PART.matcher(value.trim());
+        double totalMillis = 0;
+        int matchedUntil = 0;
+        while (matcher.find()) {
+            if (matcher.start() != matchedUntil) return 0;
+            double amount;
+            try {
+                amount = Double.parseDouble(matcher.group(1));
+            } catch (NumberFormatException ignored) {
+                return 0;
+            }
+            totalMillis += amount * switch (matcher.group(2).toLowerCase(Locale.ROOT)) {
+                case "d" -> 86_400_000;
+                case "h" -> 3_600_000;
+                case "m" -> 60_000;
+                case "s" -> 1_000;
+                case "ms" -> 1;
+                default -> 0;
+            };
+            matchedUntil = matcher.end();
+        }
+        if (matchedUntil != value.trim().length() || totalMillis <= 0) return 0;
+        return (long) Math.ceil(Math.min(totalMillis, Long.MAX_VALUE));
+    }
+
+    private boolean waitBeforeRetry(long delayMillis) {
+        try {
+            Thread.sleep(delayMillis);
             return true;
         } catch (InterruptedException interrupted) {
             Thread.currentThread().interrupt();
@@ -559,7 +709,7 @@ public class OpenAiGateway {
                 return 1_000;
             }
         }
-        return 1_000;
+        return 0;
     }
 
     private AiResult fallback(String mode) {
@@ -593,6 +743,7 @@ public class OpenAiGateway {
     record ParsedResponse(String answer, List<String> suggestedReplies, List<String> evidenceRefs,
                           List<WebSourceView> webSources) {}
 
+    private record ModelResponse(String body, String model) {}
     private record RawCitation(int startIndex, int endIndex, String url, String title) {}
     private record CitationEdit(int start, int end, String replacement) {}
     private record CitationProjection(String answer, List<WebSourceView> sources) {}

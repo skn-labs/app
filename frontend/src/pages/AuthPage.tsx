@@ -53,8 +53,8 @@ export function AuthPage() {
     <div className="safe-bottom flex min-h-0 flex-1 flex-col px-7">
       <div className="pt-10"><h1 className="text-2xl font-medium leading-[1.35] tracking-[-.035em]">당신의 피부를 연구할<br/>준비가 되었어요.</h1><p className="mt-3 text-sm leading-[1.65] text-[#73766f]">몇 가지 질문으로 당신에게 맞는<br/>케어를 시작할게요.</p></div>
       <div className="relative flex flex-1 items-center justify-center"><div aria-hidden="true" className="absolute size-[210px] rounded-full bg-[radial-gradient(circle,rgba(234,235,255,.65),rgba(255,255,255,0)_70%)] blur-xl"/><AssetMotion name="ai-drop-motion" poster="/skn-assets/onboarding-orb.png" loop alt="투명한 세럼 구체" className="onboard-float relative size-[230px] rounded-full"/></div>
-      <button type="button" onClick={() => moveTo('login')} className="h-[52px] w-full rounded-full bg-[#0a0a0a] text-base font-[600] text-white shadow-[0_8px_22px_rgba(0,0,0,.14)] transition active:scale-[.98]">로그인</button>
-      <button type="button" disabled={quickSignup.isPending} onClick={() => quickSignup.mutate()} className="mt-3 h-[52px] w-full rounded-full border border-[#e5e5ea] bg-white text-sm font-[600] text-[#3a3a3c] transition hover:bg-[#f7f7f8] active:scale-[.98] disabled:cursor-wait disabled:text-[#b0b0b5] disabled:active:scale-100">{quickSignup.isPending ? '새 계정 만드는 중…' : '빠르게 새 계정 만들기'}</button>
+      <button type="button" onClick={() => moveTo('login')} className="h-[52px] w-full rounded-full bg-cta text-base font-[600] text-white shadow-[0_8px_22px_rgba(17,23,34,.16)] transition active:scale-[.98]">로그인</button>
+      <button type="button" disabled={quickSignup.isPending} onClick={() => quickSignup.mutate()} className="mt-3 h-[52px] w-full rounded-full border border-[#e4e7ee] bg-white text-sm font-[600] text-[#3a3a3c] transition hover:bg-[#f7f7f8] active:scale-[.98] disabled:cursor-wait disabled:text-[#b0b0b5] disabled:active:scale-100">{quickSignup.isPending ? '새 계정 만드는 중…' : '빠르게 새 계정 만들기'}</button>
       {quickSignup.isError && <p role="alert" className="pt-2 text-center text-xs text-danger">계정을 만들지 못했어요. 다시 시도해주세요.</p>}
       <p className={`pb-2 text-center text-xs text-[#8e8e93] ${quickSignup.isError ? 'pt-3' : 'pt-5'}`}>처음이신가요? <button type="button" onClick={() => moveTo('signup')} className="font-medium text-[#3a3a3c] underline underline-offset-2">회원가입</button></p>
     </div>
@@ -84,7 +84,7 @@ export function AuthPage() {
       </div>
 
       <div className="flex-1"/>
-      <button type="submit" disabled={auth.isPending || !username || !password || (signup && (!usernameValid || !passwordValid))} className="h-[52px] w-full rounded-full bg-[#0a0a0a] text-base font-[600] text-white shadow-[0_8px_22px_rgba(0,0,0,.14)] transition active:scale-[.98] disabled:bg-[#e5e5ea] disabled:text-[#c7c7cc] disabled:shadow-none disabled:active:scale-100">{signup ? '회원가입' : '로그인'}</button>
+      <button type="submit" disabled={auth.isPending || !username || !password || (signup && (!usernameValid || !passwordValid))} className="h-[52px] w-full rounded-full bg-cta text-base font-[600] text-white shadow-[0_8px_22px_rgba(17,23,34,.16)] transition active:scale-[.98] disabled:bg-[#e4e7ee] disabled:text-[#c7c7cc] disabled:shadow-none disabled:active:scale-100">{signup ? '회원가입' : '로그인'}</button>
       <p className="pb-2 pt-4 text-center"><button type="button" onClick={() => moveTo('welcome')} className="inline-flex items-center gap-1 text-xs text-[#7f8792] transition hover:text-black"><span aria-hidden="true">←</span> 처음 화면으로</button></p>
     </form>
     <PrototypeHomeIndicator/>

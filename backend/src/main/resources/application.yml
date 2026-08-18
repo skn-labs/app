@@ -56,6 +56,7 @@ app:
   openai:
     api-key: ${OPENAI_API_KEY:}
     model: ${OPENAI_MODEL:gpt-5.6-terra}
+    fallback-models: ${OPENAI_FALLBACK_MODELS:gpt-5.6-luna,gpt-5.6-sol}
     reasoning-effort: ${OPENAI_REASONING_EFFORT:low}
     connect-timeout: 3s
     read-timeout: 25s

@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { ArrowRight, ChevronRight, Search } from 'lucide-react'
+import { ArrowRight, ChevronRight } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { api } from '../lib/api'
 import { startChatPath } from '../lib/chat'
@@ -11,13 +11,15 @@ import { ExperienceActionIcon } from '../components/ExperienceActionIcon'
 import { AppHeader, AssetMotion, BottomSheet, ErrorState, Loading, Screen } from '../components/ui'
 import { ProductAddSheet } from '../components/ProductAddSheet'
 import heroWave from '../assets/figma/hero-wave.webp'
+import aiSparkIcon from '../assets/figma/home-ai-spark.svg'
+import productSearchIcon from '../assets/figma/home-product-search.svg'
 const insightGraphPresets = [
-  'M112 122 L148 108 L184 110 L220 91 L255 89 L292 56 L350 34',
-  'M110 116 L146 117 L182 92 L218 98 L253 71 L292 77 L350 47',
-  'M115 124 L151 102 L187 106 L223 79 L258 85 L296 51 L350 58',
-  'M109 112 L146 116 L182 87 L219 93 L255 62 L294 68 L350 38',
-  'M111 121 L148 97 L185 102 L222 81 L258 87 L297 53 L350 27',
-  'M108 115 L145 113 L181 90 L218 96 L254 67 L293 73 L350 43',
+  'M112 136 L148 108 L184 110 L220 91 L255 89 L292 56 L350 34',
+  'M110 136 L146 117 L182 92 L218 98 L253 71 L292 77 L350 47',
+  'M115 136 L151 102 L187 106 L223 79 L258 85 L296 51 L350 58',
+  'M109 136 L146 116 L182 87 L219 93 L255 62 L294 68 L350 38',
+  'M111 136 L148 97 L185 102 L222 81 L258 87 L297 53 L350 27',
+  'M108 136 L145 113 L181 90 L218 96 L254 67 L293 73 L350 43',
 ]
 
 export function HomePage() {
@@ -44,12 +46,12 @@ export function HomePage() {
 
       <section className="mt-5" aria-label="AI와 화장품 탐색">
         <button type="button" onClick={() => navigate('/ai')} className="group flex min-h-[74px] w-full items-center gap-3.5 overflow-hidden rounded-[20px] bg-[#050505] px-4 py-3.5 text-left text-white shadow-[0_8px_22px_rgba(0,0,0,.14)] transition hover:bg-black active:scale-[.99]">
-          <span className="grid size-11 shrink-0 place-items-center overflow-hidden rounded-[15px] bg-white/[.08]"><AssetMotion name="ai-drop-motion" poster="/skn-assets/ai-drop-motion-poster.png" loop className="size-12 rounded-[14px]"/></span>
+          <span className="grid size-11 shrink-0 place-items-center overflow-hidden rounded-[15px]"><img src={aiSparkIcon} alt="" aria-hidden className="size-full object-contain"/></span>
           <span className="min-w-0 flex-1"><strong className="block text-[14px] font-semibold leading-5 tracking-[-.025em]">피부에 대해 궁금한 게 있나요?</strong><span className="mt-1 block text-[11px] leading-4 text-[#cdd0d6]">SKN AI에게 편하게 물어보세요.</span></span>
           <ChevronRight size={18} strokeWidth={1.8} className="shrink-0 text-white/70 transition group-hover:translate-x-0.5"/>
         </button>
         <button type="button" onClick={() => setProductAddOpen(true)} className="group mt-3 flex min-h-[74px] w-full items-center gap-3.5 rounded-[20px] border border-[#dfe6f2] bg-[#f8faff] px-4 py-3.5 text-left shadow-[0_5px_18px_rgba(49,73,115,.05)] transition hover:border-[#ccd8e9] hover:bg-white active:scale-[.99]">
-          <span className="grid size-11 shrink-0 place-items-center rounded-[15px] bg-white text-[#657a9d] shadow-[inset_0_0_0_1px_rgba(215,225,241,.9)] transition group-hover:bg-[#edf3ff]"><Search size={19} strokeWidth={1.8}/></span>
+          <span className="grid size-11 shrink-0 place-items-center overflow-hidden rounded-[15px]"><img src={productSearchIcon} alt="" aria-hidden className="size-full object-contain"/></span>
           <span className="min-w-0 flex-1"><strong className="block text-[14px] font-semibold leading-5 tracking-[-.025em] text-[#1a2230]">궁금한 제품이 있나요?</strong><span className="mt-1 block text-[11px] leading-4 text-[#7b8290]">추천받거나 직접 검색해보세요.</span></span>
           <ChevronRight size={18} strokeWidth={1.8} className="shrink-0 text-[#8290a5] transition group-hover:translate-x-0.5 group-hover:text-[#5f7396]"/>
         </button>
@@ -161,20 +163,20 @@ function EmptyExperienceCard({ productCount }: { productCount: number }) {
   const title = productCount ? <>내 제품으로<br/>첫 루틴을 시작해보세요</> : <>사용할수록<br/>나만의 기준이 선명해져요</>
   const description = productCount
     ? '가지고 있는 제품을 순서대로 엮고 사용감을 남기면, 다음 선택에 쓸 나만의 근거가 쌓여요'
-    : '첫 화장품을 담고 느낌을 남기면, 흩어진 경험이 다음 제품과 루틴을 고르는 근거로 이어져요'
+    : <>첫 화장품을 담고 느낌을 남기면,<br/>흩어진 경험이 다음 제품과 루틴을 고르는 근거로 이어져요</>
   return <section className="relative min-h-[306px] overflow-hidden rounded-[28px] border border-[#dce5f3] shadow-[0_12px_34px_rgba(44,71,122,.11)]">
     <img src={heroWave} alt="" aria-hidden className="absolute inset-0 size-full scale-110 object-cover object-bottom"/>
     <div aria-hidden className="absolute inset-0 bg-[linear-gradient(145deg,rgba(255,255,255,.97)_0%,rgba(244,249,255,.8)_48%,rgba(204,224,255,.2)_100%)]"/>
     <div aria-hidden className="absolute -right-16 -top-20 size-56 rounded-full bg-white/70 blur-3xl"/>
     <div className="relative z-10 flex min-h-[306px] flex-col p-5">
-      <div className="flex h-14 items-center justify-between gap-4">
+      <div className="flex items-start justify-between gap-4">
         <span className="inline-flex h-7 items-center rounded-full border border-white/80 bg-white/72 px-3 text-[10px] font-semibold tracking-[.075em] text-[#52678c] shadow-[0_3px_12px_rgba(69,96,143,.06)] backdrop-blur">START HERE</span>
         <span aria-hidden className="grid size-14 shrink-0 place-items-center rounded-full border border-white/85 bg-white/52 shadow-[inset_0_0_20px_rgba(255,255,255,.9),0_8px_20px_rgba(94,126,179,.10)]">
           <AssetMotion name="ai-drop-motion" poster="/skn-assets/onboarding-orb.png" loop className="size-12 rounded-full mix-blend-multiply opacity-80"/>
         </span>
       </div>
       <div className="mt-4 max-w-[300px]"><h2 className="text-[25px] font-semibold leading-[1.16] tracking-[-.047em] [text-wrap:balance]">{title}</h2><p className="mt-2.5 max-w-[285px] text-[12px] font-medium leading-[1.65] tracking-[-.018em] text-[#687386]">{description}</p></div>
-      <Link to="/routine/new" className="mt-auto flex h-[49px] w-full items-center justify-center gap-1.5 rounded-full bg-[#111722] text-[12px] font-semibold leading-none tracking-[-.012em] text-white shadow-[0_9px_24px_rgba(0,0,0,.18)] transition hover:bg-black active:scale-[.98]">첫 루틴 만들기<ArrowRight size={16}/></Link>
+      <Link to="/routine/new" className="mt-auto flex h-[49px] w-full items-center justify-center gap-1.5 rounded-full bg-cta text-[14px] font-semibold leading-none tracking-[-.012em] text-white shadow-[0_9px_24px_rgba(17,23,34,.18)] transition hover:bg-black active:scale-[.98]">첫 루틴 만들기<ArrowRight size={16}/></Link>
     </div>
   </section>
 }
@@ -183,8 +185,8 @@ function InsightCard({ pattern, peek, onOpen }: { pattern: Pattern; peek: boolea
   const graph = insightGraph(pattern)
   return <button type="button" onClick={onOpen} aria-label={`${pattern.title}, 근거와 함께 보기`} className={`relative min-h-[136px] snap-center overflow-hidden rounded-[24px] border border-[#dce5f3] bg-[#f5f8ff] px-5 py-4 text-left shadow-[0_8px_26px_rgba(49,73,115,.07)] transition hover:border-[#cfdbea] active:scale-[.99] ${peek ? 'w-[94%] shrink-0' : 'w-full'}`}>
     <svg viewBox="0 0 350 136" preserveAspectRatio="none" aria-hidden="true" className="pointer-events-none absolute inset-0 size-full">
-      <path d={`${graph} L350 136 L108 136 Z`} fill="rgba(216,231,255,.56)"/>
-      <path d={graph} fill="none" stroke="#c9dcff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke"/>
+      <path d={`${graph} L350 136 L108 136 Z`} fill="rgba(217,230,255,.5)"/>
+      <path d={graph} fill="none" stroke="#b2ccff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke"/>
     </svg>
     <span className="relative inline-flex h-7 items-center gap-0.5 rounded-full bg-white/80 px-3 text-[10px] font-semibold tracking-[-.01em] text-[#637594] shadow-[inset_0_0_0_1px_rgba(204,218,240,.82)]">근거와 함께 보기<ChevronRight size={12}/></span>
     <span className="relative mt-8 block max-w-[285px] text-[17px] font-semibold leading-[1.38] tracking-[-.025em] [text-wrap:balance]">{pattern.title}</span>
@@ -201,11 +203,18 @@ function EmptyInsightCard({ recordCount, href }: { recordCount: number; href: st
       ? '아직 비교할 비슷한 경험이 1개뿐이에요. 하나 더 쌓이면 반복된 흐름을 보여드려요.'
       : '아직 서로 비슷한 경험이 충분하지 않아요. 같은 제품이나 루틴의 사용 기록을 조금 더 남겨보세요.'
   return <div className="mt-4">
-    <Link to={href} className="relative block min-h-[136px] overflow-hidden rounded-[24px] border border-[#dce5f3] bg-[#f5f8ff] px-5 py-4 shadow-[0_8px_26px_rgba(49,73,115,.07)] transition hover:border-[#cfdbea] active:scale-[.99]">
+    <Link to={href} className="relative block min-h-[136px] overflow-hidden rounded-[24px] border border-[#dce5f3] bg-[#f5f8ff] p-4 shadow-[0_8px_26px_rgba(49,73,115,.07)] transition hover:border-[#cfdbea] active:scale-[.99]">
       <svg viewBox="0 0 350 136" preserveAspectRatio="none" aria-hidden="true" className="pointer-events-none absolute inset-0 size-full">
-        <path d="M112 122 L158 109 L202 110" fill="none" stroke="#b9d0f6" strokeWidth="3" strokeLinecap="round" vectorEffect="non-scaling-stroke"/>
-        <path d="M202 110 L248 84 L294 78 L350 46" fill="none" stroke="#cddbf1" strokeWidth="2" strokeDasharray="6 7" strokeLinecap="round" vectorEffect="non-scaling-stroke"/>
-        <circle cx="202" cy="110" r="4" fill="#fff" stroke="#87a6d9" strokeWidth="2" vectorEffect="non-scaling-stroke"/>
+        <defs>
+          <linearGradient id="insightAreaFill" x1="0" y1="0" x2="0" y2="1">
+            <stop stopColor="#d9e6ff" stopOpacity=".5"/>
+            <stop offset="1" stopColor="#d9e6ff" stopOpacity="0"/>
+          </linearGradient>
+        </defs>
+        <path d="M112 136 L158 109 L202 110 L248 84 L294 78 L350 46 L350 136 Z" fill="url(#insightAreaFill)" stroke="none"/>
+        <path d="M112 136 L158 109 L202 110" fill="none" stroke="#b2ccff" strokeWidth="1.5" strokeLinecap="round" vectorEffect="non-scaling-stroke"/>
+        <path d="M202 110 L248 84 L294 78 L350 46" fill="none" stroke="#d9e6ff" strokeWidth="1" strokeLinecap="round" vectorEffect="non-scaling-stroke"/>
+        <circle cx="202" cy="110" r="3.5" fill="#b2ccff" vectorEffect="non-scaling-stroke"/>
       </svg>
       <span className="relative inline-flex h-7 items-center gap-0.5 rounded-full bg-white/80 px-3 text-[10px] font-semibold tracking-[-.01em] text-[#637594] shadow-[inset_0_0_0_1px_rgba(204,218,240,.82)]">새 경험 남기기<ChevronRight size={12}/></span>
       <span className="relative mt-8 block max-w-[250px] text-[17px] font-semibold leading-[1.38] tracking-[-.025em]">{actionTitle}</span>
@@ -268,26 +277,26 @@ function ProfilePreview({ recordCount, patterns }: { recordCount: number; patter
   return <section className="mt-10 pb-8" aria-labelledby="profile-preview-title">
     <Link to="/records" className="flex items-end justify-between gap-4"><span><h2 id="profile-preview-title" className="text-lg font-semibold tracking-[-.025em]">PROFILE</h2><p className="mt-1 text-[11px] leading-5 text-[#747b86]">나의 경험 지도</p></span><span className="inline-flex shrink-0 items-center gap-0.5 pb-0.5 text-[11px] font-semibold text-[#667085]">전체 보기<ChevronRight size={13}/></span></Link>
     <div className="mt-4 overflow-hidden rounded-[24px] border border-[#dce5f3] bg-[linear-gradient(155deg,#fbfdff,#eef4ff)] p-4 shadow-[0_8px_26px_rgba(49,73,115,.07)]">
-      <span className="inline-flex rounded-full bg-white/85 px-3 py-2 text-[11px] font-medium text-[#52678c] shadow-[inset_0_0_0_1px_rgba(201,218,248,.75)]">{hasProfile ? `발견한 흐름 ${fields.length}개` : recordCount ? `기록 ${recordCount}건 비교 중` : '첫 기록을 기다리는 중'}</span>
+      <span className="inline-flex h-7 items-center rounded-full bg-white/80 px-3 text-[10px] font-semibold tracking-[-.01em] text-[#637594] shadow-[inset_0_0_0_1px_rgba(204,218,240,.82)]">{hasProfile ? `발견한 흐름 ${fields.length}개` : recordCount ? `기록 ${recordCount}건 비교 중` : '첫 기록을 기다리는 중'}</span>
 
       <div className="mx-auto mt-1 aspect-square w-full max-w-[236px]">
         <svg viewBox="0 0 240 240" className="size-full overflow-visible" role="img" aria-label={hasProfile ? `사용자 기록에서 동적으로 선정된 ${fields.length}개 필드의 육각형 근거 지도` : '기록이 쌓이면 필드가 동적으로 만들어지는 빈 육각형 근거 지도'}>
-          <g fill="none" stroke="#bfd0ed" strokeWidth="1">
+          <g fill="none" stroke="#c3d1e6" strokeWidth="1">
             {[110, 76, 42].map(radius => <polygon key={radius} points={Array.from({ length: 6 }, (_, index) => { const point = hexPoint(index, radius); return `${point.x},${point.y}` }).join(' ')}/>)}
             {Array.from({ length: 6 }, (_, index) => { const point = hexPoint(index, 110); return <line key={index} x1="120" y1="120" x2={point.x} y2={point.y}/> })}
           </g>
-          {hasProfile && fields.length > 1 && <polygon points={areaPoints} fill="rgba(127,159,215,.34)" stroke="#6f90ca" strokeWidth="2"/>}
+          {hasProfile && fields.length > 1 && <polygon points={areaPoints} fill="rgba(95,115,150,.3)" stroke="#5f7396" strokeWidth="2"/>}
           {slots.map((pattern, index) => {
             if (!pattern) return null
             const evidenceCount = pattern.supportingCount + pattern.contradictingCount
             const point = hexPoint(index, 28 + Math.min(evidenceCount, 5) / 5 * 82)
-            return <circle key={pattern.id} cx={point.x} cy={point.y} r="5" fill="#6f90ca" stroke="#fff" strokeWidth="2"/>
+            return <circle key={pattern.id} cx={point.x} cy={point.y} r="5" fill="#5f7396" stroke="#fff" strokeWidth="2"/>
           })}
           {Array.from({ length: 6 }, (_, index) => {
             const point = hexPoint(index, 110)
-            return slots[index] ? <g key={index}><circle cx={point.x} cy={point.y} r="10" fill="#fff" stroke="#b7c9e8"/><text x={point.x} y={point.y + 3.5} textAnchor="middle" fontSize="9" fontWeight="700" fill="#526f9f">{index + 1}</text></g> : <circle key={index} cx={point.x} cy={point.y} r="3" fill="#b7c9e8"/>
+            return slots[index] ? <g key={index}><circle cx={point.x} cy={point.y} r="10" fill="#fff" stroke="#c3d1e6"/><text x={point.x} y={point.y + 3.5} textAnchor="middle" fontSize="9" fontWeight="700" fill="#526f9f">{index + 1}</text></g> : <circle key={index} cx={point.x} cy={point.y} r="3" fill="#c3d1e6"/>
           })}
-          {!hasProfile && <g><circle cx="120" cy="120" r="16" fill="#fff" stroke="#a9bee3"/><text x="120" y="126" textAnchor="middle" fontSize="18" fontWeight="700" fill="#7897ce">?</text></g>}
+          {!hasProfile && <g><circle cx="120" cy="120" r="16" fill="#fff" stroke="#b8c8de"/><text x="120" y="126" textAnchor="middle" fontSize="18" fontWeight="700" fill="#7897ce">?</text></g>}
         </svg>
       </div>
 

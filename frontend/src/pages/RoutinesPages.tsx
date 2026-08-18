@@ -15,7 +15,7 @@ import routineCard3 from '../assets/figma/routine-card-3.webp'
 const routineCards = [routineCard1, routineCard2, routineCard3]
 const routineCardTones = [
   'linear-gradient(145deg, #edf5ff 0%, #f9fbff 54%, #e5efff 100%)',
-  'linear-gradient(145deg, #f0efff 0%, #fbfaff 54%, #e8e6ff 100%)',
+  'linear-gradient(145deg, #eef2f9 0%, #f9fbff 54%, #e4ebf6 100%)',
   'linear-gradient(145deg, #fff0f3 0%, #fffafa 54%, #f8e7ec 100%)',
 ]
 

@@ -6,7 +6,6 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { api } from '../lib/api'
 import { startChatPath } from '../lib/chat'
 import type { Product, ProductAchievement, ProductFact, ProductGuide, UserProduct } from '../lib/types'
-import { ActionIcon } from '../components/ActionIcon'
 import { BrandIdentity } from '../components/BrandIdentity'
 import { AppHeader, AssetMotion, BottomSheet, Button, ErrorState, FloatingAddButton, Loading, PageHeading, ProductGlyph, Screen, Skeleton, StaticProductImage, StickyActionBar, TopBar } from '../components/ui'
 import { ProductAddSheet } from '../components/ProductAddSheet'
@@ -335,7 +334,7 @@ function ProductHero({ product, onOpenImage }: { product: Product; onOpenImage: 
       <span aria-hidden className="absolute -bottom-16 -right-10 size-44 rounded-full bg-[#e5eadb]/75 blur-3xl"/>
       <span className="absolute left-4 top-4 z-10 inline-flex items-center gap-1.5 rounded-full border border-white/80 bg-white/80 py-1.5 pl-2.5 pr-3 text-[11px] font-semibold tracking-[-.01em] text-[#5d6672] shadow-[0_5px_14px_rgba(32,39,51,.06)] backdrop-blur-md">{heroCategory && <ProductCategoryIcon icon={heroCategory.icon} className="size-4"/>}{product.category}</span>
       {hasImage
-        ? <button type="button" onClick={onOpenImage} aria-label={`${product.name} 이미지 크게 보기`} className="group relative grid h-full w-full place-items-center overflow-hidden rounded-[inherit] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#5365f5]">
+        ? <button type="button" onClick={onOpenImage} aria-label={`${product.name} 이미지 크게 보기`} className="group relative grid h-full w-full place-items-center overflow-hidden rounded-[inherit] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#3d6fd6]">
           <span aria-hidden className="absolute inset-x-14 bottom-7 h-10 rounded-full bg-[#303742]/15 blur-xl"/>
           <StaticProductImage src={product.imageUrl!} alt={`${product.brand} ${product.name}`} referrerPolicy="no-referrer" onLoad={event => setPortraitDetail(event.currentTarget.naturalHeight / event.currentTarget.naturalWidth > 2.2)} onError={() => setImageFailed(true)} className={`relative h-[252px] w-[calc(100%-48px)] drop-shadow-[0_22px_18px_rgba(28,34,43,.16)] transition duration-500 ease-out group-hover:-translate-y-1 group-hover:scale-[1.025] ${portraitDetail ? 'rounded-[20px] object-cover object-[center_17%]' : 'object-contain mix-blend-multiply'}`}/>
           <span className="absolute bottom-4 right-4 inline-flex items-center gap-1.5 rounded-full border border-white/80 bg-white/82 px-3 py-2 text-[11px] font-semibold text-[#4f5865] shadow-[0_5px_15px_rgba(32,39,51,.08)] backdrop-blur-md"><ZoomIn size={14}/>크게 보기</span>
@@ -361,7 +360,7 @@ function ProductAchievements({ achievements }: { achievements: ProductAchievemen
   const visibleAchievements = achievements.slice(0, 3)
   if (visibleAchievements.length === 0) return null
   return <section className="mb-5" aria-label="외부에서 확인된 성과">
-    <div role="list" className="-mx-5 flex snap-x snap-mandatory gap-2.5 overflow-x-auto px-5 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+    <div role="list" className="-mx-5 flex snap-x snap-mandatory scroll-pl-6 gap-2.5 overflow-x-auto pb-1 pl-6 pr-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {visibleAchievements.map((achievement, index) => {
         const period = achievement.periodLabel.replace(/\s*상반기$/, ' H1').replace(/\s*하반기$/, ' H2')
         const descriptionId = `product-achievement-${index}-${achievement.type}-${achievement.periodLabel.replace(/\s/g, '-')}`
@@ -489,18 +488,18 @@ function VerifiedFacts({ facts }: { facts: ProductFact[] }) {
 function ProductAiAction({ product, onClick }: { product: Product; onClick: () => void }) {
   const hasRecords = product.personalRecordCount > 0
   return <button type="button" onClick={onClick} aria-labelledby="product-ai-title" className="group relative flex w-full items-center gap-4 overflow-hidden rounded-[24px] bg-[linear-gradient(135deg,#151a25_0%,#20283a_100%)] p-4.5 text-left text-white shadow-[0_14px_32px_rgba(24,31,45,.16)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_38px_rgba(24,31,45,.2)] active:translate-y-0 active:scale-[.99]">
-    <span aria-hidden className="absolute -right-7 -top-9 size-28 rounded-full bg-[#617cf4]/25 blur-2xl"/>
+    <span aria-hidden className="absolute -right-7 -top-9 size-28 rounded-full bg-[#3d6fd6]/25 blur-2xl"/>
     <span className="relative grid size-12 shrink-0 place-items-center overflow-hidden rounded-[17px] border border-white/15 bg-white/10"><AssetMotion name="ai-drop-motion" poster="/skn-assets/ai-drop-motion-poster.png" loop className="size-[62px] rounded-[17px]"/></span>
-    <span className="relative min-w-0 flex-1"><span className="text-[11px] font-semibold text-[#aebdff]">SKN AI</span><span id="product-ai-title" className="mt-1 block text-[15px] font-semibold leading-5 tracking-[-.02em]">{hasRecords ? `내 사용 ${product.personalRecordCount}회와 비교하기` : '내 루틴에서 함께 살펴보기'}</span><span className="mt-1 block text-[11px] leading-4 text-white/60">제품 정보와 내 기록을 구분해서 답해요.</span></span>
+    <span className="relative min-w-0 flex-1"><span className="text-[11px] font-semibold text-[#9db6e6]">SKN AI</span><span id="product-ai-title" className="mt-1 block text-[15px] font-semibold leading-5 tracking-[-.02em]">{hasRecords ? `내 사용 ${product.personalRecordCount}회와 비교하기` : '내 루틴에서 함께 살펴보기'}</span><span className="mt-1 block text-[11px] leading-4 text-white/60">제품 정보와 내 기록을 구분해서 답해요.</span></span>
     <span className="relative grid size-8 shrink-0 place-items-center rounded-full bg-white/10 transition group-hover:bg-white/15"><ArrowRight size={16}/></span>
   </button>
 }
 
 function CustomProductAiAction({ name, hasRecords, onClick }: { name: string; hasRecords: boolean; onClick: () => void }) {
   return <button type="button" onClick={onClick} className="group relative flex w-full items-center gap-4 overflow-hidden rounded-[24px] bg-[linear-gradient(135deg,#151a25_0%,#20283a_100%)] p-4.5 text-left text-white shadow-[0_14px_32px_rgba(24,31,45,.16)] transition hover:-translate-y-0.5 active:translate-y-0 active:scale-[.99]">
-    <span aria-hidden className="absolute -right-7 -top-9 size-28 rounded-full bg-[#617cf4]/25 blur-2xl"/>
+    <span aria-hidden className="absolute -right-7 -top-9 size-28 rounded-full bg-[#3d6fd6]/25 blur-2xl"/>
     <span className="relative grid size-12 shrink-0 place-items-center overflow-hidden rounded-[17px] border border-white/15 bg-white/10"><AssetMotion name="ai-drop-motion" poster="/skn-assets/ai-drop-motion-poster.png" loop className="size-[62px] rounded-[17px]"/></span>
-    <span className="relative min-w-0 flex-1"><span className="text-[11px] font-semibold text-[#aebdff]">SKN AI</span><span className="mt-1 block text-[15px] font-semibold leading-5 tracking-[-.02em]">{hasRecords ? '내가 남긴 사용과 함께 보기' : `${name} 사용 정리 시작하기`}</span><span className="mt-1 block text-[11px] leading-4 text-white/60">카탈로그 사실을 추측하지 않고 내 정보만 살펴봐요.</span></span>
+    <span className="relative min-w-0 flex-1"><span className="text-[11px] font-semibold text-[#9db6e6]">SKN AI</span><span className="mt-1 block text-[15px] font-semibold leading-5 tracking-[-.02em]">{hasRecords ? '내가 남긴 사용과 함께 보기' : `${name} 사용 정리 시작하기`}</span><span className="mt-1 block text-[11px] leading-4 text-white/60">카탈로그 사실을 추측하지 않고 내 정보만 살펴봐요.</span></span>
     <span className="relative grid size-8 shrink-0 place-items-center rounded-full bg-white/10 transition group-hover:bg-white/15"><ArrowRight size={16}/></span>
   </button>
 }
@@ -580,7 +579,7 @@ export function ShelfPage() {
     <Screen className="bg-white">
     <CatalogHeader/>
     <div className="px-5 pb-8 pt-5">
-      <div className="min-w-0"><p className="text-[10px] font-semibold tracking-[.15em] text-[#71809a]">PRODUCTS</p><h1 className="mt-1.5 text-[30px] font-semibold leading-[1.14] tracking-[-.045em] text-[#111722]">내 화장품</h1><p className="mt-2.5 max-w-[340px] text-[12px] font-medium leading-5 tracking-[-.012em] text-[#7a808a]">{products.data.length ? `담아둔 제품 ${products.data.length}개를 사용 여부와 기록에 따라 살펴보세요.` : '첫 제품을 담고, 루틴과 사용 기록을 이어가세요.'}</p></div>
+      <div className="min-w-0"><p className="text-[10px] font-semibold tracking-[.15em] text-[#71809a]">MY LAB</p><h1 className="mt-1.5 text-[30px] font-semibold leading-[1.14] tracking-[-.045em] text-[#111722]">내 연구실</h1><p className="mt-2.5 max-w-[340px] text-[12px] font-medium leading-5 tracking-[-.012em] text-[#7a808a]">{products.data.length ? `담아둔 제품 ${products.data.length}개를 사용 여부와 기록에 따라 살펴보세요.` : '첫 제품을 담고, 루틴과 사용 기록을 이어가세요.'}</p></div>
       {!!products.data.length && <section className="mt-7" aria-label="화장품 필터">
         <div className="grid grid-cols-4 border-b border-[#e6e8ec]">
           {filters.map(option => {
@@ -592,7 +591,7 @@ export function ShelfPage() {
       </section>}
       {shelfContent}
     </div>
-    <FloatingAddButton kind="product" label="화장품 추가" onClick={() => setAddOpen(true)}/>
+    {!!products.data.length && <FloatingAddButton kind="product" label="화장품 추가" onClick={() => setAddOpen(true)}/>}
     </Screen>
     <ProductAddSheet open={addOpen} onClose={() => setAddOpen(false)} onAi={openRecommendationChat} onSearch={openProductSearch}/>
   </>
@@ -623,7 +622,21 @@ function ShelfCard({ item, onStart }: { item: UserProduct; onStart: () => void }
 function ShelfEmpty({ filter, onAdd }: { filter: 'ALL' | 'ROUTINE' | 'RECORDED' | 'UNUSED'; onAdd: () => void }) {
   const title = filter === 'ROUTINE' ? '현재 루틴에 제품이 없어요' : filter === 'RECORDED' ? '아직 남긴 기록이 없어요' : filter === 'UNUSED' ? '아직 사용 전인 제품이 없어요' : '첫 화장품을 담아볼까요?'
   const body = filter === 'ROUTINE' ? '루틴 편집에서 실제 사용하는 제품을 골라보세요.' : filter === 'RECORDED' ? '제품을 실제로 사용하고 기록을 남기면 이곳에 모여요.' : filter === 'UNUSED' ? '새로 추가한 제품은 현재 루틴에\n넣기 전까지 여기에 보여요.' : '제품 하나를 담으면 루틴과 사용 경험을\n연결하는 My Lab이 시작돼요.'
-  return <div className="relative mt-8 px-1 pb-5 text-center"><div aria-hidden className="absolute inset-x-5 bottom-0 top-5 rounded-[24px] bg-[#e7effc]"/><div className="relative overflow-hidden rounded-[24px] border border-[#d9e6ff] bg-[#f7faff] px-5 pb-6 pt-8 shadow-[0_9px_28px_rgba(37,55,92,.08)]"><button type="button" onClick={onAdd} aria-label="탐색에서 화장품 추가하기" className="relative mx-auto block rounded-full"><AssetMotion name="ai-drop-motion" poster="/skn-assets/ai-drop-motion-poster.png" loop className="size-[150px] rounded-full mix-blend-multiply"/><span aria-hidden className="absolute left-1/2 top-1/2 grid size-12 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-white text-[#172033] shadow-[0_7px_22px_rgba(37,55,92,.14)]"><ActionIcon name="product-add" className="size-6"/></span></button><h2 className="mt-3 text-2xl font-medium tracking-[-.035em]">{title}</h2><p className="mt-3 whitespace-pre-line text-sm leading-6 text-[#737880]">{body}</p><Button onClick={onAdd} className="mt-6 w-full">화장품 추가하기</Button></div></div>
+  return <div className="relative mt-8 mb-6 px-1 text-center">
+    <div aria-hidden className="absolute inset-x-[31px] inset-y-0 translate-y-[27px] rounded-[26px] bg-[#d9e6ff] opacity-[.08]"/>
+    <div aria-hidden className="absolute inset-x-[23px] inset-y-0 translate-y-[20px] rounded-[26px] bg-[#d9e6ff] opacity-[.17]"/>
+    <div aria-hidden className="absolute inset-x-[15px] inset-y-0 translate-y-[13px] rounded-[25px] bg-[#d9e6ff] opacity-[.32]"/>
+    <div aria-hidden className="absolute inset-x-[7px] inset-y-0 translate-y-[6px] rounded-[25px] bg-[#d9e6ff] opacity-[.52]"/>
+    <div className="relative overflow-hidden rounded-[24px] border border-[#d9e6ff] bg-[#f7faff] px-5 pb-6 pt-8 shadow-[0_9px_28px_rgba(37,55,92,.08)]">
+      <button type="button" onClick={onAdd} aria-label="화장품 추가하기" className="group relative mx-auto grid size-[150px] place-items-center transition active:scale-[.98]">
+        <AssetMotion name="ai-drop-motion" poster="/skn-assets/ai-drop-motion-poster.png" loop className="[grid-area:1/1] size-[150px] rounded-full opacity-70 mix-blend-multiply"/>
+        <span aria-hidden className="[grid-area:1/1] z-10 grid size-11 place-items-center self-center justify-self-center rounded-full bg-white/85 text-[#172033] shadow-[0_6px_18px_rgba(37,55,92,.14)] ring-1 ring-[#eaf1ff] backdrop-blur-sm transition group-hover:bg-white group-active:scale-95"><Plus size={22} strokeWidth={2.2}/></span>
+      </button>
+      <h2 className="mt-3 text-2xl font-medium tracking-[-.035em]">{title}</h2>
+      <p className="mt-2 whitespace-pre-line text-sm leading-5 text-[#737880]">{body}</p>
+      <Button onClick={onAdd} className="mt-6 w-full">화장품 추가하기</Button>
+    </div>
+  </div>
 }
 
 function CatalogHeader({ onBack, onBrowse }: { onBack?: () => void; onBrowse?: () => void }) {
