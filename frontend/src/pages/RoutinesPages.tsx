@@ -235,8 +235,9 @@ function RoutineCarouselCard({ routine, image, tone, expanded, onExpand, onColla
       </button>
 
       <article aria-hidden={!expanded} onClick={onCollapse} className={`absolute inset-0 overflow-hidden rounded-[26px] text-left shadow-[0_14px_38px_rgba(26,36,55,.18)] [transform:rotateY(180deg)] ${expanded ? 'pointer-events-auto' : 'pointer-events-none'}`} style={{ ...faceStyle, background: tone }}>
+        <img src={image} alt="" aria-hidden className="absolute inset-0 size-full scale-[1.4] object-cover opacity-[.42] blur-[20px] saturate-[.9]"/>
         <RoutineLabPattern/>
-        <div aria-hidden className="absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(255,255,255,.72),transparent_37%),linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.22))]"/>
+        <div aria-hidden className="absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(255,255,255,.82),transparent_40%),linear-gradient(180deg,rgba(255,255,255,.5)_0%,rgba(255,255,255,.34)_48%,rgba(255,255,255,.52)_100%)]"/>
         <div className="relative flex h-full flex-col px-5 pb-5 pt-[18px]">
           <div className="flex items-center border-b border-[#6c7e99]/15 pb-3.5">
             <span className="text-[10px] font-semibold tracking-[-.01em] text-[#65758d]">{dayPartLabel(routine.dayPart)} 루틴 · {routine.items.length}개 제품</span>
@@ -247,9 +248,9 @@ function RoutineCarouselCard({ routine, image, tone, expanded, onExpand, onColla
             <p className={`tracking-[-.034em] text-[#202b3d] ${insight ? 'mt-4 line-clamp-4 text-[18px] font-semibold leading-[1.52]' : 'line-clamp-4 text-[19px] font-semibold leading-[1.48]'}`}>{insight?.text || routineGlance(routine)}</p>
           </div>
 
-          <Link to={`/routines/${routine.id}`} tabIndex={expanded ? 0 : -1} onClick={event => event.stopPropagation()} className="group mt-auto flex min-h-[58px] items-center gap-3 rounded-[18px] border border-white/75 bg-white/58 px-3.5 py-2.5 shadow-[0_8px_24px_rgba(51,68,94,.065)] backdrop-blur-md transition hover:-translate-y-0.5 hover:bg-white/72 active:translate-y-0 active:scale-[.985]">
+          <Link to={`/routines/${routine.id}`} tabIndex={expanded ? 0 : -1} onClick={event => event.stopPropagation()} className="group mt-auto flex min-h-[58px] items-center gap-3 rounded-full border border-white/75 bg-white/58 px-5 py-2.5 shadow-[0_8px_24px_rgba(51,68,94,.065)] backdrop-blur-md transition hover:-translate-y-0.5 hover:bg-white/72 active:translate-y-0 active:scale-[.985]">
             <span className="min-w-0 flex-1"><strong className="block text-[12px] font-semibold tracking-[-.018em] text-[#263348]">루틴 상세</strong><span className="mt-0.5 block text-[9px] font-medium tracking-[-.01em] text-[#78869a]">제품 순서와 기록 보기</span></span>
-            <span className="grid size-8 shrink-0 place-items-center rounded-full bg-[#1d293b] text-white shadow-[0_5px_14px_rgba(29,41,59,.18)] transition group-hover:translate-x-0.5"><ChevronRight size={14} strokeWidth={2}/></span>
+            <ChevronRight size={20} strokeWidth={2} className="shrink-0 text-[#1d293b] transition group-hover:translate-x-0.5"/>
           </Link>
         </div>
       </article>

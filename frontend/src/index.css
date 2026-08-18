@@ -646,6 +646,10 @@ video:not([controls])::-webkit-media-controls { display: none !important; }
 .routine-naming-mark.is-ready .routine-name-check { animation: routine-name-ready .55s cubic-bezier(.22, 1, .36, 1) .08s both; }
 .routine-name-reveal { animation: routine-name-reveal .7s cubic-bezier(.22, 1, .36, 1) both; }
 .routine-name-actions { animation: routine-name-actions .5s cubic-bezier(.22, 1, .36, 1) .18s both; }
+@keyframes routine-reveal-item { from { opacity: 0; transform: translateY(16px); filter: blur(7px); } to { opacity: 1; transform: translateY(0); filter: blur(0); } }
+.routine-reveal-item { animation: routine-reveal-item .62s cubic-bezier(.22, 1, .36, 1) both; }
+@keyframes routine-done-pop { 0% { opacity: 0; transform: scale(.5); } 55% { opacity: 1; transform: scale(1.08); } 100% { opacity: 1; transform: scale(1); } }
+.routine-done-pop { animation: routine-done-pop .62s cubic-bezier(.34, 1.56, .64, 1) both; }
 .hide-scrollbar::-webkit-scrollbar { display: none; }
 .hide-scrollbar { scrollbar-width: none; }
 .safe-top { padding-top: max(8px, var(--skn-safe-area-top)); }
@@ -656,7 +660,7 @@ video:not([controls])::-webkit-media-controls { display: none !important; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .animate-rise, .animate-slide-in, .animate-onboard-forward, .animate-onboard-back, .animate-onboard-rise, .onboard-float, .onboard-draw, .onboard-pop, .onboard-pulse, .onboard-scan, .onboarding-welcome, .onboarding-welcome-mark, .onboarding-welcome-visual, .onboarding-welcome-copy, .onboarding-welcome-orbit, .ai-landing-wave-track, .ai-landing-halo, .ai-landing-orb, .routine-name-orbit, .routine-name-path, .routine-naming-mark.is-ready .routine-name-check, .routine-name-reveal, .routine-name-actions, .skn-skeleton::after, .skn-skeleton-frame { animation: none !important; }
+  .animate-rise, .animate-slide-in, .animate-onboard-forward, .animate-onboard-back, .animate-onboard-rise, .onboard-float, .onboard-draw, .onboard-pop, .onboard-pulse, .onboard-scan, .onboarding-welcome, .onboarding-welcome-mark, .onboarding-welcome-visual, .onboarding-welcome-copy, .onboarding-welcome-orbit, .ai-landing-wave-track, .ai-landing-halo, .ai-landing-orb, .routine-name-orbit, .routine-name-path, .routine-naming-mark.is-ready .routine-name-check, .routine-name-reveal, .routine-name-actions, .routine-reveal-item, .routine-done-pop, .skn-skeleton::after, .skn-skeleton-frame { animation: none !important; }
   .skn-route-tab, .skn-route-forward, .skn-route-back, .skn-route-replace, .skn-sheet-backdrop, .skn-sheet-surface, .skn-fullscreen-overlay { animation: skn-route-replace-in 120ms ease-out both !important; }
   .onboard-draw { stroke-dashoffset: 0; }
 }

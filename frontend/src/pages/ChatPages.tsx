@@ -157,7 +157,7 @@ function Composer({ value, onChange, onSubmit, pending, placeholder }: { value: 
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const submit = (event: FormEvent) => { event.preventDefault(); onSubmit(value) }
   useEffect(() => { const input = inputRef.current; if (!input) return; input.style.height = '0px'; input.style.height = `${Math.min(input.scrollHeight, 112)}px` }, [value])
-  return <div className="safe-bottom z-30 shrink-0 border-t border-[#e8eef7]/80 bg-[#fbfcff]/95 px-5 pb-3 pt-3 backdrop-blur-xl">
+  return <div className="safe-bottom z-30 shrink-0 px-5 pb-3 pt-3">
     <form onSubmit={submit} className="flex items-end gap-2 rounded-[22px] border border-[#d4e5f6] bg-[#edf6ff] p-1.5 pl-4 shadow-[0_8px_28px_rgba(82,117,161,.08)] transition focus-within:border-[#a9c8e8] focus-within:bg-[#f5f9ff] focus-within:ring-4 focus-within:ring-[#dcecff]/70"><textarea ref={inputRef} disabled={pending} rows={1} value={value} onChange={e => onChange(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); onSubmit(value) } }} placeholder={placeholder} aria-label="AI에게 메시지 보내기" className="max-h-28 min-h-12 flex-1 resize-none overflow-y-auto bg-transparent py-3 text-base leading-6 text-[#1e2b3d] outline-none placeholder:text-[#8499b3] disabled:cursor-wait"/><button type="submit" disabled={pending || !value.trim()} aria-label="보내기" className="grid size-12 shrink-0 place-items-center text-[#607ea8] transition active:scale-95 disabled:text-[#b6c6da]"><Send size={20} strokeWidth={2}/></button></form>
   </div>
 }
@@ -200,7 +200,7 @@ function AiHistory({ conversations, loading, error, onRetry, onClose }: { conver
         </header>
 
         <div className="shrink-0 px-5 pt-5">
-          <button type="button" onClick={startNew} className="flex h-[52px] w-full items-center justify-center gap-2 rounded-[18px] bg-[#111722] text-sm font-[600] tracking-[-.015em] text-white shadow-[0_8px_20px_rgba(17,23,34,.16)] transition hover:bg-black active:scale-[.985]"><Plus size={18} strokeWidth={2}/>새 대화 시작</button>
+          <button type="button" onClick={startNew} className="flex h-[52px] w-full items-center justify-center gap-2 rounded-full bg-[#111722] text-sm font-semibold tracking-[-.015em] text-white shadow-[0_8px_20px_rgba(17,23,34,.16)] transition hover:bg-black active:scale-[.985]"><Plus size={18} strokeWidth={2}/>새 대화 시작</button>
         </div>
 
         <div className="hide-scrollbar flex-1 overflow-y-auto px-5 pb-7 pt-5" aria-live="polite">
@@ -400,7 +400,7 @@ function RecommendedProductLinks({ refs }: { refs: string[] }) {
   if (!loaded.length) return null
   return <section className="-mx-5 mt-5" aria-label="AI 답변에 나온 제품">
     <div className="mb-2.5 flex items-center justify-between px-5"><p className="text-xs font-semibold tracking-[-.01em] text-[#465a76]">답변에 나온 제품</p><span className="text-[11px] font-medium text-[#8a99ad]">{loaded.length}개</span></div>
-    <div className="hide-scrollbar flex snap-x snap-mandatory gap-3 overflow-x-auto px-5 pb-3">{loaded.map(product => <Link key={product.id} to={`/products/${product.id}`} className="group w-[184px] shrink-0 snap-start overflow-hidden rounded-[24px] border border-[#dbe7f4] bg-white shadow-[0_9px_25px_rgba(57,79,111,.07)] transition active:scale-[.985]">
+    <div className="hide-scrollbar flex snap-x snap-mandatory scroll-pl-5 gap-3 overflow-x-auto px-5 pb-3">{loaded.map(product => <Link key={product.id} to={`/products/${product.id}`} className="group w-[184px] shrink-0 snap-start overflow-hidden rounded-[24px] border border-[#dbe7f4] bg-white shadow-[0_9px_25px_rgba(57,79,111,.07)] transition active:scale-[.985]">
       <div className="relative grid h-[148px] place-items-center overflow-hidden bg-[radial-gradient(circle_at_50%_38%,#ffffff_0%,#f0f6fd_60%,#e9f2fc_100%)]"><span className="absolute left-3 top-3 rounded-full border border-white/90 bg-white/75 px-2.5 py-1 text-[10px] font-semibold text-[#6d819e] backdrop-blur">{product.category}</span><span className="absolute right-3 top-3 grid size-7 place-items-center rounded-full bg-white/85 text-[#607a9f] shadow-sm"><ChevronRight size={14}/></span><span className="translate-y-2 scale-[.68]"><ProductGlyph category={product.category} src={product.imageUrl} size="lg"/></span></div>
       <div className="min-h-[88px] border-t border-[#e6edf5] px-3.5 py-3"><BrandIdentity name={product.brand} logoUrl={product.brandLogoUrl} size="xs" className="max-w-full" nameClassName="text-[#71829a]"/><span className="mt-1.5 line-clamp-2 block text-sm font-semibold leading-5 tracking-[-.02em] text-[#1e2a3a]">{product.name}</span></div>
     </Link>)}</div>

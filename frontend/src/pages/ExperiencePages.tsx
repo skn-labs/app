@@ -281,8 +281,8 @@ export function RoutineEditPage() {
 
 function RoutineCommitButton({ creating, count, pending, onClick }: { creating: boolean; count: number; pending: boolean; onClick: () => void }) {
   const label = pending ? '루틴을 저장하는 중…' : creating ? '이 순서로 루틴 만들기' : '변경한 루틴 시작하기'
-  return <button type="button" disabled={!count || pending} onClick={onClick} className="flex min-h-[66px] w-full items-center justify-center rounded-[21px] bg-[#111722] px-5 text-white shadow-[0_12px_28px_rgba(17,23,34,.24)] transition hover:bg-black active:scale-[.985] disabled:cursor-not-allowed disabled:bg-[#dfe3e9] disabled:text-[#989faa] disabled:shadow-none disabled:active:scale-100">
-    <strong className="block truncate text-center text-[17px] font-[600] tracking-[-.03em]">{label}</strong>
+  return <button type="button" disabled={!count || pending} onClick={onClick} className="flex min-h-[58px] w-full items-center justify-center rounded-full bg-[#111722] px-5 text-white shadow-[0_12px_28px_rgba(17,23,34,.24)] transition hover:bg-black active:scale-[.985] disabled:cursor-not-allowed disabled:bg-[#dfe3e9] disabled:text-[#989faa] disabled:shadow-none disabled:active:scale-100">
+    <strong className="block truncate text-center text-sm font-semibold tracking-[-.015em]">{label}</strong>
   </button>
 }
 
@@ -375,18 +375,23 @@ function RoutineNamingFlow({ experience }: { experience: Experience }) {
       <div className="relative flex min-h-9 items-center"><BrandMark compact/></div>
 
       <div className="relative flex flex-1 flex-col items-center justify-center py-10 text-center" aria-live="polite">
-        <RoutineNamingMark ready={!loading}/>
+        {loading ? <RoutineNamingMark ready={false}/> : <RoutineDoneMark/>}
         {loading ? <div className="mt-10 animate-rise"><p className="inline-flex items-center gap-1.5 rounded-full bg-[#edf3ff] px-3 py-1.5 text-[11px] font-semibold text-[#5f7396]"><Sparkles size={13}/>SKN AI가 루틴을 읽는 중</p><h1 className="mx-auto mt-4 max-w-[300px] text-[27px] font-semibold leading-[1.25] tracking-[-.045em] text-[#182033]">이름과 한 줄 설명을<br/>함께 정리하고 있어요</h1><p className="mt-4 text-[12px] leading-5 text-[#828c9b]">루틴은 먼저 안전하게 저장했어요.</p></div>
-          : <div className="routine-name-reveal mt-7 w-full"><p className="mx-auto flex w-fit items-center gap-2 text-[10px] font-semibold tracking-[.035em]"><i aria-hidden className="h-px w-5 bg-[#aab8cc]"/><span className={suggestion.data.aiGenerated ? 'text-[#344760]' : 'text-[#687790]'}>{suggestion.data.aiGenerated ? <><b className="font-bold tracking-[.08em]">SKN AI</b><span className="ml-1 font-medium text-[#7e8998]">가 정리한 새 루틴</span></> : '구성을 바탕으로 준비한 이름'}</span><i aria-hidden className="h-px w-5 bg-[#aab8cc]"/></p><h1 className="mx-auto mt-4 max-w-[350px] text-[clamp(32px,9vw,41px)] font-semibold leading-[1.12] tracking-[-.058em] text-[#121a2a] [overflow-wrap:anywhere] [text-wrap:balance] [word-break:keep-all]">{suggestion.data.name}</h1><p className="mx-auto mt-3 max-w-[300px] text-[11px] font-medium leading-5 text-[#7b8594]">{routine.items.length}개 제품 · {routine.dayPart === 'MORNING' ? '아침' : routine.dayPart === 'EVENING' ? '저녁' : '아침과 저녁'} 루틴</p>{suggestion.data.insight && <div className="mx-auto mt-6 max-w-[350px] rounded-[22px] border border-white/80 bg-white/72 px-5 py-4 text-left shadow-[0_12px_34px_rgba(48,65,94,.07)] backdrop-blur"><p className="text-[10px] font-semibold tracking-[.12em] text-[#6f82a0]">이 루틴이 도와주는 것</p><div className="mt-3 flex flex-wrap gap-1.5">{(suggestion.data.insight.keywords || []).map(keyword => <span key={keyword} className="rounded-full border border-[#d7e1ef] bg-[#f4f7fc] px-2.5 py-1 text-[10px] font-semibold text-[#5c708e]">{keyword}</span>)}</div><p className="mt-3 text-[14px] font-medium leading-[1.65] tracking-[-.022em] text-[#344258]">{suggestion.data.insight.text}</p></div>}</div>}
+          : <div className="mt-7 w-full"><p className="routine-reveal-item mx-auto flex w-fit items-center gap-2 text-[10px] font-semibold tracking-[.035em]" style={{ animationDelay: '.15s' }}><i aria-hidden className="h-px w-5 bg-[#aab8cc]"/><span className={suggestion.data.aiGenerated ? 'text-[#344760]' : 'text-[#687790]'}>{suggestion.data.aiGenerated ? <><b className="font-bold tracking-[.08em]">SKN AI</b><span className="ml-1 font-medium text-[#7e8998]">가 정리한 새 루틴</span></> : '구성을 바탕으로 준비한 이름'}</span><i aria-hidden className="h-px w-5 bg-[#aab8cc]"/></p><h1 className="routine-reveal-item mx-auto mt-4 max-w-[350px] text-[clamp(32px,9vw,41px)] font-semibold leading-[1.12] tracking-[-.058em] text-[#121a2a] [overflow-wrap:break-word] [text-wrap:pretty] [word-break:keep-all]" style={{ animationDelay: '.3s' }}>{suggestion.data.name}</h1><p className="routine-reveal-item mx-auto mt-3 max-w-[300px] text-[11px] font-medium leading-5 text-[#7b8594]" style={{ animationDelay: '.48s' }}>{routine.items.length}개 제품 · {routine.dayPart === 'MORNING' ? '아침' : routine.dayPart === 'EVENING' ? '저녁' : '아침과 저녁'} 루틴</p>{suggestion.data.insight && <div className="routine-reveal-item mx-auto mt-6 max-w-[350px] rounded-[22px] border border-white/80 bg-white/72 px-5 py-4 text-left shadow-[0_12px_34px_rgba(48,65,94,.07)] backdrop-blur" style={{ animationDelay: '.62s' }}><p className="text-[10px] font-semibold tracking-[.12em] text-[#6f82a0]">이 루틴이 도와주는 것</p><div className="mt-3 flex flex-wrap gap-1.5">{(suggestion.data.insight.keywords || []).map(keyword => <span key={keyword} className="rounded-full border border-[#d7e1ef] bg-[#f4f7fc] px-2.5 py-1 text-[10px] font-semibold text-[#5c708e]">{keyword}</span>)}</div><p className="mt-3 text-[14px] font-medium leading-[1.65] tracking-[-.022em] text-[#344258]">{suggestion.data.insight.text}</p></div>}</div>}
       </div>
 
-      {!loading && <div className="relative routine-name-actions">
+      {!loading && <div className="routine-reveal-item relative" style={{ animationDelay: '.8s' }}>
         {finish.error && <p role="alert" className="mb-3 text-center text-[12px] font-medium text-danger">{finish.error.message}</p>}
-        <Button disabled={finish.isPending} onClick={() => finish.mutate('complete')} className="h-[58px] w-full rounded-[19px] text-[16px] font-[600] tracking-[-.025em] shadow-[0_10px_25px_rgba(17,23,34,.2)]">{finish.isPending && finish.variables === 'complete' ? '완료하는 중…' : '완료하기'}</Button>
-        <button type="button" disabled={finish.isPending} onClick={() => finish.mutate('edit')} className="mt-2.5 flex min-h-[54px] w-full items-center justify-center rounded-[18px] border border-[#d9e1ec] bg-white px-4 text-[14px] font-[600] tracking-[-.02em] text-[#3e4c61] shadow-[0_4px_14px_rgba(42,58,84,.04)] transition hover:bg-[#f8faff] active:scale-[.985] disabled:opacity-50">{finish.isPending && finish.variables === 'edit' ? '수정 화면 여는 중…' : '루틴 수정하기'}</button>
+        <Button disabled={finish.isPending} onClick={() => finish.mutate('complete')} className="h-[58px] w-full shadow-[0_10px_25px_rgba(17,23,34,.2)]">{finish.isPending && finish.variables === 'complete' ? '완료하는 중…' : '완료하기'}</Button>
       </div>}
     </div>
   </Screen>
+}
+
+function RoutineDoneMark() {
+  return <svg viewBox="0 0 200 200" className="size-[84px] routine-done-pop drop-shadow-[0_12px_26px_rgba(24,31,45,.2)]" role="img" aria-label="루틴 완료" fill="none">
+    <path fillRule="evenodd" clipRule="evenodd" d="M100 165C135.899 165 165 135.899 165 100C165 64.1015 135.899 35 100 35C64.1015 35 35 64.1015 35 100C35 135.899 64.1015 165 100 165ZM126.717 72.6258L138.283 84.0409L87.9734 135.013L61.7497 108.743L73.2503 97.2624L87.9081 111.946L126.717 72.6258Z" fill="#1b2333"/>
+  </svg>
 }
 
 function RoutineNamingMark({ ready }: { ready: boolean }) {

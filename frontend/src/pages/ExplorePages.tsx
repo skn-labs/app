@@ -1,11 +1,12 @@
 import { useDeferredValue, useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowRight, BadgeCheck, Check, ExternalLink, FlaskConical, Plus, Search, SlidersHorizontal, X, ZoomIn } from 'lucide-react'
+import { BadgeCheck, Check, ChevronRight, ExternalLink, FlaskConical, Plus, Search, SlidersHorizontal, X, ZoomIn } from 'lucide-react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { api } from '../lib/api'
 import { startChatPath } from '../lib/chat'
 import type { Product, ProductAchievement, ProductFact, ProductGuide, UserProduct } from '../lib/types'
+import aiSparkIcon from '../assets/figma/home-ai-spark.svg'
 import { BrandIdentity } from '../components/BrandIdentity'
 import { AppHeader, AssetMotion, BottomSheet, Button, ErrorState, FloatingAddButton, Loading, PageHeading, ProductGlyph, Screen, Skeleton, StaticProductImage, StickyActionBar, TopBar } from '../components/ui'
 import { ProductAddSheet } from '../components/ProductAddSheet'
@@ -104,14 +105,14 @@ export function ExplorePage() {
 
   return <>
     <Screen nav={false} className="bg-white [touch-action:pan-y] [-webkit-overflow-scrolling:touch]">
-      <AppHeader back onBack={() => navigate(-1)} profile={false} sticky right={<Link to="/my-products" className="inline-flex min-h-10 items-center whitespace-nowrap rounded-full px-3 text-xs font-semibold text-[#667085] transition hover:bg-soft">My</Link>}/>
+      <AppHeader profile={false} notifications={false} sticky right={<button type="button" onClick={() => navigate(-1)} aria-label="닫기" className="-mr-1 grid size-11 place-items-center rounded-full text-ink transition hover:bg-soft active:scale-95"><X size={22}/></button>}/>
       <div className="px-5 pb-8 pt-3">
         <PageHeading title="화장품 찾기" description="브랜드나 제품명을 검색해 내 화장품에 담아보세요."/>
 
         <div className="sticky top-[calc(44px+var(--skn-safe-area-top))] z-10 -mx-5 mt-6 bg-white/96 px-5 pb-4 pt-2 backdrop-blur-xl">
           <div className="flex gap-2.5">
-            <label className="flex h-[56px] min-w-0 flex-1 items-center gap-3 rounded-full bg-[#f1f3f5] pl-5 pr-2 transition-[background-color,box-shadow] focus-within:bg-white focus-within:shadow-[inset_0_0_0_1.5px_#222936,0_6px_20px_rgba(35,41,54,.08)]">
-              <Search size={19} strokeWidth={2.1} className="shrink-0 text-[#596575]"/>
+            <label className="flex h-[56px] min-w-0 flex-1 items-center gap-3 rounded-full bg-[#f3f6fc] pl-5 pr-2 transition-[background-color,box-shadow] focus-within:bg-white focus-within:shadow-[inset_0_0_0_1.5px_#a9c4ef,0_6px_20px_rgba(61,111,214,.1)]">
+              <Search size={19} strokeWidth={2.1} className="shrink-0 text-[#6b7c93]"/>
               <input value={query} onChange={event => { setQuery(event.target.value); if (event.target.value.trim()) setSelectedCategory('') }} onKeyDown={event => { if (event.key === 'Escape') setQuery('') }} aria-label="제품 검색" enterKeyHint="search" autoComplete="off" placeholder="브랜드·제품명" className="min-w-0 flex-1 bg-transparent text-[15px] font-medium tracking-[-.02em] text-[#20252d] outline-none placeholder:font-normal placeholder:text-[#9199a3]"/>
               {searching && <span aria-label="검색 중" className="size-4 shrink-0 animate-spin rounded-full border-2 border-[#d6dbe1] border-t-[#4f5b6b]"/>}
               {query && <button type="button" aria-label="검색어 지우기" onClick={() => setQuery('')} className="grid size-10 shrink-0 place-items-center rounded-full text-[#7c858f] transition hover:bg-[#edf0f3] active:scale-95"><X size={17}/></button>}
@@ -155,7 +156,7 @@ function ProductCategoryIcon({ icon, className = '' }: { icon: string; className
 function CatalogProductCard({ product, returnTo }: { product: Product; returnTo?: string }) {
   const details = [product.category, product.volume].filter(Boolean).join(' · ')
   return <Link to={productPath(product.id, returnTo)} draggable={false} aria-label={`${product.brand} ${product.name} 상세 보기`} className="group block min-w-0 select-none rounded-[26px] outline-none transition [touch-action:pan-y] [-webkit-user-drag:none] active:scale-[.985] focus-visible:ring-2 focus-visible:ring-[#202733] focus-visible:ring-offset-4">
-    <span className="pointer-events-none relative grid h-[184px] place-items-center overflow-hidden rounded-[26px] border border-black/[.035] bg-[linear-gradient(145deg,#f7f7f4_0%,#efefec_62%,#e9eae7_100%)] shadow-[0_1px_0_rgba(255,255,255,.85)_inset] transition duration-300 group-hover:-translate-y-1 group-hover:shadow-[0_18px_35px_rgba(29,35,44,.11)]">
+    <span className="pointer-events-none relative grid h-[184px] place-items-center overflow-hidden rounded-[26px] border border-black/[.035] bg-[linear-gradient(150deg,#ffffff_0%,#f5f9ff_58%,#e8f0fc_100%)] shadow-[0_1px_0_rgba(255,255,255,.85)_inset] transition duration-300 group-hover:-translate-y-1 group-hover:shadow-[0_18px_35px_rgba(29,35,44,.11)]">
       <span aria-hidden className="absolute inset-x-8 top-1/2 h-16 -translate-y-1/2 rounded-full bg-white/60 blur-2xl"/>
       <span className="relative transition duration-500 ease-out group-hover:-translate-y-1 group-hover:scale-[1.04]"><CatalogProductVisual product={product}/></span>
       {product.personalRecordCount > 0 ? <span className="absolute left-3 top-3 rounded-full border border-black/[.045] bg-white/90 px-2.5 py-1.5 text-[9px] font-semibold tracking-[-.01em] text-[#354052] shadow-[0_4px_12px_rgba(25,31,40,.06)] backdrop-blur-md">내 기록 {product.personalRecordCount}</span> : product.owned ? <span className="absolute left-3 top-3 rounded-full border border-black/[.045] bg-white/90 px-2.5 py-1.5 text-[9px] font-semibold tracking-[.04em] text-[#434b56] shadow-[0_4px_12px_rgba(25,31,40,.06)] backdrop-blur-md">MY</span> : null}
@@ -329,7 +330,7 @@ function ProductHero({ product, onOpenImage }: { product: Product; onOpenImage: 
   const hasImage = Boolean(product.imageUrl && !imageFailed)
   const heroCategory = categoryMeta(product.category)
   return <section className="pb-8">
-    <div className="relative mx-5 flex h-[306px] items-center justify-center overflow-hidden rounded-[30px] border border-black/[.035] bg-[radial-gradient(circle_at_50%_42%,#ffffff_0%,#f4f4f0_54%,#eceee9_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,.9)]">
+    <div className="relative mx-5 flex h-[306px] items-center justify-center overflow-hidden rounded-[30px] border border-black/[.035] bg-[radial-gradient(circle_at_50%_42%,#ffffff_0%,#f6faff_52%,#e7eff9_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,.9)]">
       <span aria-hidden className="absolute -left-10 top-2 size-40 rounded-full bg-[#eaf1ff]/75 blur-3xl"/>
       <span aria-hidden className="absolute -bottom-16 -right-10 size-44 rounded-full bg-[#e5eadb]/75 blur-3xl"/>
       <span className="absolute left-4 top-4 z-10 inline-flex items-center gap-1.5 rounded-full border border-white/80 bg-white/80 py-1.5 pl-2.5 pr-3 text-[11px] font-semibold tracking-[-.01em] text-[#5d6672] shadow-[0_5px_14px_rgba(32,39,51,.06)] backdrop-blur-md">{heroCategory && <ProductCategoryIcon icon={heroCategory.icon} className="size-4"/>}{product.category}</span>
@@ -403,7 +404,7 @@ function ProductImageViewer({ product, onClose }: { product: Product; onClose: (
 function CustomProductHero({ item, name, brand, category }: { item: UserProduct; name: string; brand: string; category: string }) {
   const heroCategory = categoryMeta(category)
   return <section className="pb-8">
-    <div className="relative mx-5 grid h-[286px] place-items-center overflow-hidden rounded-[30px] border border-black/[.035] bg-[radial-gradient(circle_at_50%_40%,#ffffff_0%,#f2f4ef_58%,#e9ece6_100%)]">
+    <div className="relative mx-5 grid h-[286px] place-items-center overflow-hidden rounded-[30px] border border-black/[.035] bg-[radial-gradient(circle_at_50%_40%,#ffffff_0%,#f6faff_54%,#e7eff9_100%)]">
       <span aria-hidden className="absolute -left-8 top-1 size-36 rounded-full bg-[#eaf1ff]/80 blur-3xl"/>
       <span aria-hidden className="absolute -bottom-16 -right-9 size-44 rounded-full bg-[#e2ead7]/75 blur-3xl"/>
       <span className="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full border border-white/80 bg-white/82 py-1.5 pl-2.5 pr-3 text-[11px] font-semibold text-[#5d6672] shadow-[0_5px_14px_rgba(32,39,51,.06)] backdrop-blur-md">{heroCategory && <ProductCategoryIcon icon={heroCategory.icon} className="size-4"/>}{category}</span>
@@ -471,7 +472,7 @@ function UsageGuide({ guide }: { guide: ProductGuide }) {
   const instructions = guide.usageInstructions.filter(Boolean)
   return <section aria-labelledby="usage-guide-title" className="border-b border-[#eceee9] py-7">
     <div className="flex items-start justify-between gap-3"><h2 id="usage-guide-title" className="text-lg font-semibold tracking-[-.03em]">사용 방법</h2>{timings.length > 0 && <div className="flex max-w-[58%] flex-wrap justify-end gap-1.5">{timings.map(timing => <span key={timing} className="rounded-full bg-[#eef1f7] px-2.5 py-1.5 text-[11px] font-semibold text-[#60708a]">{timing}</span>)}</div>}</div>
-    {instructions.length > 0 && <ol className="mt-5 space-y-3">{instructions.map((instruction, index) => <li key={`${instruction}-${index}`} className="relative flex gap-3.5 rounded-[18px] bg-[#f7f8f5] p-4"><span className="grid size-6 shrink-0 place-items-center rounded-full bg-[#222831] text-[11px] font-semibold text-white">{index + 1}</span><p className="text-[14px] font-medium leading-6 text-[#343a42]">{instruction}</p></li>)}</ol>}
+    {instructions.length > 0 && <ol className="mt-5 space-y-3">{instructions.map((instruction, index) => <li key={`${instruction}-${index}`} className="relative flex gap-3.5 rounded-[18px] bg-[#eef4ff] p-4"><span className="grid size-6 shrink-0 place-items-center rounded-full bg-[#48628c] text-[11px] font-semibold text-white">{index + 1}</span><p className="text-[14px] font-medium leading-6 text-[#33414f]">{instruction}</p></li>)}</ol>}
   </section>
 }
 
@@ -487,20 +488,20 @@ function VerifiedFacts({ facts }: { facts: ProductFact[] }) {
 
 function ProductAiAction({ product, onClick }: { product: Product; onClick: () => void }) {
   const hasRecords = product.personalRecordCount > 0
-  return <button type="button" onClick={onClick} aria-labelledby="product-ai-title" className="group relative flex w-full items-center gap-4 overflow-hidden rounded-[24px] bg-[linear-gradient(135deg,#151a25_0%,#20283a_100%)] p-4.5 text-left text-white shadow-[0_14px_32px_rgba(24,31,45,.16)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_38px_rgba(24,31,45,.2)] active:translate-y-0 active:scale-[.99]">
+  return <button type="button" onClick={onClick} aria-labelledby="product-ai-title" className="group relative flex w-full items-center gap-3.5 overflow-hidden rounded-[20px] bg-[linear-gradient(135deg,#151a25_0%,#20283a_100%)] px-4 py-3.5 text-left text-white shadow-[0_10px_26px_rgba(24,31,45,.14)] transition hover:-translate-y-0.5 hover:shadow-[0_16px_34px_rgba(24,31,45,.18)] active:translate-y-0 active:scale-[.99]">
     <span aria-hidden className="absolute -right-7 -top-9 size-28 rounded-full bg-[#3d6fd6]/25 blur-2xl"/>
-    <span className="relative grid size-12 shrink-0 place-items-center overflow-hidden rounded-[17px] border border-white/15 bg-white/10"><AssetMotion name="ai-drop-motion" poster="/skn-assets/ai-drop-motion-poster.png" loop className="size-[62px] rounded-[17px]"/></span>
-    <span className="relative min-w-0 flex-1"><span className="text-[11px] font-semibold text-[#9db6e6]">SKN AI</span><span id="product-ai-title" className="mt-1 block text-[15px] font-semibold leading-5 tracking-[-.02em]">{hasRecords ? `내 사용 ${product.personalRecordCount}회와 비교하기` : '내 루틴에서 함께 살펴보기'}</span><span className="mt-1 block text-[11px] leading-4 text-white/60">제품 정보와 내 기록을 구분해서 답해요.</span></span>
-    <span className="relative grid size-8 shrink-0 place-items-center rounded-full bg-white/10 transition group-hover:bg-white/15"><ArrowRight size={16}/></span>
+    <span className="relative grid size-11 shrink-0 place-items-center overflow-hidden rounded-[15px]"><img src={aiSparkIcon} alt="" aria-hidden className="size-full object-contain"/></span>
+    <span className="relative min-w-0 flex-1"><span className="text-[11px] font-semibold text-[#9db6e6]">SKN AI</span><span id="product-ai-title" className="mt-1 block text-[14px] font-semibold leading-5 tracking-[-.02em]">{hasRecords ? `내 사용 ${product.personalRecordCount}회와 비교하기` : '내 루틴에서 함께 살펴보기'}</span><span className="mt-1 block text-[11px] leading-4 text-white/60">제품 정보와 내 기록을 구분해서 답해요.</span></span>
+    <ChevronRight size={18} strokeWidth={1.8} className="relative shrink-0 text-white/70 transition group-hover:translate-x-0.5"/>
   </button>
 }
 
 function CustomProductAiAction({ name, hasRecords, onClick }: { name: string; hasRecords: boolean; onClick: () => void }) {
-  return <button type="button" onClick={onClick} className="group relative flex w-full items-center gap-4 overflow-hidden rounded-[24px] bg-[linear-gradient(135deg,#151a25_0%,#20283a_100%)] p-4.5 text-left text-white shadow-[0_14px_32px_rgba(24,31,45,.16)] transition hover:-translate-y-0.5 active:translate-y-0 active:scale-[.99]">
+  return <button type="button" onClick={onClick} className="group relative flex w-full items-center gap-3.5 overflow-hidden rounded-[20px] bg-[linear-gradient(135deg,#151a25_0%,#20283a_100%)] px-4 py-3.5 text-left text-white shadow-[0_10px_26px_rgba(24,31,45,.14)] transition hover:-translate-y-0.5 active:translate-y-0 active:scale-[.99]">
     <span aria-hidden className="absolute -right-7 -top-9 size-28 rounded-full bg-[#3d6fd6]/25 blur-2xl"/>
-    <span className="relative grid size-12 shrink-0 place-items-center overflow-hidden rounded-[17px] border border-white/15 bg-white/10"><AssetMotion name="ai-drop-motion" poster="/skn-assets/ai-drop-motion-poster.png" loop className="size-[62px] rounded-[17px]"/></span>
-    <span className="relative min-w-0 flex-1"><span className="text-[11px] font-semibold text-[#9db6e6]">SKN AI</span><span className="mt-1 block text-[15px] font-semibold leading-5 tracking-[-.02em]">{hasRecords ? '내가 남긴 사용과 함께 보기' : `${name} 사용 정리 시작하기`}</span><span className="mt-1 block text-[11px] leading-4 text-white/60">카탈로그 사실을 추측하지 않고 내 정보만 살펴봐요.</span></span>
-    <span className="relative grid size-8 shrink-0 place-items-center rounded-full bg-white/10 transition group-hover:bg-white/15"><ArrowRight size={16}/></span>
+    <span className="relative grid size-11 shrink-0 place-items-center overflow-hidden rounded-[15px]"><img src={aiSparkIcon} alt="" aria-hidden className="size-full object-contain"/></span>
+    <span className="relative min-w-0 flex-1"><span className="text-[11px] font-semibold text-[#9db6e6]">SKN AI</span><span className="mt-1 block text-[14px] font-semibold leading-5 tracking-[-.02em]">{hasRecords ? '내가 남긴 사용과 함께 보기' : `${name} 사용 정리 시작하기`}</span><span className="mt-1 block text-[11px] leading-4 text-white/60">카탈로그 사실을 추측하지 않고 내 정보만 살펴봐요.</span></span>
+    <ChevronRight size={18} strokeWidth={1.8} className="relative shrink-0 text-white/70 transition group-hover:translate-x-0.5"/>
   </button>
 }
 
@@ -513,7 +514,7 @@ function ProductDetailActions({ adding, added, error, primaryLabel, onPrimary }:
 }) {
   return <div className="safe-bottom pointer-events-none fixed inset-x-0 bottom-0 z-30 mx-auto max-w-[430px] px-5 pb-2">
     {(added || error) && <p role={error ? 'alert' : 'status'} className={`pointer-events-auto mx-3 mb-2 rounded-full px-4 py-2 text-center text-[11px] font-semibold shadow-[0_7px_18px_rgba(28,34,43,.08)] ${error ? 'bg-[#fff1f1] text-danger' : 'bg-[#edf4e8] text-[#566b49]'}`}>{error || '내 화장품에 담았어요. 루틴은 그대로예요.'}</p>}
-    <button type="button" disabled={adding} onClick={onPrimary} style={{ fontWeight: 600 }} className="pointer-events-auto flex h-[58px] w-full items-center justify-center rounded-[20px] bg-[#11151b] px-5 text-[14px] tracking-[-.025em] text-white shadow-[0_13px_30px_rgba(17,21,27,.24)] transition hover:-translate-y-0.5 hover:bg-black hover:shadow-[0_16px_34px_rgba(17,21,27,.28)] active:translate-y-0 active:scale-[.985] disabled:cursor-not-allowed disabled:bg-[#9da09c] disabled:shadow-none">
+    <button type="button" disabled={adding} onClick={onPrimary} className="pointer-events-auto flex h-[58px] w-full items-center justify-center rounded-full bg-[#11151b] px-5 text-sm font-semibold tracking-[-.015em] text-white shadow-[0_13px_30px_rgba(17,21,27,.24)] transition hover:-translate-y-0.5 hover:bg-black hover:shadow-[0_16px_34px_rgba(17,21,27,.28)] active:translate-y-0 active:scale-[.985] disabled:cursor-not-allowed disabled:bg-[#9da09c] disabled:shadow-none">
       {adding ? '담는 중…' : primaryLabel}
     </button>
   </div>
@@ -602,7 +603,7 @@ function ShelfCard({ item, onStart }: { item: UserProduct; onStart: () => void }
   const name = product?.name || item.customName || '이름 없는 제품'
   const category = product?.category || item.customCategory || '기타'
   return <button type="button" onClick={onStart} aria-label={`${name} 상세 보기`} className="group block min-w-0 w-full rounded-[26px] text-left outline-none transition active:scale-[.985] focus-visible:ring-2 focus-visible:ring-[#202733] focus-visible:ring-offset-4">
-    <span className="relative grid h-[184px] place-items-center overflow-hidden rounded-[26px] border border-black/[.035] bg-[linear-gradient(145deg,#f7f7f4_0%,#efefec_62%,#e9eae7_100%)] shadow-[0_1px_0_rgba(255,255,255,.85)_inset] transition duration-300 group-hover:-translate-y-1 group-hover:shadow-[0_18px_35px_rgba(29,35,44,.11)]">
+    <span className="relative grid h-[184px] place-items-center overflow-hidden rounded-[26px] border border-black/[.035] bg-[linear-gradient(150deg,#ffffff_0%,#f5f9ff_58%,#e8f0fc_100%)] shadow-[0_1px_0_rgba(255,255,255,.85)_inset] transition duration-300 group-hover:-translate-y-1 group-hover:shadow-[0_18px_35px_rgba(29,35,44,.11)]">
       <span aria-hidden className="absolute inset-x-8 top-1/2 h-16 -translate-y-1/2 rounded-full bg-white/60 blur-2xl"/>
       <span className="relative transition duration-500 ease-out group-hover:-translate-y-1 group-hover:scale-[1.04]">{product ? <CatalogProductVisual product={product}/> : <ProductGlyph category={category} size="md"/>}</span>
       <span className="absolute left-3 top-3 flex max-w-[calc(100%-24px)] flex-wrap gap-1.5">
@@ -640,5 +641,5 @@ function ShelfEmpty({ filter, onAdd }: { filter: 'ALL' | 'ROUTINE' | 'RECORDED' 
 }
 
 function CatalogHeader({ onBack, onBrowse }: { onBack?: () => void; onBrowse?: () => void }) {
-  return <AppHeader back={Boolean(onBack)} onBack={onBack} profile={!onBack && !onBrowse} notifications={!onBack && !onBrowse} sticky right={onBrowse ? <button type="button" onClick={onBrowse} aria-label="다른 화장품 찾기" className="grid size-11 place-items-center rounded-full border border-[#e4e7e2] bg-white text-[#343a43] shadow-[0_3px_12px_rgba(28,34,43,.04)] transition hover:bg-soft active:scale-95"><Search size={19}/></button> : undefined}/>
+  return <AppHeader back={Boolean(onBack)} onBack={onBack} profile={!onBack && !onBrowse} notifications={!onBack && !onBrowse} sticky right={onBrowse ? <button type="button" onClick={onBrowse} aria-label="다른 화장품 찾기" className="grid size-11 place-items-center rounded-full text-[#343a43] transition hover:bg-soft active:scale-95"><Search size={19}/></button> : undefined}/>
 }

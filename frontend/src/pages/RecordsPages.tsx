@@ -98,7 +98,7 @@ export function RecordsPage() {
 
         {records.isPending ? <div className="mt-5 space-y-3" role="status" aria-label="경험 기록을 불러오는 중"><Skeleton className="h-28 rounded-[22px]"/><Skeleton className="h-28 rounded-[22px]"/><Skeleton className="h-28 rounded-[22px]"/></div>
           : records.isError ? <div className="mt-5 rounded-[22px] border border-[#dce5f1] bg-white px-5 py-7 text-center"><p className="text-sm font-semibold">경험 기록을 불러오지 못했어요.</p><button type="button" onClick={() => records.refetch()} className="mt-4 min-h-10 rounded-full border border-[#c5d5ec] px-4 text-xs font-semibold text-[#526b93]">다시 불러오기</button></div>
-            : !recordItems.length ? <div className="mt-5 rounded-[24px] border border-dashed border-[#cfdbeb] bg-[linear-gradient(150deg,#fff,#f1f6ff)] px-6 py-9 text-center"><span className="mx-auto grid size-11 place-items-center rounded-full bg-white text-[#6d83a6] shadow-[0_5px_18px_rgba(47,68,102,.08)]"><BookOpen size={19}/></span><h3 className="mt-4 text-[16px] font-semibold tracking-[-.025em]">첫 기록을 남겨보세요</h3><p className="mx-auto mt-2 max-w-[260px] text-[11px] leading-5 text-[#788497]">좋았던 점도, 아직 모르겠는 점도 그대로 남기면 다음 탐색의 기준이 돼요.</p><Link to="/explore" className="mt-5 inline-flex min-h-11 items-center justify-center rounded-full bg-[#172033] px-5 text-[12px] font-semibold text-white">첫 경험 시작하기</Link></div>
+            : !recordItems.length ? <div className="mt-5 rounded-[24px] border border-dashed border-[#cfdbeb] bg-[linear-gradient(150deg,#fff,#f1f6ff)] px-6 py-9 text-center"><span className="mx-auto grid size-11 place-items-center rounded-full bg-white text-[#6d83a6] shadow-[0_5px_18px_rgba(47,68,102,.08)]"><BookOpen size={19}/></span><h3 className="mt-4 text-[16px] font-semibold tracking-[-.025em]">첫 기록을 남겨보세요</h3><p className="mx-auto mt-2 max-w-[260px] text-[11px] leading-5 text-[#788497]">좋았던 점도, 아직 모르겠는 점도 그대로 남기면<br/>다음 탐색의 기준이 돼요.</p><Link to="/explore" className="mt-5 inline-flex min-h-11 items-center justify-center rounded-full bg-[#172033] px-5 text-[12px] font-semibold text-white">첫 경험 시작하기</Link></div>
               : <ExperienceCalendar records={recordItems}/>}
       </section>}
 
@@ -184,21 +184,22 @@ function ExperienceMap({ patterns, recordCount, loading }: { patterns: Pattern[]
         {!fields.length && <span className="inline-flex rounded-full bg-white/85 px-3 py-2 text-[11px] font-medium text-[#52678c] shadow-[inset_0_0_0_1px_rgba(201,218,248,.75)]">{emptyStatus}</span>}
         <div className={`mx-auto aspect-square w-full max-w-[242px] ${fields.length ? '' : 'mt-1'}`}>
           <svg viewBox="0 0 240 240" className="size-full overflow-visible" role="img" aria-label={fields.length ? `${fields.length}개 경험 필드의 근거량 지도` : `인사이트 형성 진행 상태, 경험 ${recordCount}건`}>
-            <g fill="none" stroke="#c3d3eb" strokeWidth="1">
-              {[106, 72, 38].map(radius => <polygon key={radius} points={Array.from({ length: 6 }, (_, index) => { const point = profileHexPoint(index, radius); return `${point.x},${point.y}` }).join(' ')}/>) }
-              {Array.from({ length: 6 }, (_, index) => { const point = profileHexPoint(index, 106); return <line key={index} x1="120" y1="120" x2={point.x} y2={point.y}/> })}
-            </g>
-            {fields.length > 1 && <polygon points={points} fill="rgba(116,151,211,.3)" stroke="#698bc4" strokeWidth="2"/>}
-            {slots.map((pattern, index) => {
-              if (!pattern) return null
-              const evidence = pattern.supportingCount + pattern.contradictingCount
-              const point = profileHexPoint(index, 32 + Math.min(evidence, 6) / 6 * 74)
-              return <circle key={pattern.id} cx={point.x} cy={point.y} r="5" fill="#698bc4" stroke="#fff" strokeWidth="2"/>
-            })}
-            {fields.length ? Array.from({ length: 6 }, (_, index) => {
-              const point = profileHexPoint(index, 106)
-              return slots[index] ? <g key={index}><circle cx={point.x} cy={point.y} r="11" fill="#fff" stroke="#b7c9e7"/><text x={point.x} y={point.y + 3.5} textAnchor="middle" fontSize="9" fontWeight="700" fill="#526f9f">{index + 1}</text></g> : <circle key={index} cx={point.x} cy={point.y} r="3" fill="#b7c9e7"/>
-            }) : <g><circle cx="120" cy="120" r="16" fill="#fff" stroke="#a9bee3"/><text x="120" y="126" textAnchor="middle" fontSize="18" fontWeight="700" fill="#7897ce">?</text></g>}
+            {[106, 81, 50].map(radius => <polygon key={radius} points={Array.from({ length: 6 }, (_, index) => { const point = profileHexPoint(index, radius); return `${point.x},${point.y}` }).join(' ')} fill="#f6f9ff" stroke="#d9e6ff" strokeWidth="1"/>) }
+            <polygon points={Array.from({ length: 6 }, (_, index) => { const point = profileHexPoint(index, 50); return `${point.x},${point.y}` }).join(' ')} fill="#b2ccff" fillOpacity=".34"/>
+            {Array.from({ length: 6 }, (_, index) => { const point = profileHexPoint(index, 106); return <line key={index} x1="120" y1="120" x2={point.x} y2={point.y} stroke="#c4d5f1" strokeWidth="1" strokeDasharray="2 6"/> })}
+            {fields.length ? <>
+              {fields.length > 1 && <polygon points={points} fill="rgba(178,204,255,.5)" stroke="#6d8fce" strokeWidth="2"/>}
+              {slots.map((pattern, index) => {
+                if (!pattern) return null
+                const evidence = pattern.supportingCount + pattern.contradictingCount
+                const point = profileHexPoint(index, 32 + Math.min(evidence, 6) / 6 * 74)
+                return <circle key={pattern.id} cx={point.x} cy={point.y} r="5" fill="#6d8fce" stroke="#fff" strokeWidth="2"/>
+              })}
+              {Array.from({ length: 6 }, (_, index) => {
+                const point = profileHexPoint(index, 106)
+                return slots[index] ? <g key={index}><circle cx={point.x} cy={point.y} r="11" fill="#fff" stroke="#d9e6ff"/><text x={point.x} y={point.y + 3.5} textAnchor="middle" fontSize="9" fontWeight="700" fill="#526f9f">{index + 1}</text></g> : null
+              })}
+            </> : <text x="120" y="137" textAnchor="middle" fontSize="46" fontWeight="700" fill="#ffffff">?</text>}
           </svg>
         </div>
         {fields.length ? <><p className="-mt-1 text-center text-[10px] leading-4 text-[#748197]">도형의 길이는 좋고 나쁨이 아니라 연결된 근거량을 나타내요.</p><div className="mt-4 space-y-2">{fields.map((pattern, index) => <Link key={pattern.id} to={`/patterns/${pattern.id}`} className="flex min-h-[62px] items-center gap-3 rounded-[18px] border border-white bg-white/72 px-3.5 shadow-[inset_0_0_0_1px_rgba(211,224,244,.9)] transition active:scale-[.99]"><span className="grid size-7 shrink-0 place-items-center rounded-full bg-[#e8f0ff] text-[10px] font-semibold text-[#526f9f]">{index + 1}</span><span className="min-w-0 flex-1"><strong className="line-clamp-2 block text-[12px] font-semibold leading-5 tracking-[-.015em]">{pattern.title}</strong><span className="mt-0.5 block text-[10px] text-[#748093]">같은 방향 {pattern.supportingCount} · 다른 기록 {pattern.contradictingCount}</span></span><ChevronRight size={16} className="shrink-0 text-[#8290a5]"/></Link>)}</div></> : <><div className="mt-1 text-center"><h3 className="text-[14px] font-semibold tracking-[-.02em]">{emptyTitle}</h3><p className="mt-1 text-[11px] leading-5 text-[#68778f]">{emptyCopy}</p></div><div className="mt-4 flex items-center justify-between gap-3 border-t border-[#d9e4f5] pt-3"><p className="text-[10px] leading-4 text-[#6d788a]">비슷한 경험 2개부터 축을 만들어요.</p><Link to={recordCount ? '/records?view=history' : '/explore'} className="inline-flex h-8 shrink-0 items-center gap-0.5 rounded-full bg-[#121318] px-3.5 text-[10px] font-semibold text-white">{recordCount ? '기록 보기' : '시작하기'}<ChevronRight size={12}/></Link></div></>}

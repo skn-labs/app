@@ -176,7 +176,7 @@ function EmptyExperienceCard({ productCount }: { productCount: number }) {
         </span>
       </div>
       <div className="mt-4 max-w-[300px]"><h2 className="text-[25px] font-semibold leading-[1.16] tracking-[-.047em] [text-wrap:balance]">{title}</h2><p className="mt-2.5 max-w-[285px] text-[12px] font-medium leading-[1.65] tracking-[-.018em] text-[#687386]">{description}</p></div>
-      <Link to="/routine/new" className="mt-auto flex h-[49px] w-full items-center justify-center gap-1.5 rounded-full bg-cta text-[14px] font-semibold leading-none tracking-[-.012em] text-white shadow-[0_9px_24px_rgba(17,23,34,.18)] transition hover:bg-black active:scale-[.98]">첫 루틴 만들기<ArrowRight size={16}/></Link>
+      <Link to="/routine/new" className="mt-auto flex h-[49px] w-full items-center justify-center gap-1.5 rounded-full bg-cta text-sm font-semibold leading-none tracking-[-.015em] text-white shadow-[0_9px_24px_rgba(17,23,34,.18)] transition hover:bg-black active:scale-[.98]">첫 루틴 만들기<ArrowRight size={16}/></Link>
     </div>
   </section>
 }
@@ -198,7 +198,7 @@ function EmptyInsightCard({ recordCount, href }: { recordCount: number; href: st
     ? <>오늘 사용해봤다면<br/>첫 기록을 남겨보세요</>
     : <>오늘도 사용해봤다면<br/>새 기록을 남겨보세요</>
   const reason = recordCount === 0
-    ? '아직 비교할 경험이 없어요. 첫 경험을 남기면 다음 기록부터 서로 살펴봐요.'
+    ? <>아직 비교할 경험이 없어요.<br/>첫 경험을 남기면 다음 기록부터 서로 살펴봐요.</>
     : recordCount === 1
       ? '아직 비교할 비슷한 경험이 1개뿐이에요. 하나 더 쌓이면 반복된 흐름을 보여드려요.'
       : '아직 서로 비슷한 경험이 충분하지 않아요. 같은 제품이나 루틴의 사용 기록을 조금 더 남겨보세요.'
@@ -281,22 +281,23 @@ function ProfilePreview({ recordCount, patterns }: { recordCount: number; patter
 
       <div className="mx-auto mt-1 aspect-square w-full max-w-[236px]">
         <svg viewBox="0 0 240 240" className="size-full overflow-visible" role="img" aria-label={hasProfile ? `사용자 기록에서 동적으로 선정된 ${fields.length}개 필드의 육각형 근거 지도` : '기록이 쌓이면 필드가 동적으로 만들어지는 빈 육각형 근거 지도'}>
-          <g fill="none" stroke="#c3d1e6" strokeWidth="1">
-            {[110, 76, 42].map(radius => <polygon key={radius} points={Array.from({ length: 6 }, (_, index) => { const point = hexPoint(index, radius); return `${point.x},${point.y}` }).join(' ')}/>)}
-            {Array.from({ length: 6 }, (_, index) => { const point = hexPoint(index, 110); return <line key={index} x1="120" y1="120" x2={point.x} y2={point.y}/> })}
-          </g>
-          {hasProfile && fields.length > 1 && <polygon points={areaPoints} fill="rgba(95,115,150,.3)" stroke="#5f7396" strokeWidth="2"/>}
-          {slots.map((pattern, index) => {
-            if (!pattern) return null
-            const evidenceCount = pattern.supportingCount + pattern.contradictingCount
-            const point = hexPoint(index, 28 + Math.min(evidenceCount, 5) / 5 * 82)
-            return <circle key={pattern.id} cx={point.x} cy={point.y} r="5" fill="#5f7396" stroke="#fff" strokeWidth="2"/>
-          })}
-          {Array.from({ length: 6 }, (_, index) => {
-            const point = hexPoint(index, 110)
-            return slots[index] ? <g key={index}><circle cx={point.x} cy={point.y} r="10" fill="#fff" stroke="#c3d1e6"/><text x={point.x} y={point.y + 3.5} textAnchor="middle" fontSize="9" fontWeight="700" fill="#526f9f">{index + 1}</text></g> : <circle key={index} cx={point.x} cy={point.y} r="3" fill="#c3d1e6"/>
-          })}
-          {!hasProfile && <g><circle cx="120" cy="120" r="16" fill="#fff" stroke="#b8c8de"/><text x="120" y="126" textAnchor="middle" fontSize="18" fontWeight="700" fill="#7897ce">?</text></g>}
+          {[110, 84, 52].map(radius => <polygon key={radius} points={Array.from({ length: 6 }, (_, index) => { const point = hexPoint(index, radius); return `${point.x},${point.y}` }).join(' ')} fill="#f6f9ff" stroke="#d9e6ff" strokeWidth="1"/>)}
+          <polygon points={Array.from({ length: 6 }, (_, index) => { const point = hexPoint(index, 52); return `${point.x},${point.y}` }).join(' ')} fill="#b2ccff" fillOpacity=".34"/>
+          {Array.from({ length: 6 }, (_, index) => { const point = hexPoint(index, 110); return <line key={index} x1="120" y1="120" x2={point.x} y2={point.y} stroke="#c4d5f1" strokeWidth="1" strokeDasharray="2 6"/> })}
+          {hasProfile && <>
+            {fields.length > 1 && <polygon points={areaPoints} fill="rgba(178,204,255,.5)" stroke="#6d8fce" strokeWidth="2"/>}
+            {slots.map((pattern, index) => {
+              if (!pattern) return null
+              const evidenceCount = pattern.supportingCount + pattern.contradictingCount
+              const point = hexPoint(index, 28 + Math.min(evidenceCount, 5) / 5 * 82)
+              return <circle key={pattern.id} cx={point.x} cy={point.y} r="5" fill="#6d8fce" stroke="#fff" strokeWidth="2"/>
+            })}
+            {Array.from({ length: 6 }, (_, index) => {
+              const point = hexPoint(index, 110)
+              return slots[index] ? <g key={index}><circle cx={point.x} cy={point.y} r="10" fill="#fff" stroke="#d9e6ff"/><text x={point.x} y={point.y + 3.5} textAnchor="middle" fontSize="9" fontWeight="700" fill="#526f9f">{index + 1}</text></g> : null
+            })}
+          </>}
+          {!hasProfile && <text x="120" y="137" textAnchor="middle" fontSize="46" fontWeight="700" fill="#ffffff">?</text>}
         </svg>
       </div>
 
