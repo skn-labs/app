@@ -37,6 +37,18 @@ export function AppViewport({ children }: PropsWithChildren) {
     const root = document.documentElement
     // 캡처 동안 프레임 뒤 배경을 투명하게(둥근 모서리 투명 PNG)
     root.classList.add('skn-capture')
+    // backdrop-filter는 foreignObject 렌더 시 하드한 사각형으로 찍히므로, 캡처 직전
+    // 프레임 안 모든 요소에서 인라인으로 제거했다가 끝나면 원복한다(CSS 캐스케이드에 의존 X).
+    const blurred: { el: HTMLElement; bf: string; wbf: string }[] = []
+    node.querySelectorAll<HTMLElement>('*').forEach(el => {
+      const cs = getComputedStyle(el)
+      const wbfComputed = cs.getPropertyValue('-webkit-backdrop-filter')
+      if ((cs.backdropFilter && cs.backdropFilter !== 'none') || (wbfComputed && wbfComputed !== 'none')) {
+        blurred.push({ el, bf: el.style.getPropertyValue('backdrop-filter'), wbf: el.style.getPropertyValue('-webkit-backdrop-filter') })
+        el.style.setProperty('backdrop-filter', 'none')
+        el.style.setProperty('-webkit-backdrop-filter', 'none')
+      }
+    })
     try {
       const dataUrl = await domToPng(node, {
         scale: 3,
@@ -55,6 +67,10 @@ export function AppViewport({ children }: PropsWithChildren) {
       console.error('디바이스 프레임 캡처 실패', error)
       setCaptureState('idle')
     } finally {
+      blurred.forEach(({ el, bf, wbf }) => {
+        if (bf) el.style.setProperty('backdrop-filter', bf); else el.style.removeProperty('backdrop-filter')
+        if (wbf) el.style.setProperty('-webkit-backdrop-filter', wbf); else el.style.removeProperty('-webkit-backdrop-filter')
+      })
       root.classList.remove('skn-capture')
     }
   }
