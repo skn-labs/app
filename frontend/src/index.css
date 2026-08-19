@@ -704,3 +704,9 @@ html.skn-capture .skn-app-stage { background: transparent !important; }
 html.skn-capture .skn-desktop-editorial,
 html.skn-capture .skn-desktop-wash,
 html.skn-capture .skn-desktop-visit { display: none !important; }
+/* backdrop-filter는 DOM-to-image로 충실히 렌더되지 않아 하드한 사각형으로 찍힌다.
+   캡처 동안만 꺼서 반투명 배경이 그대로 보이도록 한다(실제 화면과 거의 동일). */
+html.skn-capture *, html.skn-capture *::before, html.skn-capture *::after {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
