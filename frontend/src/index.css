@@ -664,3 +664,12 @@ video:not([controls])::-webkit-media-controls { display: none !important; }
   .skn-route-tab, .skn-route-forward, .skn-route-back, .skn-route-replace, .skn-sheet-backdrop, .skn-sheet-surface, .skn-fullscreen-overlay { animation: skn-route-replace-in 120ms ease-out both !important; }
   .onboard-draw { stroke-dashoffset: 0; }
 }
+
+/* 디자인 목업 캡처용: <html>에 skn-capture 클래스를 붙이면 디바이스 프레임 뒤 배경이
+   모두 투명해져서 DevTools "Capture node screenshot"의 둥근 모서리가 투명 PNG로 나온다.
+   토글: document.documentElement.classList.toggle('skn-capture') */
+html.skn-capture, html.skn-capture body { background: transparent !important; }
+html.skn-capture .skn-app-stage { background: transparent !important; }
+html.skn-capture .skn-desktop-editorial,
+html.skn-capture .skn-desktop-wash,
+html.skn-capture .skn-desktop-visit { display: none !important; }
