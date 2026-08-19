@@ -1,5 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { PropsWithChildren } from 'react'
+import { toPng } from 'html-to-image'
+import { Camera, Check } from 'lucide-react'
 import { formatKstTime } from '../lib/kstTime'
 import { SknMark } from './ui'
 
@@ -22,6 +24,36 @@ function KstClock() {
 
 /** 데스크톱에서는 실제 앱을 iPhone 프레임 안에, 모바일에서는 화면 전체에 표시한다. */
 export function AppViewport({ children }: PropsWithChildren) {
+  const frameRef = useRef<HTMLDivElement>(null)
+  const [captureState, setCaptureState] = useState<'idle' | 'capturing' | 'done'>('idle')
+  const doneTimer = useRef<number>(0)
+
+  useEffect(() => () => window.clearTimeout(doneTimer.current), [])
+
+  const captureFrame = async () => {
+    const node = frameRef.current
+    if (!node || captureState === 'capturing') return
+    setCaptureState('capturing')
+    const root = document.documentElement
+    // 캡처 동안 프레임 뒤 배경을 투명하게(둥근 모서리 투명 PNG)
+    root.classList.add('skn-capture')
+    try {
+      const dataUrl = await toPng(node, { pixelRatio: 3, cacheBust: true, backgroundColor: undefined })
+      const link = document.createElement('a')
+      const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')
+      link.download = `skn-${stamp}.png`
+      link.href = dataUrl
+      link.click()
+      setCaptureState('done')
+      doneTimer.current = window.setTimeout(() => setCaptureState('idle'), 1600)
+    } catch (error) {
+      console.error('디바이스 프레임 캡처 실패', error)
+      setCaptureState('idle')
+    } finally {
+      root.classList.remove('skn-capture')
+    }
+  }
+
   return <div className="skn-app-stage">
     <img src="/skn-assets/desktop-editorial.webp" alt="" aria-hidden="true" className="skn-desktop-editorial"/>
     <div aria-hidden="true" className="skn-desktop-wash"/>
@@ -30,7 +62,18 @@ export function AppViewport({ children }: PropsWithChildren) {
       <div className="skn-desktop-visit-copy"><strong>휴대폰에서 이어보기</strong><a href="https://skn.today/">skn.today</a></div>
       <a href="https://skn.today/" aria-label="skn.today 열기" className="skn-desktop-qr"><img src="/skn-assets/skn-today-qr.svg" alt="skn.today QR 코드"/></a>
     </aside>
-    <div className="skn-device-frame">
+    <button
+      type="button"
+      onClick={captureFrame}
+      disabled={captureState === 'capturing'}
+      aria-label="휴대폰 화면 이미지로 저장"
+      className={`skn-capture-btn ${captureState === 'done' ? 'is-done' : ''}`}
+    >
+      {captureState === 'done'
+        ? <><Check size={17} strokeWidth={2.4}/><span>저장됨</span></>
+        : <><Camera size={17} strokeWidth={2}/><span>{captureState === 'capturing' ? '캡처 중…' : '화면 캡처'}</span></>}
+    </button>
+    <div className="skn-device-frame" ref={frameRef}>
       <div className="skn-device-screen">
         <div aria-hidden="true" className="skn-device-status">
           <KstClock/>
