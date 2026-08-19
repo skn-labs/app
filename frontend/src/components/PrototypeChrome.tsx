@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { PropsWithChildren } from 'react'
-import { toPng } from 'html-to-image'
+import { domToPng } from 'modern-screenshot'
 import { Camera, Check } from 'lucide-react'
 import { formatKstTime } from '../lib/kstTime'
 import { SknMark } from './ui'
@@ -38,7 +38,12 @@ export function AppViewport({ children }: PropsWithChildren) {
     // 캡처 동안 프레임 뒤 배경을 투명하게(둥근 모서리 투명 PNG)
     root.classList.add('skn-capture')
     try {
-      const dataUrl = await toPng(node, { pixelRatio: 3, cacheBust: true, backgroundColor: undefined })
+      const dataUrl = await domToPng(node, {
+        scale: 3,
+        backgroundColor: 'transparent',
+        // 프레임의 배치용 transform(translateY(-50%))를 리셋해야 클론이 잘리지 않는다.
+        style: { transform: 'none', top: '0', left: '0', margin: '0' },
+      })
       const link = document.createElement('a')
       const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')
       link.download = `skn-${stamp}.png`
