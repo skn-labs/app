@@ -495,6 +495,38 @@ html.skn-capture .skn-capture-btn { display: none !important; }
 @keyframes onboard-rise { from { opacity: 0; transform: translateY(9px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes onboard-pulse { 0%, 100% { opacity: .72; transform: scale(1); } 50% { opacity: 1; transform: scale(1.05); } }
 @keyframes onboard-scan { 0% { transform: translateY(-105%); } 60%, 100% { transform: translateY(105%); } }
+@keyframes auth-welcome-mark-in {
+  from { opacity: 0; transform: translateY(-7px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes auth-welcome-copy-in {
+  from { opacity: 0; transform: translateY(13px); filter: blur(4px); }
+  to { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+@keyframes auth-welcome-visual-in {
+  from { opacity: 0; transform: translateY(12px) scale(.94); filter: blur(7px); }
+  to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+@keyframes auth-welcome-action-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes auth-welcome-breeze {
+  0%, 100% { opacity: .44; transform: translate3d(-2%, 1%, 0) scale(.98); }
+  50% { opacity: .7; transform: translate3d(3%, -2%, 0) scale(1.04); }
+}
+@keyframes auth-welcome-halo-breathe {
+  0%, 100% { opacity: .5; transform: scale(.94); }
+  50% { opacity: .82; transform: scale(1.05); }
+}
+@keyframes auth-welcome-orb-drift {
+  0%, 100% { transform: translate3d(0, 3px, 0) scale(1); }
+  50% { transform: translate3d(0, -5px, 0) scale(1.012); }
+}
+@keyframes auth-form-enter {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 @keyframes onboarding-welcome-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes onboarding-welcome-out { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(1.015); } }
 @keyframes onboarding-welcome-mark { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
@@ -590,6 +622,43 @@ html.skn-capture .skn-capture-btn { display: none !important; }
 .onboard-scan { transform-box: fill-box; transform-origin: center; animation: onboard-scan 2.4s ease-in-out infinite; }
 .onboard-delay-1 { animation-delay: .18s; }
 .onboard-delay-2 { animation-delay: .36s; }
+.auth-welcome-mark { animation: auth-welcome-mark-in .62s cubic-bezier(.22, 1, .36, 1) .04s backwards; }
+.auth-welcome-copy { animation: auth-welcome-copy-in .8s cubic-bezier(.22, 1, .36, 1) .12s backwards; }
+.auth-welcome-visual { isolation: isolate; }
+.auth-welcome-breeze {
+  position: absolute;
+  inset: 4% -38% 18%;
+  opacity: .56;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 37% 46%, rgba(223, 237, 255, .5) 0%, rgba(238, 244, 255, .18) 26%, transparent 54%),
+    radial-gradient(circle at 67% 57%, rgba(235, 229, 255, .38) 0%, transparent 45%);
+  filter: blur(24px);
+  pointer-events: none;
+  animation: auth-welcome-breeze 10s ease-in-out .4s infinite;
+}
+.auth-welcome-halo {
+  position: absolute;
+  z-index: -1;
+  width: 250px;
+  height: 250px;
+  opacity: .66;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(231, 240, 255, .78) 0%, rgba(239, 235, 255, .36) 42%, rgba(255, 255, 255, 0) 72%);
+  filter: blur(9px);
+  pointer-events: none;
+  animation: auth-welcome-halo-breathe 6.8s ease-in-out .7s infinite;
+}
+.auth-welcome-orb-reveal { animation: auth-welcome-visual-in 1s cubic-bezier(.22, 1, .36, 1) .2s backwards; }
+.auth-welcome-orb {
+  filter: drop-shadow(0 18px 30px rgba(82, 103, 142, .1));
+  animation: auth-welcome-orb-drift 5.8s ease-in-out 1.05s infinite;
+}
+.auth-welcome-action { animation: auth-welcome-action-in .65s cubic-bezier(.22, 1, .36, 1) backwards; }
+.auth-welcome-action-primary { animation-delay: .4s; }
+.auth-welcome-action-secondary { animation-delay: .48s; }
+.auth-welcome-action-caption { animation-delay: .56s; }
+.auth-form-enter { animation: auth-form-enter .48s cubic-bezier(.22, 1, .36, 1) backwards; }
 .onboarding-welcome { animation: onboarding-welcome-in .5s ease-out both; }
 .onboarding-welcome.is-exiting { animation: onboarding-welcome-out .62s cubic-bezier(.4,0,.2,1) both; pointer-events: none; }
 .onboarding-welcome-mark { animation: onboarding-welcome-mark .65s cubic-bezier(.22,1,.36,1) .12s both; }
@@ -698,7 +767,7 @@ html.skn-capture .skn-capture-btn { display: none !important; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .animate-rise, .animate-slide-in, .animate-onboard-forward, .animate-onboard-back, .animate-onboard-rise, .onboard-float, .onboard-draw, .onboard-pop, .onboard-pulse, .onboard-scan, .onboarding-welcome, .onboarding-welcome-mark, .onboarding-welcome-visual, .onboarding-welcome-copy, .onboarding-welcome-orbit, .ai-landing-wave-track, .ai-landing-halo, .ai-landing-orb, .routine-name-orbit, .routine-name-path, .routine-naming-mark.is-ready .routine-name-check, .routine-name-reveal, .routine-name-actions, .routine-reveal-item, .routine-done-pop, .skn-skeleton::after, .skn-skeleton-frame, .skn-caret, .skn-stream-in, .skn-soft-in { animation: none !important; }
+  .animate-rise, .animate-slide-in, .animate-onboard-forward, .animate-onboard-back, .animate-onboard-rise, .onboard-float, .onboard-draw, .onboard-pop, .onboard-pulse, .onboard-scan, .auth-welcome-mark, .auth-welcome-copy, .auth-welcome-breeze, .auth-welcome-halo, .auth-welcome-orb-reveal, .auth-welcome-orb, .auth-welcome-action, .auth-form-enter, .onboarding-welcome, .onboarding-welcome-mark, .onboarding-welcome-visual, .onboarding-welcome-copy, .onboarding-welcome-orbit, .ai-landing-wave-track, .ai-landing-halo, .ai-landing-orb, .routine-name-orbit, .routine-name-path, .routine-naming-mark.is-ready .routine-name-check, .routine-name-reveal, .routine-name-actions, .routine-reveal-item, .routine-done-pop, .skn-skeleton::after, .skn-skeleton-frame, .skn-caret, .skn-stream-in, .skn-soft-in { animation: none !important; }
   .skn-route-tab, .skn-route-forward, .skn-route-back, .skn-route-replace, .skn-sheet-backdrop, .skn-sheet-surface, .skn-fullscreen-overlay { animation: skn-route-replace-in 120ms ease-out both !important; }
   .onboard-draw { stroke-dashoffset: 0; }
 }
