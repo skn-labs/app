@@ -151,7 +151,7 @@ export function ChatStartPage() {
 export function ChatPage() {
   const { id } = useParams(); const conversationId = Number(id)
   const validConversationId = Number.isSafeInteger(conversationId) && conversationId > 0
-  const navigate = useNavigate(); const queryClient = useQueryClient(); const bottomRef = useRef<HTMLDivElement>(null)
+  const navigate = useNavigate(); const queryClient = useQueryClient(); const bottomRef = useRef<HTMLDivElement>(null); const scrollRef = useRef<HTMLDivElement>(null)
   const [text, setText] = useState('')
   const [pendingMessage, setPendingMessage] = useState<{ text: string; requestId: string } | null>(null)
   const [openEvidence, setOpenEvidence] = useState<{ refs: string[]; webSources: WebSource[] } | null>(null)
@@ -161,8 +161,28 @@ export function ChatPage() {
   const streamingId = lastMessage && lastMessage.role === 'ASSISTANT' && isFreshMessage(lastMessage.createdAt) && !streamedMessageIds.has(lastMessage.id) ? lastMessage.id : null
   const [, markStreamed] = useReducer((tick: number) => tick + 1, 0) // 타이핑 완료를 반영해 근거·추천·다음 질문을 드러낸다.
   const endStream = (messageId: number) => { streamedMessageIds.add(messageId); markStreamed() }
-  const followStream = () => bottomRef.current?.scrollIntoView({ block: 'end' })
-  useEffect(() => { if (streamingId === null) bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' }) }, [streamingId])
+  // 타이핑 중에는 프레임마다 조금씩 늘어나므로 즉시 붙여도 부드럽다.
+  const followStream = () => { const el = scrollRef.current; if (el) el.scrollTop = el.scrollHeight }
+  // 답변이 끝나 근거·추천 제품이 붙을 때, 맨 아래로 훅 내려가지 않고 천천히 감속하며 이어서 내려가게 한다.
+  useEffect(() => {
+    if (streamingId !== null || prefersReducedMotion()) return
+    const el = scrollRef.current
+    if (!el) return
+    let raf = 0
+    let start = 0
+    let owned = el.scrollTop // 우리가 마지막으로 설정한 위치. 사용자가 스크롤하면 값이 벌어진다.
+    const followWindow = 1500 // 추천 제품이 늦게 로드돼 높이가 늘어나도 그 사이 부드럽게 따라간다.
+    const step = (now: number) => {
+      if (!start) start = now
+      if (Math.abs(el.scrollTop - owned) > 4) return // 사용자가 직접 스크롤하면 방해하지 않고 멈춘다.
+      const target = el.scrollHeight - el.clientHeight // 매 프레임 목표를 다시 잡아 성장하는 높이에도 튀지 않는다.
+      el.scrollTop += (target - el.scrollTop) * 0.07 // 거리에 비례해 조금씩 → 부드러운 감속
+      owned = el.scrollTop
+      if (now - start < followWindow) raf = requestAnimationFrame(step)
+    }
+    raf = requestAnimationFrame(step)
+    return () => cancelAnimationFrame(raf)
+  }, [streamingId])
   const productId = conversation.data?.productId
   const product = useQuery({ queryKey: ['product', productId], queryFn: () => api.product(productId!), enabled: Boolean(productId) })
   const send = useMutation({ mutationFn: (message: { text: string; requestId: string }) => api.sendMessage(conversationId, message.text, message.requestId), onSuccess: value => { queryClient.setQueryData(['conversation', conversationId], value); queryClient.invalidateQueries({ queryKey: ['conversations'] }); setPendingMessage(null) } })
@@ -175,8 +195,8 @@ export function ChatPage() {
   const submit = (value: string) => { const message = value.trim(); if (message && !send.isPending) { const request = { text: message, requestId: crypto.randomUUID() }; setText(''); setPendingMessage(request); send.mutate(request) } }
   return <Screen nav={false} className="flex h-full min-h-0 flex-col overflow-hidden bg-[#fbfcff]">
     <AiHeader onBack={() => navigate('/ai')}/>
-    <div className="hide-scrollbar flex-1 overflow-y-auto px-5 pb-8 pt-4">
-      {product.data && <ProductContextCard product={product.data}/>} 
+    <div ref={scrollRef} className="hide-scrollbar flex-1 overflow-y-auto px-5 pb-8 pt-4">
+      {product.data && <ProductContextCard product={product.data}/>}
       <div className="space-y-5">{data.messages.map(message => message.role === 'USER' ? <UserMessage key={message.id} text={message.content} createdAt={message.createdAt}/> : <AssistantMessage key={message.id} message={message} recommend={data.mode === 'RECOMMEND'} streaming={message.id === streamingId} onStreamEnd={() => endStream(message.id)} onReveal={followStream} onEvidence={() => setOpenEvidence({ refs: message.evidenceRefs, webSources: message.webSources || [] })}/>)}{pendingMessage && <UserMessage text={pendingMessage.text} pending/>}{send.isPending && <ThinkingPanel compact product={Boolean(productId)} recommend={data.mode === 'RECOMMEND'}/>}</div>
 
       {data.rescuePlan && !streamingId && <RescuePlanCard conversation={data} onApply={() => apply.mutate()} pending={apply.isPending}/>}
