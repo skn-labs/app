@@ -163,26 +163,40 @@ export function ChatPage() {
   const endStream = (messageId: number) => { streamedMessageIds.add(messageId); markStreamed() }
   // 타이핑 중에는 프레임마다 조금씩 늘어나므로 즉시 붙여도 부드럽다.
   const followStream = () => { const el = scrollRef.current; if (el) el.scrollTop = el.scrollHeight }
-  // 답변이 끝나 근거·추천 제품이 붙을 때, 맨 아래로 훅 내려가지 않고 천천히 감속하며 이어서 내려가게 한다.
-  useEffect(() => {
-    if (streamingId !== null || prefersReducedMotion()) return
+  // 맨 아래로 아주 부드럽고 천천히 감속하며 이동. 추천 제품이 늦게 로드돼 높이가 늘어나도 매 프레임 목표를 다시 잡아 훅 튀지 않는다.
+  const followRaf = useRef<number | null>(null)
+  const smoothFollowToBottom = () => {
     const el = scrollRef.current
     if (!el) return
-    let raf = 0
+    if (prefersReducedMotion()) { el.scrollTop = el.scrollHeight; return }
+    if (followRaf.current) cancelAnimationFrame(followRaf.current)
     let start = 0
-    let owned = el.scrollTop // 우리가 마지막으로 설정한 위치. 사용자가 스크롤하면 값이 벌어진다.
-    const followWindow = 1500 // 추천 제품이 늦게 로드돼 높이가 늘어나도 그 사이 부드럽게 따라간다.
+    let owned = el.scrollTop
+    const followWindow = 2000
     const step = (now: number) => {
       if (!start) start = now
-      if (Math.abs(el.scrollTop - owned) > 4) return // 사용자가 직접 스크롤하면 방해하지 않고 멈춘다.
-      const target = el.scrollHeight - el.clientHeight // 매 프레임 목표를 다시 잡아 성장하는 높이에도 튀지 않는다.
-      el.scrollTop += (target - el.scrollTop) * 0.07 // 거리에 비례해 조금씩 → 부드러운 감속
+      if (Math.abs(el.scrollTop - owned) > 4) { followRaf.current = null; return } // 사용자가 직접 스크롤하면 멈춰 방해하지 않는다.
+      const target = el.scrollHeight - el.clientHeight
+      el.scrollTop += (target - el.scrollTop) * 0.05 // 천천히 감속
       owned = el.scrollTop
-      if (now - start < followWindow) raf = requestAnimationFrame(step)
+      followRaf.current = now - start < followWindow ? requestAnimationFrame(step) : null
     }
-    raf = requestAnimationFrame(step)
-    return () => cancelAnimationFrame(raf)
+    followRaf.current = requestAnimationFrame(step)
+  }
+  // 답변이 끝나면 근거·시간은 바로, 추천 제품·다음 질문은 잠시 뜸 들였다가 스스륵 드러낸다.
+  const [extrasReady, setExtrasReady] = useState(() => streamingId === null) // 타이핑으로 시작하면 첫 프레임부터 추가 요소를 숨겨 깜빡임을 막는다.
+  const prevStreamingId = useRef<number | null>(streamingId)
+  useEffect(() => {
+    const was = prevStreamingId.current
+    prevStreamingId.current = streamingId
+    if (streamingId !== null) { setExtrasReady(false); return } // 타이핑 중에는 감춘다.
+    if (was === null) { setExtrasReady(true); return } // 과거 대화 등 스트리밍이 없던 경우는 즉시 노출.
+    setExtrasReady(false)
+    const timer = setTimeout(() => { setExtrasReady(true); smoothFollowToBottom() }, 800) // 고의적인 뜸.
+    return () => clearTimeout(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [streamingId])
+  useEffect(() => () => { if (followRaf.current) cancelAnimationFrame(followRaf.current) }, [])
   const productId = conversation.data?.productId
   const product = useQuery({ queryKey: ['product', productId], queryFn: () => api.product(productId!), enabled: Boolean(productId) })
   const send = useMutation({ mutationFn: (message: { text: string; requestId: string }) => api.sendMessage(conversationId, message.text, message.requestId), onSuccess: value => { queryClient.setQueryData(['conversation', conversationId], value); queryClient.invalidateQueries({ queryKey: ['conversations'] }); setPendingMessage(null) } })
@@ -197,12 +211,12 @@ export function ChatPage() {
     <AiHeader onBack={() => navigate('/ai')}/>
     <div ref={scrollRef} className="hide-scrollbar flex-1 overflow-y-auto px-5 pb-8 pt-4">
       {product.data && <ProductContextCard product={product.data}/>}
-      <div className="space-y-5">{data.messages.map(message => message.role === 'USER' ? <UserMessage key={message.id} text={message.content} createdAt={message.createdAt}/> : <AssistantMessage key={message.id} message={message} recommend={data.mode === 'RECOMMEND'} streaming={message.id === streamingId} onStreamEnd={() => endStream(message.id)} onReveal={followStream} onEvidence={() => setOpenEvidence({ refs: message.evidenceRefs, webSources: message.webSources || [] })}/>)}{pendingMessage && <UserMessage text={pendingMessage.text} pending/>}{send.isPending && <ThinkingPanel compact product={Boolean(productId)} recommend={data.mode === 'RECOMMEND'}/>}</div>
+      <div className="space-y-5">{data.messages.map(message => message.role === 'USER' ? <UserMessage key={message.id} text={message.content} createdAt={message.createdAt}/> : <AssistantMessage key={message.id} message={message} recommend={data.mode === 'RECOMMEND'} streaming={message.id === streamingId} showProducts={message.id === lastMessage?.id ? extrasReady : true} onStreamEnd={() => endStream(message.id)} onReveal={followStream} onEvidence={() => setOpenEvidence({ refs: message.evidenceRefs, webSources: message.webSources || [] })}/>)}{pendingMessage && <UserMessage text={pendingMessage.text} pending/>}{send.isPending && <ThinkingPanel compact product={Boolean(productId)} recommend={data.mode === 'RECOMMEND'}/>}</div>
 
-      {data.rescuePlan && !streamingId && <RescuePlanCard conversation={data} onApply={() => apply.mutate()} pending={apply.isPending}/>}
+      {data.rescuePlan && extrasReady && <RescuePlanCard conversation={data} onApply={() => apply.mutate()} pending={apply.isPending}/>}
       {apply.isError && <p role="alert" className="mt-3 rounded-xl bg-[#fff5f5] p-3 text-xs leading-5 text-danger">{apply.error.message}</p>}
       {send.error && pendingMessage && <RetryCard message="메시지를 보내지 못했어요. 입력한 내용은 이 화면에 남아 있어요." onRetry={() => send.mutate(pendingMessage)}/>}
-      {!send.isPending && !pendingMessage && !streamingId && <FollowUpQuestions suggestions={data.quickReplies} onSelect={submit}/>}
+      {!send.isPending && !pendingMessage && extrasReady && <FollowUpQuestions suggestions={data.quickReplies} onSelect={submit}/>}
       <div ref={bottomRef}/>
     </div>
     <Composer value={text} onChange={setText} onSubmit={submit} pending={send.isPending} placeholder={data.mode === 'RESCUE' ? '지금 상태를 평소 말하듯 적어주세요' : '제품이나 내 사용 경험을 물어보세요'}/>
@@ -342,7 +356,7 @@ function UserMessage({ text, createdAt, pending = false }: { text: string; creat
   return <div className="flex flex-col items-end"><div className="w-fit max-w-[84%] rounded-[20px] border border-[#cfe0ff] bg-white px-4 py-2.5 text-sm leading-6 text-black"><MessageContent text={text}/></div><span className="mt-1.5 px-1 text-xs text-[#a0a5ac]">{pending ? '보내는 중…' : createdAt ? messageTime(createdAt) : ''}</span></div>
 }
 
-function AssistantMessage({ message, recommend, streaming = false, onStreamEnd, onReveal, onEvidence }: { message: Message; recommend: boolean; streaming?: boolean; onStreamEnd?: () => void; onReveal?: () => void; onEvidence: () => void }) {
+function AssistantMessage({ message, recommend, streaming = false, showProducts = true, onStreamEnd, onReveal, onEvidence }: { message: Message; recommend: boolean; streaming?: boolean; showProducts?: boolean; onStreamEnd?: () => void; onReveal?: () => void; onEvidence: () => void }) {
   const [done, setDone] = useState(!streaming)
   // 다른 답변이 새로 타이핑을 시작해 이 답변이 중단되면(스트리밍 해제) 근거·시간이 끝까지 감춰지지 않도록 완료 처리한다.
   useEffect(() => { if (!streaming) setDone(true) }, [streaming])
@@ -351,7 +365,7 @@ function AssistantMessage({ message, recommend, streaming = false, onStreamEnd, 
   return <article className="w-full">
     <div className="mb-2 flex items-center gap-2 px-1"><span className="grid size-7 place-items-center rounded-full border border-[#dce7f4] bg-white"><img src="/skn-assets/skn-mark.png" alt="" className="h-3.5 w-auto"/></span><span className="text-[11px] font-semibold tracking-[.04em] text-[#617592]">SKN AI</span></div>
     <div className="w-fit max-w-[94%] rounded-[8px_22px_22px_22px] border border-[#dce8f5] bg-[linear-gradient(145deg,#f2f7fd_0%,#f8fbff_100%)] px-4 py-4 text-[#1d2a3b] shadow-[0_8px_24px_rgba(68,91,124,.055)]"><MessageContent text={revealed} markdown caret={!done}/>{done && message.status === 'FALLBACK' && <div className="skn-stream-in mt-4 flex items-start gap-2 border-t border-[#dbe6f2] pt-4 text-xs leading-5 text-[#718198]"><ShieldCheck size={14} className="mt-0.5 shrink-0 text-[#6e88ac]"/>외부 AI 연결 없이 저장된 내 데이터로 답했어요.</div>}{done && hasEvidence && <div className="skn-stream-in"><EvidenceSummary refs={message.evidenceRefs} webSources={message.webSources || []} onOpen={onEvidence}/></div>}</div>
-    {done && <span className="skn-stream-in mt-1.5 block px-1 text-xs text-[#a0a9b5]">{messageTime(message.createdAt)}</span>}{done && recommend && <RecommendedProductLinks refs={message.evidenceRefs}/>}
+    {done && <span className="skn-stream-in mt-1.5 block px-1 text-xs text-[#a0a9b5]">{messageTime(message.createdAt)}</span>}{done && recommend && showProducts && <RecommendedProductLinks refs={message.evidenceRefs}/>}
   </article>
 }
 
@@ -476,12 +490,12 @@ function RecommendedProductLinks({ refs }: { refs: string[] }) {
     .filter(Number.isFinite))].slice(0, 3)
   const products = useQueries({ queries: productIds.map(id => ({ queryKey: ['product', id], queryFn: () => api.product(id) })) })
   if (!productIds.length) return null
-  if (products.some(result => result.isPending)) return <div className="-mx-5 mt-4" role="status" aria-label="추천 제품 불러오는 중"><div className="hide-scrollbar flex gap-3 overflow-hidden px-5">{productIds.map(id => <Skeleton key={id} className="h-[232px] w-[184px] shrink-0 rounded-[24px]"/>)}</div></div>
+  if (products.some(result => result.isPending)) return <div className="skn-soft-in -mx-5 mt-4" role="status" aria-label="추천 제품 불러오는 중"><div className="hide-scrollbar flex gap-3 overflow-hidden px-5">{productIds.map(id => <Skeleton key={id} className="h-[232px] w-[184px] shrink-0 rounded-[24px]"/>)}</div></div>
   const loaded = products.flatMap(result => result.data ? [result.data] : [])
   if (!loaded.length) return null
-  return <section className="skn-stream-in -mx-5 mt-5" aria-label="AI 답변에 나온 제품">
-    <div className="mb-2.5 flex items-center justify-between px-5"><p className="text-xs font-semibold tracking-[-.01em] text-[#465a76]">답변에 나온 제품</p><span className="text-[11px] font-medium text-[#8a99ad]">{loaded.length}개</span></div>
-    <div className="hide-scrollbar flex snap-x snap-mandatory scroll-pl-5 gap-3 overflow-x-auto px-5 pb-3">{loaded.map((product, index) => <Link key={product.id} to={`/products/${product.id}`} style={{ animationDelay: `${index * 90}ms` }} className="skn-stream-in group w-[184px] shrink-0 snap-start overflow-hidden rounded-[24px] border border-[#dbe7f4] bg-white shadow-[0_9px_25px_rgba(57,79,111,.07)] transition active:scale-[.985]">
+  return <section className="-mx-5 mt-5" aria-label="AI 답변에 나온 제품">
+    <div className="skn-soft-in mb-2.5 flex items-center justify-between px-5"><p className="text-xs font-semibold tracking-[-.01em] text-[#465a76]">답변에 나온 제품</p><span className="text-[11px] font-medium text-[#8a99ad]">{loaded.length}개</span></div>
+    <div className="hide-scrollbar flex snap-x snap-mandatory scroll-pl-5 gap-3 overflow-x-auto px-5 pb-3">{loaded.map((product, index) => <Link key={product.id} to={`/products/${product.id}`} style={{ animationDelay: `${120 + index * 130}ms` }} className="skn-soft-in group w-[184px] shrink-0 snap-start overflow-hidden rounded-[24px] border border-[#dbe7f4] bg-white shadow-[0_9px_25px_rgba(57,79,111,.07)] transition active:scale-[.985]">
       <div className="relative grid h-[148px] place-items-center overflow-hidden bg-[radial-gradient(circle_at_50%_38%,#ffffff_0%,#f0f6fd_60%,#e9f2fc_100%)]"><span className="absolute left-3 top-3 rounded-full border border-white/90 bg-white/75 px-2.5 py-1 text-[10px] font-semibold text-[#6d819e] backdrop-blur">{product.category}</span><span className="absolute right-3 top-3 grid size-7 place-items-center rounded-full bg-white/85 text-[#607a9f] shadow-sm"><ChevronRight size={14}/></span><span className="translate-y-2 scale-[.68]"><ProductGlyph category={product.category} src={product.imageUrl} size="lg"/></span></div>
       <div className="min-h-[88px] border-t border-[#e6edf5] px-3.5 py-3"><BrandIdentity name={product.brand} logoUrl={product.brandLogoUrl} size="xs" className="max-w-full" nameClassName="text-[#71829a]"/><span className="mt-1.5 line-clamp-2 block text-sm font-semibold leading-5 tracking-[-.02em] text-[#1e2a3a]">{product.name}</span></div>
     </Link>)}</div>
