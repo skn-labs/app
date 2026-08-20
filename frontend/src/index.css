@@ -565,6 +565,10 @@ html.skn-capture .skn-capture-btn { display: none !important; }
 }
 .animate-rise { animation: rise .28s ease-out both; }
 .animate-slide-in { animation: slide-in .24s cubic-bezier(.2,.75,.2,1) both; }
+@keyframes skn-caret-blink { 0%, 46% { opacity: 1; } 54%, 100% { opacity: 0; } }
+.skn-caret { animation: skn-caret-blink .92s steps(1, end) infinite; }
+@keyframes skn-stream-in { from { opacity: 0; transform: translateY(7px); filter: blur(3px); } to { opacity: 1; transform: none; filter: blur(0); } }
+.skn-stream-in { animation: skn-stream-in .36s cubic-bezier(.2,.75,.2,1) both; }
 .skn-route-tab { animation: skn-route-tab-in var(--skn-motion-fast) ease-out; }
 /* Route shell에 transform의 최종 프레임을 유지하면 하위 fixed UI의 기준점이 뷰포트에서 이탈한다. */
 .skn-route-forward { animation: skn-route-forward-in var(--skn-motion-standard) var(--skn-motion-ease-out); }
@@ -691,7 +695,7 @@ html.skn-capture .skn-capture-btn { display: none !important; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .animate-rise, .animate-slide-in, .animate-onboard-forward, .animate-onboard-back, .animate-onboard-rise, .onboard-float, .onboard-draw, .onboard-pop, .onboard-pulse, .onboard-scan, .onboarding-welcome, .onboarding-welcome-mark, .onboarding-welcome-visual, .onboarding-welcome-copy, .onboarding-welcome-orbit, .ai-landing-wave-track, .ai-landing-halo, .ai-landing-orb, .routine-name-orbit, .routine-name-path, .routine-naming-mark.is-ready .routine-name-check, .routine-name-reveal, .routine-name-actions, .routine-reveal-item, .routine-done-pop, .skn-skeleton::after, .skn-skeleton-frame { animation: none !important; }
+  .animate-rise, .animate-slide-in, .animate-onboard-forward, .animate-onboard-back, .animate-onboard-rise, .onboard-float, .onboard-draw, .onboard-pop, .onboard-pulse, .onboard-scan, .onboarding-welcome, .onboarding-welcome-mark, .onboarding-welcome-visual, .onboarding-welcome-copy, .onboarding-welcome-orbit, .ai-landing-wave-track, .ai-landing-halo, .ai-landing-orb, .routine-name-orbit, .routine-name-path, .routine-naming-mark.is-ready .routine-name-check, .routine-name-reveal, .routine-name-actions, .routine-reveal-item, .routine-done-pop, .skn-skeleton::after, .skn-skeleton-frame, .skn-caret, .skn-stream-in { animation: none !important; }
   .skn-route-tab, .skn-route-forward, .skn-route-back, .skn-route-replace, .skn-sheet-backdrop, .skn-sheet-surface, .skn-fullscreen-overlay { animation: skn-route-replace-in 120ms ease-out both !important; }
   .onboard-draw { stroke-dashoffset: 0; }
 }
